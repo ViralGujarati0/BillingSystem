@@ -1,4 +1,4 @@
-package com.billingsystem
+package com.billing.system
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

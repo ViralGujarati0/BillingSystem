@@ -1,4 +1,4 @@
-package com.billingsystem
+package com.billing.system
 
 import android.app.Application
 import com.facebook.react.PackageList
