@@ -1,16 +1,6 @@
-import React, { useEffect } from 'react';
-import { View, Text } from 'react-native';
-import { getApps } from '@react-native-firebase/app';
+import 'react-native-gesture-handler'; 
+import React from 'react';
+import AppNavigator from './src/navigation/AppNavigator';
 
-export default function App() {
-
-  useEffect(() => {
-    console.log("Firebase initialized:", getApps().length);
-  }, []);
-
-  return (
-    <View>
-      <Text>Firebase Connected Successfully</Text>
-    </View>
-  );
-}
+const App = () => <AppNavigator />;
+export default App;
