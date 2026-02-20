@@ -1,4 +1,4 @@
-const { onCall } = require("firebase-functions/v2/https");
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const admin = require("firebase-admin");
 
@@ -9,37 +9,51 @@ admin.initializeApp();
 const USERS = "billing_users";
 
 exports.createStaff = onCall(async (request) => {
-  const data = request.data;
   const context = request.auth;
+  const data = request.data;
 
-  console.log("Received data:", JSON.stringify(data));
-  console.log("Auth context:", context ? context.uid : "NO AUTH");
-
-  if (!context) throw new Error("unauthenticated");
+  if (!context) throw new HttpsError("unauthenticated", "Login required");
 
   const callerUid = context.uid;
-  const { email, password, name, shopId, permissions = {} } = data;
+  const { email, password, name, permissions = {} } = data;
 
-  if (!email || !password || !name || !shopId) {
-    throw new Error("Missing fields");
+  if (!email || !password || !name) {
+    throw new HttpsError("invalid-argument", "Missing fields");
   }
 
   const db = admin.firestore();
 
-  const callerDoc = await db.collection(USERS).doc(callerUid).get();
+  // 🔐 Get OWNER from Firestore
+  const callerSnap = await db.collection(USERS).doc(callerUid).get();
 
-  if (!callerDoc.exists) throw new Error("Owner not found");
+  if (!callerSnap.exists)
+    throw new HttpsError("not-found", "Owner not found");
 
-  const caller = callerDoc.data();
+  const caller = callerSnap.data();
 
-  if (caller.role !== "OWNER") throw new Error("Not owner");
+  if (caller.role !== "OWNER")
+    throw new HttpsError("permission-denied", "Only owners can create staff");
 
-  const newUser = await admin.auth().createUser({
-    email,
-    password,
-    displayName: name,
-  });
+  // 🔐 TRUST ONLY SERVER SHOP ID
+  const shopId = caller.shopId;
 
+  if (!shopId)
+    throw new HttpsError("failed-precondition", "Owner has no shop");
+
+  // 🔐 Create Auth user safely
+  let newUser;
+
+  try {
+    newUser = await admin.auth().createUser({
+      email,
+      password,
+      displayName: name,
+    });
+  } catch (e) {
+    throw new HttpsError("already-exists", "Email already registered");
+  }
+
+  // 🔐 Create Firestore STAFF
   await db.collection(USERS).doc(newUser.uid).set({
     shopId,
     name,
@@ -49,6 +63,18 @@ exports.createStaff = onCall(async (request) => {
     permissions,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
+
+  // OPTIONAL: also attach to shop
+  await db
+    .collection("billing_shops")
+    .doc(shopId)
+    .collection("staff")
+    .doc(newUser.uid)
+    .set({
+      name,
+      email,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
 
   return { uid: newUser.uid };
 });

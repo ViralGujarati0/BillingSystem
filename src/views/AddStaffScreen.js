@@ -10,8 +10,7 @@ import {
 
 import { createStaff } from '../services/createStaff';
 
-const AddStaffScreen = ({ route, navigation }) => {
-  const { shopId } = route.params;
+const AddStaffScreen = ({ navigation }) => {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -23,7 +22,6 @@ const AddStaffScreen = ({ route, navigation }) => {
         name,
         email,
         password,
-        shopId,
       });
 
       Alert.alert('Success', 'Staff created successfully');

@@ -22,9 +22,7 @@ const HomeScreen = ({ navigation, route }) => {
       <TouchableOpacity
         style={styles.button}
         onPress={() =>
-          navigation.navigate('AddStaff', {
-            shopId: userDoc.shopId,
-          })
+          navigation.navigate('AddStaff')
         }
       >
         <Text style={styles.buttonText}>Add Staff</Text>
