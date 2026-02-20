@@ -4,80 +4,54 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
-  StatusBar,
   Image,
-  Dimensions,
+  StatusBar,
 } from 'react-native';
+
 import useAuthViewModel from '../viewmodels/AuthViewModel';
 
-const { width, height } = Dimensions.get('window');
+const HomeScreen = ({ navigation, route }) => {
+  const { user } = route.params;
+  const { signOut } = useAuthViewModel();
 
-const LoginScreen = ({ navigation }) => {
-  const { loading, error, signInWithGoogle } = useAuthViewModel();
-
-  const handleGoogleSignIn = async () => {
-    const user = await signInWithGoogle();
-    if (user) {
-      navigation.replace('Home', { user });
-    }
+  const handleSignOut = async () => {
+    await signOut();
+    navigation.replace('Login');
   };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a2e" />
 
-      {/* Background gradient circles */}
-      <View style={styles.circle1} />
-      <View style={styles.circle2} />
+      {/* Profile */}
+      <View style={styles.profileCard}>
+        {user?.photoURL ? (
+          <Image source={{ uri: user.photoURL }} style={styles.avatar} />
+        ) : (
+          <View style={styles.avatarPlaceholder}>
+            <Text style={styles.avatarLetter}>
+              {user?.displayName?.[0] || 'U'}
+            </Text>
+          </View>
+        )}
 
-      {/* Logo & Branding */}
-      <View style={styles.header}>
-        <View style={styles.logoContainer}>
-          <Text style={styles.logoEmoji}>✦</Text>
-        </View>
-        <Text style={styles.appName}>Welcome Back</Text>
-        <Text style={styles.subtitle}>Sign in to continue your journey</Text>
+        <Text style={styles.name}>{user?.displayName || 'User'}</Text>
+        <Text style={styles.email}>{user?.email}</Text>
       </View>
 
-      {/* Illustration area */}
-      <View style={styles.illustrationContainer}>
-        <View style={styles.illustrationCard}>
-          <Text style={styles.illustrationEmoji}>🚀</Text>
-          <Text style={styles.illustrationText}>Your personal space awaits</Text>
-        </View>
-      </View>
-
-      {/* Sign In Section */}
-      <View style={styles.signInContainer}>
-        {error ? (
-          <Text style={styles.errorText}>{error}</Text>
-        ) : null}
-
-        <TouchableOpacity
-          style={[styles.googleButton, loading && styles.googleButtonDisabled]}
-          onPress={handleGoogleSignIn}
-          disabled={loading}
-          activeOpacity={0.85}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <>
-              <View style={styles.googleIconWrapper}>
-                <Text style={styles.googleLetter}>G</Text>
-              </View>
-              <Text style={styles.googleButtonText}>Sign in with Google</Text>
-            </>
-          )}
-        </TouchableOpacity>
-
-        <Text style={styles.termsText}>
-          By signing in, you agree to our{' '}
-          <Text style={styles.termsLink}>Terms</Text> &{' '}
-          <Text style={styles.termsLink}>Privacy Policy</Text>
+      {/* Welcome */}
+      <View style={styles.welcomeCard}>
+        <Text style={styles.welcomeEmoji}>🎉</Text>
+        <Text style={styles.welcomeTitle}>You're in!</Text>
+        <Text style={styles.welcomeText}>
+          Google login successful.
         </Text>
       </View>
+
+      {/* Sign Out */}
+      <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+        <Text style={styles.signOutText}>Sign Out</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -87,150 +61,102 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1a1a2e',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 60,
-    overflow: 'hidden',
-  },
-  circle1: {
-    position: 'absolute',
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: '#16213e',
-    top: -80,
-    right: -80,
-  },
-  circle2: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: '#0f3460',
-    bottom: 100,
-    left: -60,
-  },
-  header: {
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  logoContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 24,
-    backgroundColor: '#e94560',
-    alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
-    shadowColor: '#e94560',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 12,
+    padding: 24,
   },
-  logoEmoji: {
-    fontSize: 32,
-    color: '#fff',
-  },
-  appName: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#fff',
-    letterSpacing: 0.5,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#8892b0',
-    marginTop: 8,
-    letterSpacing: 0.3,
-  },
-  illustrationContainer: {
-    width: '100%',
+
+  profileCard: {
     alignItems: 'center',
-    zIndex: 1,
-  },
-  illustrationCard: {
-    width: width * 0.78,
     backgroundColor: '#16213e',
     borderRadius: 24,
     padding: 32,
-    alignItems: 'center',
+    width: '100%',
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: '#0f3460',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 10,
   },
-  illustrationEmoji: {
-    fontSize: 64,
+
+  avatar: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    marginBottom: 16,
+    borderWidth: 3,
+    borderColor: '#e94560',
+  },
+
+  avatarPlaceholder: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#e94560',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
   },
-  illustrationText: {
-    fontSize: 16,
-    color: '#8892b0',
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  signInContainer: {
-    width: '100%',
-    alignItems: 'center',
-    paddingHorizontal: 32,
-    zIndex: 1,
-  },
-  googleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#e94560',
-    width: '100%',
-    paddingVertical: 16,
-    borderRadius: 16,
-    shadowColor: '#e94560',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 12,
-    elevation: 10,
-    marginBottom: 20,
-  },
-  googleButtonDisabled: {
-    opacity: 0.7,
-  },
-  googleIconWrapper: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  googleLetter: {
-    fontSize: 16,
+
+  avatarLetter: {
+    fontSize: 36,
     fontWeight: '800',
-    color: '#e94560',
+    color: '#fff',
   },
-  googleButtonText: {
-    fontSize: 16,
+
+  name: {
+    fontSize: 22,
     fontWeight: '700',
     color: '#fff',
-    letterSpacing: 0.4,
+    marginBottom: 4,
   },
-  errorText: {
-    color: '#ff6b6b',
+
+  email: {
+    fontSize: 14,
+    color: '#8892b0',
+  },
+
+  welcomeCard: {
+    backgroundColor: '#16213e',
+    borderRadius: 24,
+    padding: 28,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 30,
+    borderWidth: 1,
+    borderColor: '#0f3460',
+  },
+
+  welcomeEmoji: {
+    fontSize: 40,
     marginBottom: 12,
-    textAlign: 'center',
-    fontSize: 13,
   },
-  termsText: {
-    fontSize: 12,
+
+  welcomeTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 8,
+  },
+
+  welcomeText: {
+    fontSize: 14,
     color: '#8892b0',
     textAlign: 'center',
+    lineHeight: 22,
   },
-  termsLink: {
-    color: '#e94560',
-    fontWeight: '600',
+
+  signOutButton: {
+    backgroundColor: '#e94560',
+    paddingVertical: 14,
+    paddingHorizontal: 48,
+    borderRadius: 16,
+    width: '100%',
+    alignItems: 'center',
+  },
+
+  signOutText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
   },
 });
 
-export default LoginScreen;
+export default HomeScreen;
