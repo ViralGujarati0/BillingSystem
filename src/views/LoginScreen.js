@@ -4,54 +4,49 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Image,
-  StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 
 import useAuthViewModel from '../viewmodels/AuthViewModel';
+import { getUser } from '../services/firestore'; 
 
-const HomeScreen = ({ navigation, route }) => {
-  const { user } = route.params;
-  const { signOut } = useAuthViewModel();
+const LoginScreen = ({ navigation }) => {
+  const { loading, error, signInWithGoogle } = useAuthViewModel();
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigation.replace('Login');
+  const handleOwnerLogin = async () => {
+    const firebaseUser = await signInWithGoogle();
+    if (firebaseUser) {
+      const userDoc = await getUser(firebaseUser.uid);
+      navigation.replace('Home', { userDoc });
+    }
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#1a1a2e" />
 
-      {/* Profile */}
-      <View style={styles.profileCard}>
-        {user?.photoURL ? (
-          <Image source={{ uri: user.photoURL }} style={styles.avatar} />
+      {error && <Text style={styles.error}>{error}</Text>}
+
+      {/* OWNER LOGIN */}
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handleOwnerLogin}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color="#fff" />
         ) : (
-          <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarLetter}>
-              {user?.displayName?.[0] || 'U'}
-            </Text>
-          </View>
+          <Text style={styles.buttonText}>Sign in with Google</Text>
         )}
-
-        <Text style={styles.name}>{user?.displayName || 'User'}</Text>
-        <Text style={styles.email}>{user?.email}</Text>
-      </View>
-
-      {/* Welcome */}
-      <View style={styles.welcomeCard}>
-        <Text style={styles.welcomeEmoji}>🎉</Text>
-        <Text style={styles.welcomeTitle}>You're in!</Text>
-        <Text style={styles.welcomeText}>
-          Google login successful.
-        </Text>
-      </View>
-
-      {/* Sign Out */}
-      <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-        <Text style={styles.signOutText}>Sign Out</Text>
       </TouchableOpacity>
+
+      {/* STAFF LOGIN */}
+      <TouchableOpacity
+        style={styles.staffButton}
+        onPress={() => navigation.navigate('StaffLogin')}
+      >
+        <Text style={styles.staffText}>Staff Login</Text>
+      </TouchableOpacity>
+
     </View>
   );
 };
@@ -59,104 +54,42 @@ const HomeScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
-    alignItems: 'center',
+    backgroundColor: '#fff',
     justifyContent: 'center',
-    padding: 24,
+    padding: 30,
   },
 
-  profileCard: {
+  button: {
+    backgroundColor: '#1a73e8',
+    padding: 16,
+    borderRadius: 6,
     alignItems: 'center',
-    backgroundColor: '#16213e',
-    borderRadius: 24,
-    padding: 32,
-    width: '100%',
-    marginBottom: 20,
+    marginBottom: 15,
+  },
+
+  staffButton: {
     borderWidth: 1,
-    borderColor: '#0f3460',
-  },
-
-  avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    marginBottom: 16,
-    borderWidth: 3,
-    borderColor: '#e94560',
-  },
-
-  avatarPlaceholder: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: '#e94560',
+    borderColor: '#1a73e8',
+    padding: 14,
+    borderRadius: 6,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
   },
 
-  avatarLetter: {
-    fontSize: 36,
-    fontWeight: '800',
+  buttonText: {
     color: '#fff',
+    fontWeight: '600',
   },
 
-  name: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 4,
+  staffText: {
+    color: '#1a73e8',
+    fontWeight: '600',
   },
 
-  email: {
-    fontSize: 14,
-    color: '#8892b0',
-  },
-
-  welcomeCard: {
-    backgroundColor: '#16213e',
-    borderRadius: 24,
-    padding: 28,
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 30,
-    borderWidth: 1,
-    borderColor: '#0f3460',
-  },
-
-  welcomeEmoji: {
-    fontSize: 40,
-    marginBottom: 12,
-  },
-
-  welcomeTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 8,
-  },
-
-  welcomeText: {
-    fontSize: 14,
-    color: '#8892b0',
+  error: {
+    color: 'red',
+    marginBottom: 15,
     textAlign: 'center',
-    lineHeight: 22,
-  },
-
-  signOutButton: {
-    backgroundColor: '#e94560',
-    paddingVertical: 14,
-    paddingHorizontal: 48,
-    borderRadius: 16,
-    width: '100%',
-    alignItems: 'center',
-  },
-
-  signOutText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 16,
   },
 });
 
-export default HomeScreen;
+export default LoginScreen;

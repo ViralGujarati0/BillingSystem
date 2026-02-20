@@ -2,126 +2,53 @@ const { onCall } = require("firebase-functions/v2/https");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const admin = require("firebase-admin");
 
-// Always deploy to us-central1
 setGlobalOptions({ region: "us-central1" });
 
-// ---------------------------------------------------------------------------
-// TWO-PROJECT SETUP: Cloud Functions in one project, Firestore/Auth in another
-// ---------------------------------------------------------------------------
+admin.initializeApp();
 
-const USERS = "users";
+const USERS = "billing_users";
 
-let appAuth = null;
-let appFirestore = null;
-
-try {
-  const serviceAccount = require("./serviceAccountKey-app.json");
-  const appProjectId = serviceAccount.project_id;
-
-  const appApp = admin.initializeApp(
-    {
-      credential: admin.credential.cert(serviceAccount),
-      projectId: appProjectId,
-    },
-    "app"
-  );
-
-  appAuth = appApp.auth();
-  appFirestore = appApp.firestore();
-} catch (e) {
-  console.log("No secondary service account, using default project");
-}
-
-// Default initialize (earnpaisa)
-if (!appAuth) {
-  admin.initializeApp();
-}
-
-function getAuth() {
-  return appAuth || admin.auth();
-}
-
-function getFirestore() {
-  return appFirestore || admin.firestore();
-}
-
-/**
- * Callable: createStaff
- * Only callable by authenticated OWNER with shopId
- */
 exports.createStaff = onCall(async (request) => {
   const data = request.data;
   const context = request.auth;
 
-  if (!context) {
-    throw new Error("unauthenticated");
-  }
+  console.log("Received data:", JSON.stringify(data));
+  console.log("Auth context:", context ? context.uid : "NO AUTH");
+
+  if (!context) throw new Error("unauthenticated");
 
   const callerUid = context.uid;
-
-  const { email, password, name, shopId, permissions = {} } = data || {};
+  const { email, password, name, shopId, permissions = {} } = data;
 
   if (!email || !password || !name || !shopId) {
-    throw new Error("Missing required fields");
+    throw new Error("Missing fields");
   }
 
-  const db = getFirestore();
+  const db = admin.firestore();
 
   const callerDoc = await db.collection(USERS).doc(callerUid).get();
 
-  if (!callerDoc.exists) {
-    throw new Error("User not found");
-  }
+  if (!callerDoc.exists) throw new Error("Owner not found");
 
   const caller = callerDoc.data();
 
-  if (caller.role !== "OWNER" || !caller.shopId) {
-    throw new Error("Only owners with a shop can create staff");
-  }
+  if (caller.role !== "OWNER") throw new Error("Not owner");
 
-  if (caller.shopId !== shopId) {
-    throw new Error("Shop mismatch");
-  }
+  const newUser = await admin.auth().createUser({
+    email,
+    password,
+    displayName: name,
+  });
 
-  const auth = getAuth();
-
-  let newUser;
-
-  try {
-    newUser = await auth.createUser({
-      email,
-      password,
-      displayName: name,
-    });
-  } catch (err) {
-    if (err.code === "auth/email-already-exists") {
-      throw new Error("Email already exists");
-    }
-    throw err;
-  }
-
-  const uid = newUser.uid;
-
-  const userData = {
+  await db.collection(USERS).doc(newUser.uid).set({
     shopId,
-    name: name || "",
-    email: email || "",
+    name,
+    email,
     role: "STAFF",
     isActive: true,
-    permissions: {
-      sales: permissions.sales ?? false,
-      invoiceHistory: permissions.invoiceHistory ?? false,
-      accounts: permissions.accounts ?? false,
-      profit: permissions.profit ?? false,
-    },
+    permissions,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  };
+  });
 
-  await db.collection(USERS).doc(uid).set(userData);
-
-  return {
-    uid,
-    email,
-    message: "Staff created. They can sign in with email and password.",
-  };
+  return { uid: newUser.uid };
 });

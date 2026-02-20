@@ -59,7 +59,6 @@ const useAuthViewModel = () => {
   };
 
   const signOut = async () => {
-    await GoogleSignin.revokeAccess();
     await GoogleSignin.signOut();
     await auth().signOut();
   };

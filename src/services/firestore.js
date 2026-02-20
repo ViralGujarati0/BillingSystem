@@ -18,19 +18,32 @@ const ownerPermissions = {
  */
 export async function createOrUpdateOwnerUser(firebaseUser) {
   const ref = firestore().collection(USERS).doc(firebaseUser.uid);
-  const data = {
-    shopId: null,
-    name: firebaseUser.displayName || '',
-    email: firebaseUser.email || '',
-    role: 'OWNER',
-    isActive: true,
-    permissions: ownerPermissions,
-    createdAt: firestore.FieldValue.serverTimestamp(),
-  };
-  await ref.set(data, { merge: true });
-  return { id: firebaseUser.uid, ...data };
+  
+  // Check if doc already exists
+  const snap = await ref.get();
+  
+  if (snap.exists) {
+    // Already exists — only update name/email, never touch shopId
+    await ref.update({
+      name: firebaseUser.displayName || '',
+      email: firebaseUser.email || '',
+    });
+    return { id: firebaseUser.uid, ...snap.data() };
+  } else {
+    // First time — create with shopId: null
+    const data = {
+      shopId: null,
+      name: firebaseUser.displayName || '',
+      email: firebaseUser.email || '',
+      role: 'OWNER',
+      isActive: true,
+      permissions: ownerPermissions,
+      createdAt: firestore.FieldValue.serverTimestamp(),
+    };
+    await ref.set(data);
+    return { id: firebaseUser.uid, ...data };
+  }
 }
-
 /**
  * Get user doc from Firestore.
  * @param {string} userId - users/{userId}
