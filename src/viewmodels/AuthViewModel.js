@@ -22,8 +22,8 @@ const useAuthViewModel = () => {
       if (!idToken) throw new Error('No ID token received');
       const credential = auth.GoogleAuthProvider.credential(idToken);
       const userCredential = await auth().signInWithCredential(credential);
-      await createOrUpdateOwnerUser(userCredential.user);
-      return userCredential.user;
+      const userDoc = await createOrUpdateOwnerUser(userCredential.user);
+      return { firebaseUser: userCredential.user, userDoc };
     } catch (err) {
       setError(err.message);
       console.error('Sign-in error:', err);

@@ -14,21 +14,30 @@ const HomeScreen = ({ navigation, route }) => {
   return (
     <View style={styles.container}>
 
-      <Text style={styles.title}>
-        Welcome {userDoc.name}
-      </Text>
+      <Text style={styles.title}>Welcome {userDoc.name}</Text>
 
-      {/* ADD STAFF */}
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() =>
-          navigation.navigate('AddStaff')
-        }
-      >
-        <Text style={styles.buttonText}>Add Staff</Text>
-      </TouchableOpacity>
+      {/* CREATE SHOP IF NOT EXISTS */}
+      {!userDoc.shopId && (
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() =>
+            navigation.navigate('CreateShop', { userDoc })
+          }
+        >
+          <Text style={styles.buttonText}>Create Shop</Text>
+        </TouchableOpacity>
+      )}
 
-      {/* LOGOUT */}
+      {/* ADD STAFF ONLY AFTER SHOP CREATED */}
+      {userDoc.shopId && (
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigation.navigate('AddStaff')}
+        >
+          <Text style={styles.buttonText}>Add Staff</Text>
+        </TouchableOpacity>
+      )}
+
       <TouchableOpacity onPress={handleSignOut}>
         <Text style={styles.logoutText}>Sign Out</Text>
       </TouchableOpacity>

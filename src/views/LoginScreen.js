@@ -14,11 +14,11 @@ const LoginScreen = ({ navigation }) => {
   const { loading, error, signInWithGoogle } = useAuthViewModel();
 
   const handleOwnerLogin = async () => {
-    const firebaseUser = await signInWithGoogle();
-    if (firebaseUser) {
-      const userDoc = await getUser(firebaseUser.uid);
-      navigation.replace('Home', { userDoc });
-    }
+    const result = await signInWithGoogle();
+
+if (result) {
+  navigation.replace('Home', { userDoc: result.userDoc });
+}
   };
 
   return (
