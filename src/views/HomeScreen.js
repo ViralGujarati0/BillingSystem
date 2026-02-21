@@ -1,10 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useSetAtom } from 'jotai';
 import useAuthViewModel from '../viewmodels/AuthViewModel';
+import { currentOwnerAtom } from '../atoms/owner';
 
 const HomeScreen = ({ navigation, route }) => {
   const { userDoc } = route.params;
   const { signOut } = useAuthViewModel();
+  const setCurrentOwner = useSetAtom(currentOwnerAtom);
+
+  useEffect(() => {
+    if (userDoc?.role === 'OWNER') {
+      setCurrentOwner(userDoc);
+    }
+  }, [userDoc, setCurrentOwner]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -30,12 +39,20 @@ const HomeScreen = ({ navigation, route }) => {
 
       {/* ADD STAFF ONLY AFTER SHOP CREATED */}
       {userDoc.shopId && (
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate('AddStaff')}
-        >
-          <Text style={styles.buttonText}>Add Staff</Text>
-        </TouchableOpacity>
+        <>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.navigate('AddStaff')}
+          >
+            <Text style={styles.buttonText}>Add Staff</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.navigate('StaffList')}
+          >
+            <Text style={styles.buttonText}>See Staffs</Text>
+          </TouchableOpacity>
+        </>
       )}
 
       <TouchableOpacity onPress={handleSignOut}>

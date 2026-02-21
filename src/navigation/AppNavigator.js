@@ -11,6 +11,8 @@ import StaffLoginScreen from '../views/StaffLoginScreen';
 import StaffHomeScreen from '../views/StaffHomeScreen';
 import AddStaffScreen from '../views/AddStaffScreen';
 import CreateShopScreen from '../views/CreateShopScreen';
+import StaffListScreen from '../views/StaffListScreen';
+import EditStaffScreen from '../views/EditStaffScreen';
 
 const Stack = createStackNavigator();
 
@@ -82,6 +84,8 @@ const AppNavigator = () => {
         />
         <Stack.Screen name="StaffLogin" component={StaffLoginScreen} />
         <Stack.Screen name="AddStaff" component={AddStaffScreen} />
+        <Stack.Screen name="StaffList" component={StaffListScreen} />
+        <Stack.Screen name="EditStaff" component={EditStaffScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

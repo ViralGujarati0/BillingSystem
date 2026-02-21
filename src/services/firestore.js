@@ -86,3 +86,59 @@ export async function createShopAndAssignToOwner(ownerId, shopData) {
   await updateUserShopId(ownerId, shopId);
   return shopId;
 }
+
+/**
+ * List staff for a shop from the staff subcollection: billing_shops/{shopId}/staff.
+ */
+export async function getStaffByShopId(shopId) {
+  const snap = await firestore()
+    .collection(SHOPS)
+    .doc(shopId)
+    .collection('staff')
+    .get();
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/**
+ * Update staff in billing_users (e.g. name). Does not change Auth email/password.
+ */
+export async function updateStaffDoc(staffId, data) {
+  const ref = firestore().collection(USERS).doc(staffId);
+  await ref.set(data, { merge: true });
+  const snap = await ref.get();
+  return { id: snap.id, ...snap.data() };
+}
+
+/**
+ * Update staff doc in shop subcollection: billing_shops/{shopId}/staff/{staffId}.
+ */
+export async function updateStaffInShop(shopId, staffId, data) {
+  await firestore()
+    .collection(SHOPS)
+    .doc(shopId)
+    .collection('staff')
+    .doc(staffId)
+    .set(data, { merge: true });
+}
+
+/**
+ * Deactivate staff in billing_users so they cannot log in (owner "delete").
+ */
+export async function setStaffInactive(staffId) {
+  await firestore()
+    .collection(USERS)
+    .doc(staffId)
+    .set({ isActive: false }, { merge: true });
+}
+
+/**
+ * Remove staff from shop subcollection so they no longer appear in the list.
+ */
+export async function removeStaffFromShop(shopId, staffId) {
+  await firestore()
+    .collection(SHOPS)
+    .doc(shopId)
+    .collection('staff')
+    .doc(staffId)
+    .delete();
+}
