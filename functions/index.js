@@ -78,3 +78,35 @@ exports.createStaff = onCall(async (request) => {
 
   return { uid: newUser.uid };
 });
+
+exports.deleteStaff = onCall(async (request) => {
+  const context = request.auth;
+  const { staffId } = request.data;
+
+  if (!context) throw new HttpsError("unauthenticated");
+
+  const db = admin.firestore();
+
+  const ownerSnap = await db.collection("billing_users").doc(context.uid).get();
+
+  if (!ownerSnap.exists || ownerSnap.data().role !== "OWNER")
+    throw new HttpsError("permission-denied");
+
+  await admin.auth().deleteUser(staffId);
+
+  await db.collection("billing_users").doc(staffId).delete();
+
+  const shopId = ownerSnap.data().shopId;
+
+  if (shopId) {
+    await db
+      .collection("billing_shops")
+      .doc(shopId)
+      .collection("staff")
+      .doc(staffId)
+      .delete();
+  }
+
+  return { success: true };
+});
+

@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,17 +9,13 @@ import {
   Alert,
 } from 'react-native';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useFocusEffect } from '@react-navigation/native';
 import {
   currentOwnerAtom,
   staffListAtom,
   loadingStaffAtom,
 } from '../atoms/owner';
-import {
-  getStaffByShopId,
-  setStaffInactive,
-  removeStaffFromShop,
-} from '../services/firestore';
+import { subscribeStaffByShopId } from '../services/firestore';
+import functions from '@react-native-firebase/functions';
 
 const StaffListScreen = ({ navigation }) => {
   const owner = useAtomValue(currentOwnerAtom);
@@ -28,29 +24,24 @@ const StaffListScreen = ({ navigation }) => {
   const setStaffList = useSetAtom(staffListAtom);
   const setLoading = useSetAtom(loadingStaffAtom);
 
-  const loadStaff = useCallback(async () => {
+  // 🔴 Realtime staff listener
+  useEffect(() => {
     if (!owner?.shopId) return;
-    setLoading(true);
-    try {
-      const list = await getStaffByShopId(owner.shopId);
-      setStaffList(list);
-    } catch (err) {
-      Alert.alert('Error', err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [owner?.shopId, setStaffList, setLoading]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadStaff();
-    }, [loadStaff])
-  );
+    setLoading(true);
+
+    const unsubscribe = subscribeStaffByShopId(owner.shopId, (list) => {
+      setStaffList(list);
+      setLoading(false);
+    });
+
+    return unsubscribe; // cleanup listener on unmount
+  }, [owner?.shopId, setStaffList, setLoading]);
 
   const handleDelete = (staff) => {
     Alert.alert(
       'Delete Staff',
-      `Deactivate "${staff.name}"? They will no longer be able to log in.`,
+      `Delete "${staff.name}" permanently?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -58,11 +49,10 @@ const StaffListScreen = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await setStaffInactive(staff.id);
-              if (owner?.shopId) {
-                await removeStaffFromShop(owner.shopId, staff.id);
-              }
-              loadStaff();
+              await functions().httpsCallable('deleteStaff')({
+                staffId: staff.id,
+              });
+              // realtime listener auto refreshes list
             } catch (err) {
               Alert.alert('Error', err.message);
             }
@@ -100,7 +90,9 @@ const StaffListScreen = ({ navigation }) => {
       >
         <Text style={styles.backText}>← Back</Text>
       </TouchableOpacity>
+
       <Text style={styles.title}>Staff List</Text>
+
       {staffList.length === 0 ? (
         <Text style={styles.empty}>No staff added yet.</Text>
       ) : (
@@ -113,6 +105,7 @@ const StaffListScreen = ({ navigation }) => {
                 <Text style={styles.name}>{item.name}</Text>
                 <Text style={styles.email}>{item.email}</Text>
               </View>
+
               <View style={styles.actions}>
                 <TouchableOpacity
                   style={styles.editBtn}
@@ -120,6 +113,7 @@ const StaffListScreen = ({ navigation }) => {
                 >
                   <Text style={styles.editBtnText}>Edit</Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity
                   style={[styles.delBtn, { marginLeft: 8 }]}
                   onPress={() => handleDelete(item)}

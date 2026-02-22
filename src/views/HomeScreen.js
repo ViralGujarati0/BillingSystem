@@ -1,13 +1,14 @@
 import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useSetAtom } from 'jotai';
+import { useSetAtom, useAtomValue } from 'jotai';
 import useAuthViewModel from '../viewmodels/AuthViewModel';
-import { currentOwnerAtom } from '../atoms/owner';
+import { currentOwnerAtom, scannedBarcodeAtom } from '../atoms/owner';
 
 const HomeScreen = ({ navigation, route }) => {
-  const { userDoc } = route.params;
+  const userDoc = route.params?.userDoc;
   const { signOut } = useAuthViewModel();
   const setCurrentOwner = useSetAtom(currentOwnerAtom);
+  const scannedBarcode = useAtomValue(scannedBarcodeAtom);
 
   useEffect(() => {
     if (userDoc?.role === 'OWNER') {
@@ -17,41 +18,53 @@ const HomeScreen = ({ navigation, route }) => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigation.replace('Login');
+    navigation.getParent()?.replace('Login');
   };
 
   return (
     <View style={styles.container}>
 
-      <Text style={styles.title}>Welcome {userDoc.name}</Text>
+      <Text style={styles.title}>Welcome {userDoc?.name}</Text>
 
       {/* CREATE SHOP IF NOT EXISTS */}
-      {!userDoc.shopId && (
+      {!userDoc?.shopId && (
         <TouchableOpacity
           style={styles.button}
           onPress={() =>
-            navigation.navigate('CreateShop', { userDoc })
+            navigation.getParent()?.navigate('CreateShop', { userDoc })
           }
         >
           <Text style={styles.buttonText}>Create Shop</Text>
         </TouchableOpacity>
       )}
 
-      {/* ADD STAFF ONLY AFTER SHOP CREATED */}
-      {userDoc.shopId && (
+      {/* ADD STAFF + SEE STAFFS + SCAN (only after shop created) */}
+      {userDoc?.shopId && (
         <>
           <TouchableOpacity
             style={styles.button}
-            onPress={() => navigation.navigate('AddStaff')}
+            onPress={() => navigation.getParent()?.navigate('AddStaff')}
           >
             <Text style={styles.buttonText}>Add Staff</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.button}
-            onPress={() => navigation.navigate('StaffList')}
+            onPress={() => navigation.getParent()?.navigate('StaffList')}
           >
             <Text style={styles.buttonText}>See Staffs</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.getParent()?.navigate('BarcodeScanner')}
+          >
+            <Text style={styles.buttonText}>Scan</Text>
+          </TouchableOpacity>
+          {scannedBarcode ? (
+            <View style={styles.scanResult}>
+              <Text style={styles.scanResultLabel}>Last scanned:</Text>
+              <Text style={styles.scanResultValue}>{scannedBarcode}</Text>
+            </View>
+          ) : null}
         </>
       )}
 
@@ -87,6 +100,24 @@ const styles = StyleSheet.create({
 
   buttonText: {
     color: '#fff',
+    fontWeight: '600',
+  },
+
+  scanResult: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    minWidth: 200,
+    alignItems: 'center',
+  },
+  scanResultLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  scanResultValue: {
+    fontSize: 18,
     fontWeight: '600',
   },
 

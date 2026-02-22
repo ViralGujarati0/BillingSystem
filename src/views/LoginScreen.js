@@ -17,7 +17,11 @@ const LoginScreen = ({ navigation }) => {
     const result = await signInWithGoogle();
 
 if (result) {
-  navigation.replace('Home', { userDoc: result.userDoc });
+  if (result.userDoc.shopId) {
+    navigation.replace('OwnerTabs', { userDoc: result.userDoc });
+  } else {
+    navigation.replace('CreateShop', { userDoc: result.userDoc });
+  }
 }
   };
 

@@ -59,8 +59,13 @@ const useAuthViewModel = () => {
   };
 
   const signOut = async () => {
-    await GoogleSignin.signOut();
-    await auth().signOut();
+    try {
+      await GoogleSignin.signOut(); // works for owner
+    } catch (e) {
+      // staff never used Google → ignore
+    }
+  
+    await auth().signOut(); // ALWAYS runs
   };
 
   return { loading, error, signInWithGoogle, signInWithEmailPassword, signOut };

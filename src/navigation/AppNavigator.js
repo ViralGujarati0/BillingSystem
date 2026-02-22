@@ -6,13 +6,14 @@ import auth from '@react-native-firebase/auth';
 
 import { getUser } from '../services/firestore';
 import LoginScreen from '../views/LoginScreen';
-import HomeScreen from '../views/HomeScreen';
 import StaffLoginScreen from '../views/StaffLoginScreen';
 import StaffHomeScreen from '../views/StaffHomeScreen';
 import AddStaffScreen from '../views/AddStaffScreen';
 import CreateShopScreen from '../views/CreateShopScreen';
 import StaffListScreen from '../views/StaffListScreen';
 import EditStaffScreen from '../views/EditStaffScreen';
+import OwnerTabNavigator from './OwnerTabNavigator';
+import BarcodeScannerScreen from '../views/BarcodeScannerScreen';
 
 const Stack = createStackNavigator();
 
@@ -31,10 +32,17 @@ const AppNavigator = () => {
               setInitialRoute('CreateShop');
               setInitialParams({ userDoc });
             } else {
-              setInitialRoute('Home');
+              setInitialRoute('OwnerTabs');
               setInitialParams({ userDoc });
             }
           } else if (userDoc && userDoc.role === 'STAFF') {
+
+            if (!userDoc.isActive) {
+              await auth().signOut();
+              setInitialRoute('Login');
+              return;
+            }
+
             setInitialRoute('StaffHome');
             setInitialParams({ userDoc });
           } else {
@@ -68,9 +76,9 @@ const AppNavigator = () => {
       >
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen
-          name="Home"
-          component={HomeScreen}
-          initialParams={initialRoute === 'Home' ? initialParams : undefined}
+          name="OwnerTabs"
+          component={OwnerTabNavigator}
+          initialParams={initialRoute === 'OwnerTabs' ? initialParams : undefined}
         />
         <Stack.Screen
           name="CreateShop"
@@ -86,6 +94,7 @@ const AppNavigator = () => {
         <Stack.Screen name="AddStaff" component={AddStaffScreen} />
         <Stack.Screen name="StaffList" component={StaffListScreen} />
         <Stack.Screen name="EditStaff" component={EditStaffScreen} />
+        <Stack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

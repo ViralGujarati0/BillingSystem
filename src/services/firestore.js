@@ -2,6 +2,7 @@ import firestore from '@react-native-firebase/firestore';
 
 const USERS = "billing_users";
 const SHOPS = "billing_shops";
+const PRODUCTS = "billing_products";
 
 const ownerPermissions = {
   sales: true,
@@ -12,7 +13,7 @@ const ownerPermissions = {
 
 /**
  * Create or update owner user in Firestore when they sign in with Google.
- * Atomic UPSERT (mobile safe).
+ * Atomic UPSERT (mobile safe). Does NOT overwrite shopId so owner keeps their shop on re-login.
  */
 export async function createOrUpdateOwnerUser(firebaseUser) {
   const ref = firestore().collection(USERS).doc(firebaseUser.uid);
@@ -23,9 +24,10 @@ export async function createOrUpdateOwnerUser(firebaseUser) {
     role: 'OWNER',
     isActive: true,
     permissions: ownerPermissions,
-    shopId: null,
     createdAt: firestore.FieldValue.serverTimestamp(),
   };
+  // Do not set shopId here: new owners have none until they create a shop;
+  // existing owners must keep their shopId on re-login.
 
   // ✅ Safe create/update
   await ref.set(data, { merge: true });
@@ -90,13 +92,18 @@ export async function createShopAndAssignToOwner(ownerId, shopData) {
 /**
  * List staff for a shop from the staff subcollection: billing_shops/{shopId}/staff.
  */
-export async function getStaffByShopId(shopId) {
-  const snap = await firestore()
+export function subscribeStaffByShopId(shopId, callback) {
+  return firestore()
     .collection(SHOPS)
     .doc(shopId)
     .collection('staff')
-    .get();
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    .onSnapshot((snap) => {
+      const list = snap.docs.map(d => ({
+        id: d.id,
+        ...d.data(),
+      }));
+      callback(list);
+    });
 }
 
 /**
@@ -141,4 +148,62 @@ export async function removeStaffFromShop(shopId, staffId) {
     .collection('staff')
     .doc(staffId)
     .delete();
+}
+
+// ─── Global Products & Shop Inventory ─────────────────────────────────────
+
+/**
+ * Create or update a product in global collection billing_products/{barcode}.
+ * Document ID = barcode.
+ */
+export async function createProduct({
+  barcode,
+  name,
+  category,
+  mrp,
+  gstPercent,
+  createdBy,
+}) {
+  const ref = firestore().collection(PRODUCTS).doc(barcode);
+  const data = {
+    barcode: String(barcode),
+    name: name || '',
+    category: category || '',
+    mrp: Number(mrp) || 0,
+    gstPercent: Number(gstPercent) || 0,
+    createdBy: createdBy || '',
+    createdAt: firestore.FieldValue.serverTimestamp(),
+  };
+  await ref.set(data, { merge: true });
+  const snap = await ref.get();
+  return { id: snap.id, ...snap.data() };
+}
+
+/**
+ * Set (create or update) an inventory item for a shop: billing_shops/{shopId}/inventory/{barcode}.
+ * Document ID = barcode.
+ */
+export async function setInventoryItem(shopId, {
+  barcode,
+  sellingPrice,
+  purchasePrice,
+  stock,
+  supplierId = '',
+}) {
+  const ref = firestore()
+    .collection(SHOPS)
+    .doc(shopId)
+    .collection('inventory')
+    .doc(String(barcode));
+  const data = {
+    barcode: String(barcode),
+    sellingPrice: Number(sellingPrice) ?? 0,
+    purchasePrice: Number(purchasePrice) ?? 0,
+    stock: Number(stock) ?? 0,
+    supplierId: supplierId || '',
+    lastUpdated: firestore.FieldValue.serverTimestamp(),
+  };
+  await ref.set(data, { merge: true });
+  const snap = await ref.get();
+  return { id: snap.id, ...snap.data() };
 }

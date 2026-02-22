@@ -22,7 +22,7 @@ const CreateShopScreen = ({ navigation, route }) => {
         gstNumber,
       });
       const updatedUserDoc = await getUser(userDoc.id); // fetch fresh doc with shopId
-      navigation.replace('Home', { userDoc: updatedUserDoc });
+      navigation.replace('OwnerTabs', { userDoc: updatedUserDoc });
     } catch (err) {
       Alert.alert('Error', err.message);
     }

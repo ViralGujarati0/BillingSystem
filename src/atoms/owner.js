@@ -14,3 +14,6 @@ export const editingStaffNameAtom = atom('');
 
 /** Saving state when updating a staff (used in EditStaffScreen). */
 export const savingStaffAtom = atom(false);
+
+/** Last barcode scanned (set by BarcodeScannerScreen, shown on HomeScreen). */
+export const scannedBarcodeAtom = atom('');
