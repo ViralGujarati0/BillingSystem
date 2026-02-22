@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useEffect, useState } from 'react';
+import React, { useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,18 +7,19 @@ import {
   Alert,
   ActivityIndicator,
   Linking,
-  Platform,
 } from 'react-native';
 import { Camera, useCodeScanner, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
-import { useSetAtom } from 'jotai';
+import { useSetAtom, useAtomValue } from 'jotai';
 import { scannedBarcodeAtom } from '../atoms/owner';
+import { barcodeScannerRequestingPermissionAtom } from '../atoms/forms';
 
 const BarcodeScannerScreen = ({ navigation }) => {
   const device = useCameraDevice('back');
   const { hasPermission, requestPermission } = useCameraPermission();
-  const setScannedBarcode = useSetAtom(scannedBarcodeAtom);
   const hasScanned = useRef(false);
-  const [requestingPermission, setRequestingPermission] = useState(false);
+  const setScannedBarcode = useSetAtom(scannedBarcodeAtom);
+  const requestingPermission = useAtomValue(barcodeScannerRequestingPermissionAtom);
+  const setRequestingPermission = useSetAtom(barcodeScannerRequestingPermissionAtom);
 
   useEffect(() => {
     hasScanned.current = false;
@@ -30,8 +31,9 @@ const BarcodeScannerScreen = ({ navigation }) => {
       const value = codes[0]?.value;
       if (value) {
         hasScanned.current = true;
+        // Store last scanned barcode in Jotai atom and go to result screen
         setScannedBarcode(value);
-        navigation.goBack();
+        navigation.replace('ProductScanResult', { barcode: value });
       }
     },
     [navigation, setScannedBarcode]

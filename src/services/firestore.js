@@ -153,22 +153,54 @@ export async function removeStaffFromShop(shopId, staffId) {
 // ─── Global Products & Shop Inventory ─────────────────────────────────────
 
 /**
+ * Get product by barcode from billing_products/{barcode}. Returns null if not found.
+ */
+export async function getProductByBarcode(barcode) {
+  const ref = firestore().collection(PRODUCTS).doc(String(barcode));
+  const snap = await ref.get();
+  const exists = typeof snap.exists === 'function' ? snap.exists() : snap.exists;
+  if (__DEV__) console.log('[Firestore] getProductByBarcode', { barcode, path: ref.path, exists });
+  if (!exists) return null;
+  return { id: snap.id, ...snap.data() };
+}
+
+/**
+ * Get inventory item for a shop: billing_shops/{shopId}/inventory/{barcode}. Returns null if not found.
+ */
+export async function getInventoryItem(shopId, barcode) {
+  const ref = firestore()
+    .collection(SHOPS)
+    .doc(shopId)
+    .collection('inventory')
+    .doc(String(barcode));
+  const snap = await ref.get();
+  const exists = typeof snap.exists === 'function' ? snap.exists() : snap.exists;
+  if (__DEV__) console.log('[Firestore] getInventoryItem', { shopId, barcode, path: ref.path, exists });
+  if (!exists) return null;
+  return { id: snap.id, ...snap.data() };
+}
+
+/**
  * Create or update a product in global collection billing_products/{barcode}.
- * Document ID = barcode.
+ * Document ID = barcode. Fields: barcode, name, category, brand, unit, mrp, gstPercent, createdBy, createdAt.
  */
 export async function createProduct({
   barcode,
   name,
   category,
+  brand = '',
+  unit = 'pcs',
   mrp,
   gstPercent,
   createdBy,
 }) {
-  const ref = firestore().collection(PRODUCTS).doc(barcode);
+  const ref = firestore().collection(PRODUCTS).doc(String(barcode));
   const data = {
     barcode: String(barcode),
     name: name || '',
     category: category || '',
+    brand: brand || '',
+    unit: unit || 'pcs',
     mrp: Number(mrp) || 0,
     gstPercent: Number(gstPercent) || 0,
     createdBy: createdBy || '',
@@ -180,15 +212,15 @@ export async function createProduct({
 }
 
 /**
- * Set (create or update) an inventory item for a shop: billing_shops/{shopId}/inventory/{barcode}.
- * Document ID = barcode.
+ * Set (create or update) an inventory item: billing_shops/{shopId}/inventory/{barcode}.
+ * Document ID = barcode. Fields: barcode, sellingPrice, purchasePrice, stock, expiry, lastUpdated.
  */
 export async function setInventoryItem(shopId, {
   barcode,
   sellingPrice,
   purchasePrice,
   stock,
-  supplierId = '',
+  expiry = '',
 }) {
   const ref = firestore()
     .collection(SHOPS)
@@ -200,7 +232,7 @@ export async function setInventoryItem(shopId, {
     sellingPrice: Number(sellingPrice) ?? 0,
     purchasePrice: Number(purchasePrice) ?? 0,
     stock: Number(stock) ?? 0,
-    supplierId: supplierId || '',
+    expiry: expiry || '',
     lastUpdated: firestore.FieldValue.serverTimestamp(),
   };
   await ref.set(data, { merge: true });

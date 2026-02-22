@@ -1,25 +1,24 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { useAtom } from 'jotai';
+import { createShopFormAtom } from '../atoms/forms';
 import { createShopAndAssignToOwner, getUser } from '../services/firestore';
 
 const CreateShopScreen = ({ navigation, route }) => {
   const { userDoc } = route.params;
-  const [businessName, setBusinessName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [gstNumber, setGstNumber] = useState('');
+  const [form, setForm] = useAtom(createShopFormAtom);
 
   const handleCreate = async () => {
-    if (!businessName) {
+    if (!form.businessName.trim()) {
       Alert.alert('Error', 'Business name is required');
       return;
     }
     try {
       await createShopAndAssignToOwner(userDoc.id, {
-        businessName,
-        phone,
-        address,
-        gstNumber,
+        businessName: form.businessName.trim(),
+        phone: form.phone,
+        address: form.address,
+        gstNumber: form.gstNumber,
       });
       const updatedUserDoc = await getUser(userDoc.id); // fetch fresh doc with shopId
       navigation.replace('OwnerTabs', { userDoc: updatedUserDoc });
@@ -35,27 +34,27 @@ const CreateShopScreen = ({ navigation, route }) => {
       <TextInput
         placeholder="Business Name *"
         style={styles.input}
-        value={businessName}
-        onChangeText={setBusinessName}
+        value={form.businessName}
+        onChangeText={(v) => setForm((prev) => ({ ...prev, businessName: v }))}
       />
       <TextInput
         placeholder="Phone"
         style={styles.input}
-        value={phone}
-        onChangeText={setPhone}
+        value={form.phone}
+        onChangeText={(v) => setForm((prev) => ({ ...prev, phone: v }))}
         keyboardType="phone-pad"
       />
       <TextInput
         placeholder="Address"
         style={styles.input}
-        value={address}
-        onChangeText={setAddress}
+        value={form.address}
+        onChangeText={(v) => setForm((prev) => ({ ...prev, address: v }))}
       />
       <TextInput
         placeholder="GST Number"
         style={styles.input}
-        value={gstNumber}
-        onChangeText={setGstNumber}
+        value={form.gstNumber}
+        onChangeText={(v) => setForm((prev) => ({ ...prev, gstNumber: v }))}
         autoCapitalize="characters"
       />
 

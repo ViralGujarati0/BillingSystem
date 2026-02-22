@@ -1,6 +1,7 @@
-import { useState } from 'react';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import auth from '@react-native-firebase/auth';
+import { useSetAtom, useAtomValue } from 'jotai';
+import { authLoadingAtom, authErrorAtom } from '../atoms/auth';
 import { createOrUpdateOwnerUser, getUser } from '../services/firestore';
 
 GoogleSignin.configure({
@@ -8,8 +9,10 @@ GoogleSignin.configure({
 });
 
 const useAuthViewModel = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const setLoading = useSetAtom(authLoadingAtom);
+  const setError = useSetAtom(authErrorAtom);
+  const loading = useAtomValue(authLoadingAtom);
+  const error = useAtomValue(authErrorAtom);
 
   /** Owner: sign in with Google → create/update owner user doc in Firestore */
   const signInWithGoogle = async () => {

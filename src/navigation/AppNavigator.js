@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { useAtomValue, useSetAtom } from 'jotai';
 import auth from '@react-native-firebase/auth';
 
+import { appInitializingAtom, appInitialRouteAtom, appInitialParamsAtom } from '../atoms/auth';
 import { getUser } from '../services/firestore';
 import LoginScreen from '../views/LoginScreen';
 import StaffLoginScreen from '../views/StaffLoginScreen';
@@ -14,13 +16,19 @@ import StaffListScreen from '../views/StaffListScreen';
 import EditStaffScreen from '../views/EditStaffScreen';
 import OwnerTabNavigator from './OwnerTabNavigator';
 import BarcodeScannerScreen from '../views/BarcodeScannerScreen';
+import ProductScanResultScreen from '../views/ProductScanResultScreen';
+import InventoryFormScreen from '../views/InventoryFormScreen';
+import CreateProductScreen from '../views/CreateProductScreen';
 
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
-  const [initializing, setInitializing] = useState(true);
-  const [initialRoute, setInitialRoute] = useState('Login');
-  const [initialParams, setInitialParams] = useState(undefined);
+  const initializing = useAtomValue(appInitializingAtom);
+  const initialRoute = useAtomValue(appInitialRouteAtom);
+  const initialParams = useAtomValue(appInitialParamsAtom);
+  const setInitializing = useSetAtom(appInitializingAtom);
+  const setInitialRoute = useSetAtom(appInitialRouteAtom);
+  const setInitialParams = useSetAtom(appInitialParamsAtom);
 
   useEffect(() => {
     const unsubscribe = auth().onAuthStateChanged(async (firebaseUser) => {
@@ -36,13 +44,11 @@ const AppNavigator = () => {
               setInitialParams({ userDoc });
             }
           } else if (userDoc && userDoc.role === 'STAFF') {
-
             if (!userDoc.isActive) {
               await auth().signOut();
               setInitialRoute('Login');
               return;
             }
-
             setInitialRoute('StaffHome');
             setInitialParams({ userDoc });
           } else {
@@ -58,7 +64,7 @@ const AppNavigator = () => {
     });
 
     return unsubscribe;
-  }, []);
+  }, [setInitializing, setInitialRoute, setInitialParams]);
 
   if (initializing) {
     return (
@@ -95,6 +101,9 @@ const AppNavigator = () => {
         <Stack.Screen name="StaffList" component={StaffListScreen} />
         <Stack.Screen name="EditStaff" component={EditStaffScreen} />
         <Stack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} />
+        <Stack.Screen name="ProductScanResult" component={ProductScanResultScreen} />
+        <Stack.Screen name="InventoryForm" component={InventoryFormScreen} />
+        <Stack.Screen name="CreateProduct" component={CreateProductScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

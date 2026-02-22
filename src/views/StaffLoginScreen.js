@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -7,17 +7,16 @@ import {
   StyleSheet,
   StatusBar,
 } from 'react-native';
-
+import { useAtom } from 'jotai';
 import useAuthViewModel from '../viewmodels/AuthViewModel';
+import { staffLoginFormAtom } from '../atoms/forms';
 
 const StaffLoginScreen = ({ navigation }) => {
   const { signInWithEmailPassword, loading, error } = useAuthViewModel();
-
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [form, setForm] = useAtom(staffLoginFormAtom);
 
   const handleLogin = async () => {
-    const result = await signInWithEmailPassword(email, password);
+    const result = await signInWithEmailPassword(form.email, form.password);
     if (result) {
       navigation.replace('StaffHome', {
         firebaseUser: result.firebaseUser,
@@ -35,16 +34,16 @@ const StaffLoginScreen = ({ navigation }) => {
       <TextInput
         placeholder="Email"
         style={styles.input}
-        value={email}
-        onChangeText={setEmail}
+        value={form.email}
+        onChangeText={(v) => setForm((prev) => ({ ...prev, email: v }))}
         autoCapitalize="none"
       />
 
       <TextInput
         placeholder="Password"
         style={styles.input}
-        value={password}
-        onChangeText={setPassword}
+        value={form.password}
+        onChangeText={(v) => setForm((prev) => ({ ...prev, password: v }))}
         secureTextEntry
       />
 

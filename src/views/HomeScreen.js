@@ -1,14 +1,13 @@
 import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useSetAtom, useAtomValue } from 'jotai';
+import { useSetAtom } from 'jotai';
 import useAuthViewModel from '../viewmodels/AuthViewModel';
-import { currentOwnerAtom, scannedBarcodeAtom } from '../atoms/owner';
+import { currentOwnerAtom } from '../atoms/owner';
 
 const HomeScreen = ({ navigation, route }) => {
   const userDoc = route.params?.userDoc;
   const { signOut } = useAuthViewModel();
   const setCurrentOwner = useSetAtom(currentOwnerAtom);
-  const scannedBarcode = useAtomValue(scannedBarcodeAtom);
 
   useEffect(() => {
     if (userDoc?.role === 'OWNER') {
@@ -59,12 +58,6 @@ const HomeScreen = ({ navigation, route }) => {
           >
             <Text style={styles.buttonText}>Scan</Text>
           </TouchableOpacity>
-          {scannedBarcode ? (
-            <View style={styles.scanResult}>
-              <Text style={styles.scanResultLabel}>Last scanned:</Text>
-              <Text style={styles.scanResultValue}>{scannedBarcode}</Text>
-            </View>
-          ) : null}
         </>
       )}
 
@@ -100,24 +93,6 @@ const styles = StyleSheet.create({
 
   buttonText: {
     color: '#fff',
-    fontWeight: '600',
-  },
-
-  scanResult: {
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    minWidth: 200,
-    alignItems: 'center',
-  },
-  scanResultLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-  },
-  scanResultValue: {
-    fontSize: 18,
     fontWeight: '600',
   },
 

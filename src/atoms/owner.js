@@ -17,3 +17,10 @@ export const savingStaffAtom = atom(false);
 
 /** Last barcode scanned (set by BarcodeScannerScreen, shown on HomeScreen). */
 export const scannedBarcodeAtom = atom('');
+
+/** Scan result state (ProductScanResultScreen) – single source of truth, no stale local state. */
+export const scanResultBarcodeAtom = atom(null);
+export const scanResultProductAtom = atom(null);
+export const scanResultInventoryAtom = atom(null);
+export const scanResultLoadingAtom = atom(false);
+export const scanResultErrorAtom = atom(null);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -7,24 +7,22 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
-
+import { useAtom } from 'jotai';
+import { addStaffFormAtom } from '../atoms/forms';
 import { createStaff } from '../services/createStaff';
 
 const AddStaffScreen = ({ navigation }) => {
-
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [form, setForm] = useAtom(addStaffFormAtom);
 
   const handleCreate = async () => {
     try {
       await createStaff({
-        name,
-        email,
-        password,
+        name: form.name,
+        email: form.email,
+        password: form.password,
       });
-
       Alert.alert('Success', 'Staff created successfully');
+      setForm({ name: '', email: '', password: '' });
       navigation.goBack();
     } catch (err) {
       Alert.alert('Error', err.message);
@@ -39,23 +37,23 @@ const AddStaffScreen = ({ navigation }) => {
       <TextInput
         placeholder="Name"
         style={styles.input}
-        value={name}
-        onChangeText={setName}
+        value={form.name}
+        onChangeText={(v) => setForm((prev) => ({ ...prev, name: v }))}
       />
 
       <TextInput
         placeholder="Email"
         style={styles.input}
-        value={email}
-        onChangeText={setEmail}
+        value={form.email}
+        onChangeText={(v) => setForm((prev) => ({ ...prev, email: v }))}
         autoCapitalize="none"
       />
 
       <TextInput
         placeholder="Password"
         style={styles.input}
-        value={password}
-        onChangeText={setPassword}
+        value={form.password}
+        onChangeText={(v) => setForm((prev) => ({ ...prev, password: v }))}
         secureTextEntry
       />
 
