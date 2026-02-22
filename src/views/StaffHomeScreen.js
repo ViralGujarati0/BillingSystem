@@ -15,6 +15,13 @@ const StaffHomeScreen = ({ navigation, route }) => {
     <View style={styles.container}>
       <Text style={styles.text}>Welcome {userDoc.name}</Text>
 
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => navigation.navigate('BillingScanner', { userDoc })}
+      >
+        <Text style={styles.buttonText}>Create Bill</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.button} onPress={handleSignOut}>
         <Text style={styles.buttonText}>Sign Out</Text>
       </TouchableOpacity>

@@ -19,6 +19,10 @@ import BarcodeScannerScreen from '../views/BarcodeScannerScreen';
 import ProductScanResultScreen from '../views/ProductScanResultScreen';
 import InventoryFormScreen from '../views/InventoryFormScreen';
 import CreateProductScreen from '../views/CreateProductScreen';
+import BillingScannerScreen from '../views/BillingScannerScreen';
+import ManualItemScreen from '../views/ManualItemScreen';
+import BillingCartScreen from '../views/BillingCartScreen';
+import BillSuccessScreen from '../views/BillSuccessScreen';
 
 const Stack = createStackNavigator();
 
@@ -104,6 +108,10 @@ const AppNavigator = () => {
         <Stack.Screen name="ProductScanResult" component={ProductScanResultScreen} />
         <Stack.Screen name="InventoryForm" component={InventoryFormScreen} />
         <Stack.Screen name="CreateProduct" component={CreateProductScreen} />
+        <Stack.Screen name="BillingScanner" component={BillingScannerScreen} />
+        <Stack.Screen name="ManualItem" component={ManualItemScreen} />
+        <Stack.Screen name="BillingCart" component={BillingCartScreen} />
+        <Stack.Screen name="BillSuccess" component={BillSuccessScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

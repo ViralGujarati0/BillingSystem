@@ -90,6 +90,31 @@ export async function createShopAndAssignToOwner(ownerId, shopData) {
 }
 
 /**
+ * Get shop doc: billing_shops/{shopId}.
+ */
+export async function getShop(shopId) {
+  const snap = await firestore().collection(SHOPS).doc(shopId).get();
+  const exists = typeof snap.exists === 'function' ? snap.exists() : snap.exists;
+  if (!exists) return null;
+  return { id: snap.id, ...snap.data() };
+}
+
+/**
+ * Get shop settings: billing_shops/{shopId}/settings/main.
+ */
+export async function getShopSettings(shopId) {
+  const snap = await firestore()
+    .collection(SHOPS)
+    .doc(shopId)
+    .collection('settings')
+    .doc('main')
+    .get();
+  const exists = typeof snap.exists === 'function' ? snap.exists() : snap.exists;
+  if (!exists) return null;
+  return { id: snap.id, ...snap.data() };
+}
+
+/**
  * List staff for a shop from the staff subcollection: billing_shops/{shopId}/staff.
  */
 export function subscribeStaffByShopId(shopId, callback) {
@@ -152,32 +177,49 @@ export async function removeStaffFromShop(shopId, staffId) {
 
 // ─── Global Products & Shop Inventory ─────────────────────────────────────
 
-/**
- * Get product by barcode from billing_products/{barcode}. Returns null if not found.
- */
-export async function getProductByBarcode(barcode) {
-  const ref = firestore().collection(PRODUCTS).doc(String(barcode));
-  const snap = await ref.get();
-  const exists = typeof snap.exists === 'function' ? snap.exists() : snap.exists;
-  if (__DEV__) console.log('[Firestore] getProductByBarcode', { barcode, path: ref.path, exists });
-  if (!exists) return null;
-  return { id: snap.id, ...snap.data() };
+/** Barcode variants to try (scanner may return with/without leading zeros). */
+function barcodeVariants(barcode) {
+  const s = String(barcode || '').trim();
+  if (!s) return [];
+  const set = new Set([s]);
+  const noLeading = s.replace(/^0+/, '') || s;
+  set.add(noLeading);
+  if (s.length <= 13) set.add(s.padStart(13, '0'));
+  return [...set];
 }
 
 /**
- * Get inventory item for a shop: billing_shops/{shopId}/inventory/{barcode}. Returns null if not found.
+ * Get product by barcode from billing_products. Tries barcode as-is, without leading zeros, and padded to 13 digits. Returns null if not found.
+ */
+export async function getProductByBarcode(barcode) {
+  const variants = barcodeVariants(barcode);
+  for (const key of variants) {
+    const ref = firestore().collection(PRODUCTS).doc(key);
+    const snap = await ref.get();
+    const exists = typeof snap.exists === 'function' ? snap.exists() : snap.exists;
+    if (__DEV__) console.log('[Firestore] getProductByBarcode', { barcode: key, path: ref.path, exists });
+    if (exists) return { id: snap.id, ...snap.data() };
+  }
+  return null;
+}
+
+/**
+ * Get inventory item for a shop: billing_shops/{shopId}/inventory/{barcode}. Tries same barcode variants as getProductByBarcode. Returns null if not found.
  */
 export async function getInventoryItem(shopId, barcode) {
-  const ref = firestore()
-    .collection(SHOPS)
-    .doc(shopId)
-    .collection('inventory')
-    .doc(String(barcode));
-  const snap = await ref.get();
-  const exists = typeof snap.exists === 'function' ? snap.exists() : snap.exists;
-  if (__DEV__) console.log('[Firestore] getInventoryItem', { shopId, barcode, path: ref.path, exists });
-  if (!exists) return null;
-  return { id: snap.id, ...snap.data() };
+  const variants = barcodeVariants(barcode);
+  for (const key of variants) {
+    const ref = firestore()
+      .collection(SHOPS)
+      .doc(shopId)
+      .collection('inventory')
+      .doc(key);
+    const snap = await ref.get();
+    const exists = typeof snap.exists === 'function' ? snap.exists() : snap.exists;
+    if (__DEV__) console.log('[Firestore] getInventoryItem', { shopId, barcode: key, path: ref.path, exists });
+    if (exists) return { id: snap.id, ...snap.data() };
+  }
+  return null;
 }
 
 /**
@@ -236,6 +278,67 @@ export async function setInventoryItem(shopId, {
     lastUpdated: firestore.FieldValue.serverTimestamp(),
   };
   await ref.set(data, { merge: true });
+  const snap = await ref.get();
+  return { id: snap.id, ...snap.data() };
+}
+
+// ─── Bills & Settings ─────────────────────────────────────────────────────
+
+/**
+ * Set shop settings: billing_shops/{shopId}/settings/main
+ * Fields: billTerms, billMessage
+ */
+export async function setShopSettings(shopId, { billTerms = '', billMessage = '' } = {}) {
+  const ref = firestore()
+    .collection(SHOPS)
+    .doc(shopId)
+    .collection('settings')
+    .doc('main');
+  const data = {
+    billTerms: billTerms || 'Goods once sold cannot be returned',
+    billMessage: billMessage || 'Thank you for shopping!',
+  };
+  await ref.set(data, { merge: true });
+  const snap = await ref.get();
+  return { id: snap.id, ...snap.data() };
+}
+
+/**
+ * Create a bill: billing_shops/{shopId}/bills/{billId}
+ * Fields: billNo, createdAt, paymentType (CASH|UPI|CARD), customerName, items[], grandTotal, createdBy, createdByRole
+ */
+export async function createBillDoc(shopId, {
+  billNo,
+  paymentType = 'CASH',
+  customerName = 'Walk-in',
+  items = [],
+  grandTotal,
+  createdBy,
+  createdByRole = 'OWNER',
+}) {
+  const ref = firestore()
+    .collection(SHOPS)
+    .doc(shopId)
+    .collection('bills')
+    .doc();
+  const data = {
+    billNo: Number(billNo) || 1,
+    createdAt: firestore.FieldValue.serverTimestamp(),
+    paymentType: paymentType || 'CASH',
+    customerName: customerName || 'Walk-in',
+    items: items.map((it) => ({
+      barcode: it.barcode || '',
+      name: it.name || '',
+      qty: Number(it.qty) || 0,
+      mrp: Number(it.mrp) ?? 0,
+      rate: Number(it.rate) ?? 0,
+      amount: Number(it.amount) ?? 0,
+    })),
+    grandTotal: Number(grandTotal) ?? 0,
+    createdBy: createdBy || '',
+    createdByRole: createdByRole || 'OWNER',
+  };
+  await ref.set(data);
   const snap = await ref.get();
   return { id: snap.id, ...snap.data() };
 }
