@@ -282,6 +282,19 @@ export async function setInventoryItem(shopId, {
   return { id: snap.id, ...snap.data() };
 }
 
+/**
+ * Delete an inventory item from a shop: billing_shops/{shopId}/inventory/{barcode}.
+ * Does NOT touch global products.
+ */
+export async function deleteInventoryItem(shopId, barcode) {
+  const ref = firestore()
+    .collection(SHOPS)
+    .doc(shopId)
+    .collection('inventory')
+    .doc(String(barcode));
+  await ref.delete();
+}
+
 // ─── Bills & Settings ─────────────────────────────────────────────────────
 
 /**

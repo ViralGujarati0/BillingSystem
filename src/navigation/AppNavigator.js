@@ -18,6 +18,7 @@ import OwnerTabNavigator from './OwnerTabNavigator';
 import BarcodeScannerScreen from '../views/BarcodeScannerScreen';
 import ProductScanResultScreen from '../views/ProductScanResultScreen';
 import InventoryFormScreen from '../views/InventoryFormScreen';
+import UpdateInventoryScreen from '../views/UpdateInventoryScreen';
 import CreateProductScreen from '../views/CreateProductScreen';
 import BillingScannerScreen from '../views/BillingScannerScreen';
 import ManualItemScreen from '../views/ManualItemScreen';
@@ -107,6 +108,7 @@ const AppNavigator = () => {
         <Stack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} />
         <Stack.Screen name="ProductScanResult" component={ProductScanResultScreen} />
         <Stack.Screen name="InventoryForm" component={InventoryFormScreen} />
+        <Stack.Screen name="UpdateInventory" component={UpdateInventoryScreen} />
         <Stack.Screen name="CreateProduct" component={CreateProductScreen} />
         <Stack.Screen name="BillingScanner" component={BillingScannerScreen} />
         <Stack.Screen name="ManualItem" component={ManualItemScreen} />

@@ -64,6 +64,12 @@ const HomeScreen = ({ navigation, route }) => {
           >
             <Text style={styles.buttonText}>Create Bill</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.getParent()?.navigate('BarcodeScanner', { mode: 'updateInventory' })}
+          >
+            <Text style={styles.buttonText}>Update Inventory</Text>
+          </TouchableOpacity>
         </>
       )}
 

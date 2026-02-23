@@ -13,7 +13,8 @@ import { useSetAtom, useAtomValue } from 'jotai';
 import { scannedBarcodeAtom } from '../atoms/owner';
 import { barcodeScannerRequestingPermissionAtom } from '../atoms/forms';
 
-const BarcodeScannerScreen = ({ navigation }) => {
+const BarcodeScannerScreen = ({ navigation, route }) => {
+  const mode = route?.params?.mode || 'default';
   const device = useCameraDevice('back');
   const { hasPermission, requestPermission } = useCameraPermission();
   const hasScanned = useRef(false);
@@ -31,12 +32,16 @@ const BarcodeScannerScreen = ({ navigation }) => {
       const value = codes[0]?.value;
       if (value) {
         hasScanned.current = true;
-        // Store last scanned barcode in Jotai atom and go to result screen
-        setScannedBarcode(value);
-        navigation.replace('ProductScanResult', { barcode: value });
+        if (mode === 'updateInventory') {
+          navigation.replace('UpdateInventory', { barcode: value });
+        } else {
+          // Default: product scan + add-to-inventory flow
+          setScannedBarcode(value);
+          navigation.replace('ProductScanResult', { barcode: value });
+        }
       }
     },
-    [navigation, setScannedBarcode]
+    [navigation, setScannedBarcode, mode]
   );
 
   const codeScanner = useCodeScanner({
