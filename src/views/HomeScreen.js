@@ -70,6 +70,18 @@ const HomeScreen = ({ navigation, route }) => {
           >
             <Text style={styles.buttonText}>Update Inventory</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.getParent()?.navigate('SupplierList')}
+          >
+            <Text style={styles.buttonText}>Suppliers</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.getParent()?.navigate('PurchaseCreate')}
+          >
+            <Text style={styles.buttonText}>New Purchase</Text>
+          </TouchableOpacity>
         </>
       )}
 

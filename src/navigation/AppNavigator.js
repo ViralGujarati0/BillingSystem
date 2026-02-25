@@ -24,6 +24,11 @@ import BillingScannerScreen from '../views/BillingScannerScreen';
 import ManualItemScreen from '../views/ManualItemScreen';
 import BillingCartScreen from '../views/BillingCartScreen';
 import BillSuccessScreen from '../views/BillSuccessScreen';
+import SupplierListScreen from '../views/SupplierListScreen';
+import SupplierCreateScreen from '../views/SupplierCreateScreen';
+import SupplierEditScreen from '../views/SupplierEditScreen';
+import PurchaseCreateScreen from '../views/PurchaseCreateScreen';
+import PurchaseSuccessScreen from '../views/PurchaseSuccessScreen';
 
 const Stack = createStackNavigator();
 
@@ -114,6 +119,11 @@ const AppNavigator = () => {
         <Stack.Screen name="ManualItem" component={ManualItemScreen} />
         <Stack.Screen name="BillingCart" component={BillingCartScreen} />
         <Stack.Screen name="BillSuccess" component={BillSuccessScreen} />
+        <Stack.Screen name="SupplierList" component={SupplierListScreen} />
+        <Stack.Screen name="SupplierCreate" component={SupplierCreateScreen} />
+        <Stack.Screen name="SupplierEdit" component={SupplierEditScreen} />
+        <Stack.Screen name="PurchaseCreate" component={PurchaseCreateScreen} />
+        <Stack.Screen name="PurchaseSuccess" component={PurchaseSuccessScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

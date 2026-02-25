@@ -5,12 +5,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { Camera, useCodeScanner, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useAtomValue } from 'jotai';
 import { billingCartItemsAtom } from '../atoms/billing';
-import { getProductByBarcode, getInventoryItem } from '../services/firestore';
+import useBillingViewModel from '../viewmodels/BillingViewModel';
 
 const BillingScannerScreen = ({ navigation, route }) => {
   const { userDoc } = route.params || {};
@@ -18,34 +17,13 @@ const BillingScannerScreen = ({ navigation, route }) => {
   const device = useCameraDevice('back');
   const { hasPermission, requestPermission } = useCameraPermission();
   const cartItems = useAtomValue(billingCartItemsAtom);
-  const setCartItems = useSetAtom(billingCartItemsAtom);
+  const vm = useBillingViewModel();
   const hasScanned = useRef(false);
   const scanningRef = useRef(false);
 
   useEffect(() => {
     hasScanned.current = false;
   }, []);
-
-  const addToCart = useCallback(
-    (item) => {
-      setCartItems((prev) => {
-        const existing = prev.find(
-          (i) => i.type === 'BARCODE' && i.barcode === item.barcode
-        );
-        if (existing) {
-          const newQty = existing.qty + item.qty;
-          const newAmount = newQty * item.rate;
-          return prev.map((i) =>
-            i.type === 'BARCODE' && i.barcode === item.barcode
-              ? { ...i, qty: newQty, amount: newAmount }
-              : i
-          );
-        }
-        return [...prev, item];
-      });
-    },
-    [setCartItems]
-  );
 
   const onCodeScanned = useCallback(
     async (codes) => {
@@ -55,44 +33,15 @@ const BillingScannerScreen = ({ navigation, route }) => {
       scanningRef.current = true;
       hasScanned.current = true;
       try {
-        const [product, inventory] = await Promise.all([
-          getProductByBarcode(barcode),
-          getInventoryItem(shopId, barcode),
-        ]);
-        if (!product) {
-          Alert.alert('Not found', 'Product not in catalog.');
-          return;
-        }
-        if (!inventory) {
-          Alert.alert('Not in inventory', 'Add this product to your shop inventory first.');
-          return;
-        }
-        const stock = inventory.stock ?? 0;
-        const rate = inventory.sellingPrice ?? product.mrp ?? 0;
-        const currentQty = cartItems.find(
-          (i) => i.type === 'BARCODE' && i.barcode === barcode
-        )?.qty ?? 0;
-        if (currentQty + 1 > stock) {
-          Alert.alert('Out of stock', `Only ${stock} available.`);
-          return;
-        }
-        addToCart({
-          type: 'BARCODE',
-          barcode: product.id || barcode,
-          name: product.name || 'Item',
-          qty: 1,
-          rate,
-          mrp: product.mrp ?? rate,
-          amount: rate,
-        });
+        await vm.addScannedBarcode({ shopId, barcode });
       } catch (e) {
-        Alert.alert('Error', e.message);
+        Alert.alert('Error', e?.message || 'Failed to add item.');
       } finally {
         scanningRef.current = false;
         hasScanned.current = false;
       }
     },
-    [shopId, cartItems, addToCart, setCartItems]
+    [shopId, vm]
   );
 
   const codeScanner = useCodeScanner({

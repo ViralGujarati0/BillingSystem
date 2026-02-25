@@ -12,6 +12,7 @@ import { Camera, useCodeScanner, useCameraDevice, useCameraPermission } from 're
 import { useSetAtom, useAtomValue } from 'jotai';
 import { scannedBarcodeAtom } from '../atoms/owner';
 import { barcodeScannerRequestingPermissionAtom } from '../atoms/forms';
+import { purchaseScannedBarcodeAtom } from '../atoms/purchase';
 
 const BarcodeScannerScreen = ({ navigation, route }) => {
   const mode = route?.params?.mode || 'default';
@@ -19,6 +20,7 @@ const BarcodeScannerScreen = ({ navigation, route }) => {
   const { hasPermission, requestPermission } = useCameraPermission();
   const hasScanned = useRef(false);
   const setScannedBarcode = useSetAtom(scannedBarcodeAtom);
+  const setPurchaseScannedBarcode = useSetAtom(purchaseScannedBarcodeAtom);
   const requestingPermission = useAtomValue(barcodeScannerRequestingPermissionAtom);
   const setRequestingPermission = useSetAtom(barcodeScannerRequestingPermissionAtom);
 
@@ -34,6 +36,9 @@ const BarcodeScannerScreen = ({ navigation, route }) => {
         hasScanned.current = true;
         if (mode === 'updateInventory') {
           navigation.replace('UpdateInventory', { barcode: value });
+        } else if (mode === 'purchaseItem') {
+          setPurchaseScannedBarcode(value);
+          navigation.goBack();
         } else {
           // Default: product scan + add-to-inventory flow
           setScannedBarcode(value);
@@ -41,7 +46,7 @@ const BarcodeScannerScreen = ({ navigation, route }) => {
         }
       }
     },
-    [navigation, setScannedBarcode, mode]
+    [navigation, setScannedBarcode, setPurchaseScannedBarcode, mode]
   );
 
   const codeScanner = useCodeScanner({

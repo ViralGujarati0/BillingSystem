@@ -8,10 +8,11 @@ import {
   Alert,
 } from 'react-native';
 import { useAtom } from 'jotai';
-import { billingCartItemsAtom, manualItemFormAtom } from '../atoms/billing';
+import { manualItemFormAtom } from '../atoms/billing';
+import useBillingViewModel from '../viewmodels/BillingViewModel';
 
 const ManualItemScreen = ({ navigation }) => {
-  const [cartItems, setCartItems] = useAtom(billingCartItemsAtom);
+  const vm = useBillingViewModel();
   const [form, setForm] = useAtom(manualItemFormAtom);
   const name = form.name;
   const qty = form.qty;
@@ -33,13 +34,13 @@ const ManualItemScreen = ({ navigation }) => {
       Alert.alert('Error', 'Valid rate required.');
       return;
     }
-    const amount = q * r;
-    setCartItems((prev) => [
-      ...prev,
-      { type: 'MANUAL', name: n, qty: q, rate: r, amount },
-    ]);
-    setForm({ name: '', qty: '1', rate: '' });
-    navigation.goBack();
+    try {
+      vm.addManualItem({ name: n, qty: q, rate: r });
+      setForm({ name: '', qty: '1', rate: '' });
+      navigation.goBack();
+    } catch (e) {
+      Alert.alert('Error', e?.message || 'Failed to add item.');
+    }
   };
 
   return (

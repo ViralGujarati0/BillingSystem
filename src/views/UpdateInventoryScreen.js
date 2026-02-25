@@ -9,14 +9,11 @@ import {
   ScrollView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useAtomValue } from 'jotai';
-import { currentOwnerAtom } from '../atoms/owner';
-import { getProductByBarcode, getInventoryItem, setInventoryItem, deleteInventoryItem } from '../services/firestore';
+import useInventoryViewModel from '../viewmodels/InventoryViewModel';
 
 const UpdateInventoryScreen = ({ navigation, route }) => {
   const { barcode } = route.params || {};
-  const owner = useAtomValue(currentOwnerAtom);
-  const shopId = owner?.shopId;
+  const vm = useInventoryViewModel();
 
   const [loading, setLoading] = useState(true);
   const [product, setProduct] = useState(null);
@@ -27,6 +24,8 @@ const UpdateInventoryScreen = ({ navigation, route }) => {
   const [expiry, setExpiry] = useState('');
 
   useEffect(() => {
+    const owner = vm.owner;
+    const shopId = vm.shopId;
     if (!barcode || !owner || owner.role !== 'OWNER' || !shopId) {
       Alert.alert('Error', 'Only owners with a shop can update inventory.', [
         { text: 'OK', onPress: () => navigation.goBack() },
@@ -37,10 +36,7 @@ const UpdateInventoryScreen = ({ navigation, route }) => {
     let cancelled = false;
     (async () => {
       try {
-        const [prod, inv] = await Promise.all([
-          getProductByBarcode(barcode),
-          getInventoryItem(shopId, barcode),
-        ]);
+        const { product: prod, inventory: inv } = await vm.loadInventoryForBarcode({ barcode });
         if (cancelled) return;
 
         if (!inv) {
@@ -71,39 +67,11 @@ const UpdateInventoryScreen = ({ navigation, route }) => {
     return () => {
       cancelled = true;
     };
-  }, [barcode, owner, shopId, navigation]);
+  }, [barcode, vm, navigation]);
 
   const handleSave = async () => {
-    if (!shopId || !inventory?.barcode) {
-      Alert.alert('Error', 'Missing shop or inventory item.');
-      return;
-    }
-
-    const sell = Number.parseFloat(String(sellingPrice));
-    const purchase = Number.parseFloat(String(purchasePrice));
-    const stockNum = Number.parseInt(String(stock), 10);
-
-    if (!Number.isFinite(sell) || sell < 0) {
-      Alert.alert('Error', 'Enter a valid selling price (0 or more).');
-      return;
-    }
-    if (!Number.isFinite(purchase) || purchase < 0) {
-      Alert.alert('Error', 'Enter a valid purchase price (0 or more).');
-      return;
-    }
-    if (!Number.isInteger(stockNum) || stockNum < 0) {
-      Alert.alert('Error', 'Enter a valid stock quantity (0 or more).');
-      return;
-    }
-
     try {
-      await setInventoryItem(shopId, {
-        barcode: inventory.barcode,
-        sellingPrice: sell,
-        purchasePrice: purchase,
-        stock: stockNum,
-        expiry: (expiry || '').trim(),
-      });
+      await vm.saveInventoryUpdate({ inventory, sellingPrice, purchasePrice, stock, expiry });
       Alert.alert('Success', 'Inventory updated successfully.', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
@@ -132,9 +100,8 @@ const UpdateInventoryScreen = ({ navigation, route }) => {
   };
 
   const handleDelete = async () => {
-    if (!shopId || !inventory?.barcode) return;
     try {
-      await deleteInventoryItem(shopId, inventory.barcode);
+      await vm.deleteInventory({ barcode: inventory.barcode });
       Alert.alert('Deleted', 'Product removed from your inventory.', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);

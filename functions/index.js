@@ -3,7 +3,6 @@ const { setGlobalOptions } = require("firebase-functions/v2");
 const admin = require("firebase-admin");
 
 setGlobalOptions({ region: "us-central1" });
-
 admin.initializeApp();
 
 const USERS = "billing_users";
@@ -16,33 +15,27 @@ exports.createStaff = onCall(async (request) => {
   if (!request.auth) throw new HttpsError("unauthenticated");
 
   const { email, password, name, permissions = {} } = request.data;
-  const callerUid = request.auth.uid;
+  const uid = request.auth.uid;
 
   if (!email || !password || !name)
-    throw new HttpsError("invalid-argument", "Missing fields");
+    throw new HttpsError("invalid-argument");
 
   const db = admin.firestore();
 
-  const callerSnap = await db.collection(USERS).doc(callerUid).get();
-  if (!callerSnap.exists || callerSnap.data().role !== "OWNER")
+  const ownerSnap = await db.collection(USERS).doc(uid).get();
+  if (!ownerSnap.exists || ownerSnap.data().role !== "OWNER")
     throw new HttpsError("permission-denied");
 
-  const shopId = callerSnap.data().shopId;
-  if (!shopId) throw new HttpsError("failed-precondition", "No shop");
+  const shopId = ownerSnap.data().shopId;
+  if (!shopId) throw new HttpsError("failed-precondition");
 
-  let newUser;
+  const user = await admin.auth().createUser({
+    email,
+    password,
+    displayName: name,
+  });
 
-  try {
-    newUser = await admin.auth().createUser({
-      email,
-      password,
-      displayName: name,
-    });
-  } catch {
-    throw new HttpsError("already-exists", "Email exists");
-  }
-
-  await db.collection(USERS).doc(newUser.uid).set({
+  await db.collection(USERS).doc(user.uid).set({
     shopId,
     name,
     email,
@@ -52,13 +45,13 @@ exports.createStaff = onCall(async (request) => {
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 
-  await db.collection(SHOPS).doc(shopId).collection("staff").doc(newUser.uid).set({
+  await db.collection(SHOPS).doc(shopId).collection("staff").doc(user.uid).set({
     name,
     email,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 
-  return { uid: newUser.uid };
+  return { uid: user.uid };
 });
 
 /* ───────────────── DELETE STAFF ───────────────── */
@@ -77,7 +70,6 @@ exports.deleteStaff = onCall(async (request) => {
   await db.collection(USERS).doc(staffId).delete();
 
   const shopId = ownerSnap.data().shopId;
-
   if (shopId) {
     await db.collection(SHOPS).doc(shopId).collection("staff").doc(staffId).delete();
   }
@@ -85,122 +77,179 @@ exports.deleteStaff = onCall(async (request) => {
   return { success: true };
 });
 
-/* ───────────────── CREATE BILL ───────────────── */
-
 exports.createBill = onCall(async (request) => {
-  try {
-    if (!request.auth) throw new HttpsError("unauthenticated");
+  if (!request.auth) throw new HttpsError("unauthenticated");
 
-    const uid = request.auth.uid;
-    const { items = [], paymentType = "CASH", customerName = "Walk-in" } = request.data;
+  const { items = [], paymentType = "CASH", customerName = "Walk-in" } = request.data;
+  if (!items.length) throw new HttpsError("invalid-argument");
 
-    if (!items.length) throw new HttpsError("invalid-argument", "No items");
+  const uid = request.auth.uid;
+  const db = admin.firestore();
 
-    const db = admin.firestore();
-    const userSnap = await db.collection(USERS).doc(uid).get();
+  const userSnap = await db.collection(USERS).doc(uid).get();
+  if (!userSnap.exists) throw new HttpsError("not-found");
 
-    if (!userSnap.exists) throw new HttpsError("not-found", "User not found");
+  const shopId = userSnap.data().shopId;
+  if (!shopId) throw new HttpsError("failed-precondition");
 
-    const shopId = userSnap.data().shopId;
-    if (!shopId) throw new HttpsError("failed-precondition", "No shop");
+  const year = new Date().getFullYear().toString();
 
+  // ✅ Prepare all refs BEFORE entering the transaction
+  const barcodeItems = items.filter((it) => it.type === "BARCODE");
+  const invRefs = barcodeItems.map((it) =>
+    db.collection(SHOPS).doc(shopId).collection("inventory").doc(String(it.barcode))
+  );
+  const prodRefs = barcodeItems.map((it) =>
+    db.collection(PRODUCTS).doc(String(it.barcode))
+  );
+  const counterRef = db.collection(SHOPS).doc(shopId).collection("meta").doc("counters");
+
+  const billNoFormatted = await db.runTransaction(async (tx) => {
+    // ✅ All reads first, in parallel
+    const [counterSnap, ...snaps] = await Promise.all([
+      tx.get(counterRef),
+      ...invRefs.map((r) => tx.get(r)),
+      ...prodRefs.map((r) => tx.get(r)),
+    ]);
+
+    const invSnaps = snaps.slice(0, invRefs.length);
+    const prodSnaps = snaps.slice(invRefs.length);
+
+    // Counter logic
+    const counterData = counterSnap.exists ? counterSnap.data() : {};
+    const billSeries = counterData.billSeries || {};
+    const nextNo = (billSeries[year] || 0) + 1;
+    const formatted = `${year}-${String(nextNo).padStart(5, "0")}`;
+
+    // ✅ All validation + writes after all reads
     let subtotal = 0;
     const finalItems = [];
 
-    const txResult = await db.runTransaction(async (tx) => {
-      const counterRef = db.collection("billing_counters").doc(shopId);
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
 
-      // ——— Phase 1: All reads first ———
-      const counterSnap = await tx.get(counterRef);
+      if (it.type === "BARCODE") {
+        const bIdx = barcodeItems.indexOf(it);
+        const invSnap = invSnaps[bIdx];
+        const prodSnap = prodSnaps[bIdx];
 
-      const productRefs = [];
-      const invRefs = [];
-      for (const item of items) {
-        if (item.type === "BARCODE") {
-          const barcode = String(item.barcode || "");
-          if (!barcode) throw new HttpsError("invalid-argument", "Invalid barcode item");
-          productRefs.push(db.collection(PRODUCTS).doc(barcode));
-          invRefs.push(db.collection(SHOPS).doc(shopId).collection("inventory").doc(barcode));
-        }
+        if (!invSnap.exists) throw new HttpsError("failed-precondition", "Product not in inventory");
+        if (!prodSnap.exists) throw new HttpsError("not-found", "Product not in catalog");
+
+        const inv = invSnap.data();
+        const prod = prodSnap.data();
+        const qty = Number(it.qty);
+
+        if ((inv.stock || 0) < qty)
+          throw new HttpsError("failed-precondition", "Insufficient stock");
+
+        const rate = Number(inv.sellingPrice);
+        const amount = qty * rate;
+        subtotal += amount;
+
+        finalItems.push({ barcode: String(it.barcode), name: prod.name, qty, rate, amount });
+
+        tx.update(invRefs[bIdx], {
+          stock: admin.firestore.FieldValue.increment(-qty),
+        });
+      } else {
+        const amount = Number(it.qty) * Number(it.rate);
+        subtotal += amount;
+        finalItems.push(it);
       }
-      const productSnaps = productRefs.length ? await Promise.all(productRefs.map((ref) => tx.get(ref))) : [];
-      const invSnaps = invRefs.length ? await Promise.all(invRefs.map((ref) => tx.get(ref))) : [];
+    }
 
-      // ——— Process read data and build finalItems (no writes yet) ———
-      let billNo = 1;
-      if (counterSnap.exists) billNo = (counterSnap.data().lastBillNo || 0) + 1;
-
-      let barcodeIndex = 0;
-      for (const item of items) {
-        if (item.type === "BARCODE") {
-          const qty = Number(item.qty) || 0;
-          if (qty <= 0) throw new HttpsError("invalid-argument", "Invalid barcode item");
-
-          const productSnap = productSnaps[barcodeIndex];
-          const invSnap = invSnaps[barcodeIndex];
-          barcodeIndex++;
-
-          if (!productSnap.exists || !invSnap.exists)
-            throw new HttpsError("not-found", "Product or inventory not found");
-
-          const stock = Number(invSnap.data().stock) || 0;
-          if (stock < qty) throw new HttpsError("failed-precondition", "Out of stock");
-
-          const rate = Number(invSnap.data().sellingPrice) || 0;
-          const amount = qty * rate;
-          subtotal += amount;
-
-          finalItems.push({
-            type: "BARCODE",
-            barcode: String(item.barcode || ""),
-            name: productSnap.data().name || "",
-            qty,
-            rate,
-            amount,
-          });
-        } else {
-          const name = String(item.name || "").trim();
-          const qty = Number(item.qty) || 0;
-          const rate = Number(item.rate) || 0;
-          if (!name || qty <= 0) throw new HttpsError("invalid-argument", "Invalid manual item");
-          const amount = qty * rate;
-          subtotal += amount;
-          finalItems.push({ type: "MANUAL", name, qty, rate, amount });
-        }
-      }
-
-      // ——— Phase 2: All writes ———
-      tx.set(counterRef, { lastBillNo: billNo }, { merge: true });
-
-      barcodeIndex = 0;
-      for (const item of items) {
-        if (item.type === "BARCODE") {
-          const qty = Number(item.qty) || 0;
-          tx.update(invRefs[barcodeIndex], {
-            stock: admin.firestore.FieldValue.increment(-qty),
-          });
-          barcodeIndex++;
-        }
-      }
-
-      tx.set(db.collection(SHOPS).doc(shopId).collection("bills").doc(), {
-        billNo,
-        customerName: String(customerName || "Walk-in").trim() || "Walk-in",
-        paymentType: String(paymentType || "CASH"),
-        items: finalItems,
-        subtotal,
-        grandTotal: subtotal,
-        createdBy: uid,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-
-      return { billNo };
+    // Writes
+    tx.set(counterRef, { [`billSeries.${year}`]: nextNo }, { merge: true });
+    tx.set(db.collection(SHOPS).doc(shopId).collection("bills").doc(), {
+      billNo: nextNo,
+      billNoFormatted: formatted,
+      customerName,
+      paymentType,
+      items: finalItems,
+      grandTotal: subtotal,
+      createdBy: uid,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    return { success: true, billNo: txResult.billNo };
-  } catch (err) {
-    if (err instanceof HttpsError) throw err;
-    console.error("createBill error:", err);
-    throw new HttpsError("internal", err.message || "Failed to create bill");
-  }
+    return formatted;
+  });
+
+  return { success: true, billNo: billNoFormatted };
+});
+/* ───────────────── CREATE PURCHASE (SUPPLIER) ───────────────── */
+
+exports.createPurchase = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError("unauthenticated");
+
+  const { supplierId, items = [], paidAmount = 0 } = request.data;
+  if (!supplierId || !items.length) throw new HttpsError("invalid-argument");
+
+  const uid = request.auth.uid;
+  const db = admin.firestore();
+
+  const userSnap = await db.collection(USERS).doc(uid).get();
+  if (!userSnap.exists) throw new HttpsError("not-found");
+
+  const shopId = userSnap.data().shopId;
+  if (!shopId) throw new HttpsError("failed-precondition");
+
+  const year = new Date().getFullYear().toString();
+
+  // ✅ Prepare all refs BEFORE transaction
+  const counterRef = db.collection(SHOPS).doc(shopId).collection("meta").doc("counters");
+  const invRefs = items.map((it) =>
+    db.collection(SHOPS).doc(shopId).collection("inventory").doc(String(it.barcode))
+  );
+
+  const result = await db.runTransaction(async (tx) => {
+    // ✅ All reads first, in parallel
+    const [counterSnap] = await Promise.all([
+      tx.get(counterRef),
+      // inventory refs don't need to be read here since we're only writing (incrementing)
+      // but if you want to validate stock/product existence, add reads here
+    ]);
+
+    const data = counterSnap.exists ? counterSnap.data() : {};
+    const purchaseSeries = data.purchaseSeries || {};
+    const nextNo = (purchaseSeries[year] || 0) + 1;
+    const purchaseNoFormatted = `PUR-${year}-${String(nextNo).padStart(5, "0")}`;
+
+    let subtotal = 0;
+
+    // ✅ All writes after all reads
+    tx.set(counterRef, { [`purchaseSeries.${year}`]: nextNo }, { merge: true });
+
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      subtotal += it.qty * it.purchasePrice;
+
+      tx.set(invRefs[i], {
+        barcode: it.barcode,
+        stock: admin.firestore.FieldValue.increment(it.qty),
+        lastPurchasePrice: it.purchasePrice,
+        supplierId,
+        lastPurchaseDate: admin.firestore.FieldValue.serverTimestamp(),
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+    }
+
+    const dueAmount = Math.max(0, subtotal - Number(paidAmount || 0));
+
+    tx.set(db.collection(SHOPS).doc(shopId).collection("purchases").doc(), {
+      supplierId,
+      purchaseNo: nextNo,
+      purchaseNoFormatted,
+      items,
+      subtotal,
+      paidAmount,
+      dueAmount,
+      createdBy: uid,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return purchaseNoFormatted;
+  });
+
+  return { success: true, purchaseNo: result };
 });

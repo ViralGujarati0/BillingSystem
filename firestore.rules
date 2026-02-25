@@ -35,6 +35,18 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/billing_shops/$(shopId)).data.ownerId == request.auth.uid;
     }
 
+    // Suppliers: only the shop owner can read/write
+    match /billing_shops/{shopId}/suppliers/{supplierId} {
+      allow read, write: if request.auth != null
+        && get(/databases/$(database)/documents/billing_shops/$(shopId)).data.ownerId == request.auth.uid;
+    }
+
+    // Purchases: only the shop owner can read/write
+    match /billing_shops/{shopId}/purchases/{purchaseId} {
+      allow read, write: if request.auth != null
+        && get(/databases/$(database)/documents/billing_shops/$(shopId)).data.ownerId == request.auth.uid;
+    }
+
     // Shop bills: only the shop owner (or staff if you add later) can read/write
     match /billing_shops/{shopId}/bills/{billId} {
       allow read, write: if request.auth != null

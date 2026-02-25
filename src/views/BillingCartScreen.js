@@ -14,11 +14,10 @@ import {
   billingCartItemsAtom,
   billingCustomerNameAtom,
   billingPaymentTypeAtom,
-  billSuccessDataAtom,
   billingGenerateLoadingAtom,
 } from '../atoms/billing';
 import { getShop, getShopSettings } from '../services/firestore';
-import { createBill } from '../services/createBill';
+import useBillingViewModel from '../viewmodels/BillingViewModel';
 
 const PAYMENT_OPTIONS = ['CASH', 'UPI', 'CARD'];
 
@@ -28,12 +27,12 @@ const BillingCartScreen = ({ navigation, route }) => {
   const cartItems = useAtomValue(billingCartItemsAtom);
   const customerName = useAtomValue(billingCustomerNameAtom);
   const paymentType = useAtomValue(billingPaymentTypeAtom);
-  const setCartItems = useSetAtom(billingCartItemsAtom);
   const setCustomerName = useSetAtom(billingCustomerNameAtom);
   const setPaymentType = useSetAtom(billingPaymentTypeAtom);
-  const setBillSuccessData = useSetAtom(billSuccessDataAtom);
   const loading = useAtomValue(billingGenerateLoadingAtom);
   const setLoading = useSetAtom(billingGenerateLoadingAtom);
+
+  const vm = useBillingViewModel();
 
   const [shop, setShop] = useState(null);
   const [settings, setSettings] = useState(null);
@@ -43,10 +42,7 @@ const BillingCartScreen = ({ navigation, route }) => {
     let cancelled = false;
     (async () => {
       try {
-        const [s, st] = await Promise.all([
-          getShop(shopId),
-          getShopSettings(shopId),
-        ]);
+        const { shop: s, settings: st } = await vm.loadShopAndSettings(shopId);
         if (!cancelled) {
           setShop(s);
           setSettings(st);
@@ -56,59 +52,18 @@ const BillingCartScreen = ({ navigation, route }) => {
       }
     })();
     return () => { cancelled = true; };
-  }, [shopId]);
+  }, [shopId, vm]);
 
   const updateItemQty = (index, newQty) => {
-    setCartItems((prev) => {
-      const next = [...prev];
-      const it = next[index];
-      if (!it) return prev;
-      const trimmed = String(newQty).trim();
-      // Keep row when input is empty (user is editing); only remove when they explicitly enter 0
-      const n = trimmed === '' ? it.qty : Math.max(0, parseInt(trimmed, 10) || 0);
-      if (n === 0) {
-        next.splice(index, 1);
-        return next;
-      }
-      next[index] = { ...it, qty: n, amount: n * it.rate };
-      return next;
-    });
+    vm.updateItemQty(index, newQty);
   };
 
   const grandTotal = cartItems.reduce((s, i) => s + (i.amount || 0), 0);
 
   const handleGenerateBill = async () => {
-    if (!cartItems.length) {
-      Alert.alert('Error', 'Add at least one item.');
-      return;
-    }
-    const payload = {
-      items: cartItems.map((i) => {
-        if (i.type === 'MANUAL') {
-          return { type: 'MANUAL', name: i.name, qty: i.qty, rate: i.rate };
-        }
-        return { type: 'BARCODE', barcode: i.barcode, qty: i.qty };
-      }),
-      paymentType,
-      customerName: customerName.trim() || 'Walk-in',
-    };
     setLoading(true);
     try {
-      const result = await createBill(payload);
-      setBillSuccessData({
-        shopName: shop?.businessName || 'Shop',
-        shopAddress: [shop?.address, shop?.phone].filter(Boolean).join(' • ') || '—',
-        customerName: customerName.trim() || 'Walk-in',
-        billNo: result?.billNo != null ? String(result.billNo) : '—',
-        date: new Date().toLocaleString(),
-        paymentType,
-        items: cartItems,
-        grandTotal,
-        thankYouMessage: settings?.billMessage || 'Thank you for shopping!',
-      });
-      setCartItems([]);
-      setCustomerName('Walk-in');
-      setPaymentType('CASH');
+      await vm.generateBill({ userDoc, shop, settings });
       const backScreen = userDoc?.role === 'OWNER' ? 'OwnerTabs' : 'StaffHome';
       const backParams = userDoc ? { userDoc } : {};
       navigation.replace('BillSuccess', { backScreen, backParams });

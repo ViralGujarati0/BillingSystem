@@ -8,59 +8,27 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import { useAtomValue, useAtom } from 'jotai';
-import { currentOwnerAtom } from '../atoms/owner';
-import { inventoryFormAtom, defaultInventoryForm } from '../atoms/forms';
-import { setInventoryItem } from '../services/firestore';
+import { useAtom } from 'jotai';
+import { inventoryFormAtom } from '../atoms/forms';
+import useInventoryViewModel from '../viewmodels/InventoryViewModel';
 
 const InventoryFormScreen = ({ navigation, route }) => {
   const { barcode, product } = route.params || {};
-  const owner = useAtomValue(currentOwnerAtom);
+  const vm = useInventoryViewModel();
   const [form, setForm] = useAtom(inventoryFormAtom);
   const mrp = product?.mrp ?? 0;
 
   useEffect(() => {
-    setForm({
-      ...defaultInventoryForm,
-      sellingPrice: mrp ? String(mrp) : '',
-    });
-  }, [barcode, mrp, setForm]);
+    vm.initAddForm({ mrp });
+  }, [barcode, mrp, vm]);
 
   const handleSubmit = async () => {
-    if (!owner?.shopId || !barcode) {
-      Alert.alert('Error', 'Missing shop or barcode.');
-      return;
-    }
-    const sell = parseFloat(form.sellingPrice);
-    const purchase = parseFloat(form.purchasePrice);
-    const stockNum = parseInt(form.stock, 10);
-    if (isNaN(sell) || sell < 0) {
-      Alert.alert('Error', 'Enter a valid selling price.');
-      return;
-    }
-    if (isNaN(purchase) || purchase < 0) {
-      Alert.alert('Error', 'Enter a valid purchase price.');
-      return;
-    }
-    if (isNaN(stockNum) || stockNum < 0) {
-      Alert.alert('Error', 'Enter a valid opening stock.');
-      return;
-    }
-    setForm((prev) => ({ ...prev, saving: true }));
     try {
-      await setInventoryItem(owner.shopId, {
-        barcode,
-        sellingPrice: sell,
-        purchasePrice: purchase,
-        stock: stockNum,
-        expiry: (form.expiry || '').trim(),
-      });
+      await vm.saveNewInventory({ barcode });
       Alert.alert('Success', 'Product successfully added to inventory.');
       navigation.goBack();
     } catch (err) {
-      Alert.alert('Error', err.message);
-    } finally {
-      setForm((prev) => ({ ...prev, saving: false }));
+      Alert.alert('Error', err.message || 'Failed to save inventory.');
     }
   };
 

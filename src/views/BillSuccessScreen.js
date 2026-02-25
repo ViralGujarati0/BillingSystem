@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  Platform,
 } from 'react-native';
 import Share from 'react-native-share';
 import { useAtomValue } from 'jotai';

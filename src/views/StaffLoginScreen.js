@@ -16,13 +16,8 @@ const StaffLoginScreen = ({ navigation }) => {
   const [form, setForm] = useAtom(staffLoginFormAtom);
 
   const handleLogin = async () => {
-    const result = await signInWithEmailPassword(form.email, form.password);
-    if (result) {
-      navigation.replace('StaffHome', {
-        firebaseUser: result.firebaseUser,
-        userDoc: result.userDoc,
-      });
-    }
+    await signInWithEmailPassword(form.email, form.password);
+    // AppNavigator handles routing
   };
 
   return (

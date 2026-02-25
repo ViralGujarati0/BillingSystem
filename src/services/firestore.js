@@ -1,8 +1,10 @@
 import firestore from '@react-native-firebase/firestore';
-
+import functions from '@react-native-firebase/functions';
 const USERS = "billing_users";
 const SHOPS = "billing_shops";
 const PRODUCTS = "billing_products";
+const SUPPLIERS = "suppliers";
+const PURCHASES = "purchases";
 
 const ownerPermissions = {
   sales: true,
@@ -10,6 +12,26 @@ const ownerPermissions = {
   accounts: true,
   profit: true,
 };
+
+export async function createBill(items, customerName = 'Walk-in', paymentType = 'CASH') {
+  const res = await functions().httpsCallable('createBill')({
+    items,
+    customerName,
+    paymentType,
+  });
+
+  return res.data; // { success, billNo }
+}
+
+export async function createPurchaseInvoice({ supplierId, items, paidAmount = 0 }) {
+  const res = await functions().httpsCallable('createPurchase')({
+    supplierId,
+    items,
+    paidAmount,
+  });
+
+  return res.data; // { success, purchaseNo }
+}
 
 /**
  * Create or update owner user in Firestore when they sign in with Google.
@@ -263,6 +285,9 @@ export async function setInventoryItem(shopId, {
   purchasePrice,
   stock,
   expiry = '',
+  supplierId,
+  lastPurchasePrice,
+  lastPurchaseDate,
 }) {
   const ref = firestore()
     .collection(SHOPS)
@@ -275,6 +300,9 @@ export async function setInventoryItem(shopId, {
     purchasePrice: Number(purchasePrice) ?? 0,
     stock: Number(stock) ?? 0,
     expiry: expiry || '',
+    ...(typeof supplierId !== 'undefined' && { supplierId: String(supplierId) }),
+    ...(typeof lastPurchasePrice !== 'undefined' && { lastPurchasePrice: Number(lastPurchasePrice) ?? 0 }),
+    ...(typeof lastPurchaseDate !== 'undefined' && { lastPurchaseDate }),
     lastUpdated: firestore.FieldValue.serverTimestamp(),
   };
   await ref.set(data, { merge: true });
@@ -293,6 +321,197 @@ export async function deleteInventoryItem(shopId, barcode) {
     .collection('inventory')
     .doc(String(barcode));
   await ref.delete();
+}
+
+// ─── Suppliers ───────────────────────────────────────────────────────────
+
+/**
+ * Create a supplier: billing_shops/{shopId}/suppliers/{supplierId}
+ * openingBalance is set once and should not be updated later.
+ */
+export async function createSupplier(shopId, {
+  name,
+  phone = '',
+  address = '',
+  gstNumber = '',
+  openingBalance = 0,
+} = {}) {
+  const ref = firestore()
+    .collection(SHOPS)
+    .doc(shopId)
+    .collection(SUPPLIERS)
+    .doc();
+
+  const data = {
+    name: String(name || '').trim(),
+    phone: String(phone || '').trim(),
+    address: String(address || '').trim(),
+    gstNumber: String(gstNumber || '').trim(),
+    openingBalance: Number(openingBalance) || 0,
+    isActive: true,
+    createdAt: firestore.FieldValue.serverTimestamp(),
+  };
+  if (!data.name) throw new Error('Supplier name is required');
+
+  await ref.set(data);
+  const snap = await ref.get();
+  return { id: snap.id, ...snap.data() };
+}
+
+export async function listSuppliers(shopId) {
+  try {
+    const snap = await firestore()
+      .collection(SHOPS)
+      .doc(shopId)
+      .collection(SUPPLIERS)
+      .where('isActive', '==', true)
+      .orderBy('name')
+      .get();
+
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (e) {
+    console.log('🔥 FIRESTORE ERROR:', e);
+    console.log('🔥 FIRESTORE MESSAGE:', e?.message);
+    console.log('🔥 FIRESTORE CODE:', e?.code);
+    throw e;
+  }
+}
+
+/**
+ * Realtime subscription for suppliers list of a shop.
+ * Calls callback(list) on every change.
+ */
+export function subscribeSuppliers(shopId, callback) {
+  return firestore()
+    .collection(SHOPS)
+    .doc(shopId)
+    .collection(SUPPLIERS)
+    .where('isActive', '==', true)
+    .orderBy('name')
+    .onSnapshot((snap) => {
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      callback(list);
+    });
+}
+
+export async function getSupplier(shopId, supplierId) {
+  const snap = await firestore()
+    .collection(SHOPS)
+    .doc(shopId)
+    .collection(SUPPLIERS)
+    .doc(String(supplierId))
+    .get();
+  const exists = typeof snap.exists === 'function' ? snap.exists() : snap.exists;
+  if (!exists) return null;
+  return { id: snap.id, ...snap.data() };
+}
+
+/**
+ * TEMP helper: create a few suppliers for a shop.
+ */
+export async function createSampleSuppliers(shopId) {
+  const samples = [
+    { name: 'Patel Distributors', phone: '9999999999', address: 'Main Market', gstNumber: '—', openingBalance: 0 },
+    { name: 'Shree Traders', phone: '8888888888', address: 'Industrial Area', gstNumber: '—', openingBalance: 1500 },
+    { name: 'Om Wholesale', phone: '7777777777', address: 'Ring Road', gstNumber: '—', openingBalance: 0 },
+  ];
+  await Promise.all(samples.map((s) => createSupplier(shopId, s)));
+  return true;
+}
+
+// ─── Purchases ───────────────────────────────────────────────────────────
+
+/**
+ * Create a purchase invoice and increment inventory stock.
+ * Writes:
+ *  - billing_shops/{shopId}/purchases/{purchaseId}
+ *  - updates billing_shops/{shopId}/inventory/{barcode} stock += qty and sets supplierId + lastPurchase fields
+ */
+export async function createPurchase(shopId, {
+  supplierId,
+  invoiceNo = '',
+  items = [],
+  paidAmount = 0,
+  paymentType = 'CASH', // CASH | UPI | BANK
+} = {}) {
+  if (!shopId) throw new Error('Missing shopId');
+  if (!supplierId) throw new Error('Missing supplierId');
+  if (!Array.isArray(items) || items.length === 0) throw new Error('No items');
+
+  const normalizedItems = items.map((it) => {
+    const barcode = String(it.barcode || '').trim();
+    const qty = Number(it.qty) || 0;
+    const purchasePrice = Number(it.purchasePrice) || 0;
+    if (!barcode || qty <= 0) throw new Error('Invalid item');
+    return {
+      barcode,
+      name: String(it.name || '').trim(),
+      qty,
+      purchasePrice,
+      amount: qty * purchasePrice,
+    };
+  });
+  const subtotal = normalizedItems.reduce((s, it) => s + it.amount, 0);
+  const paid = Math.max(0, Number(paidAmount) || 0);
+  const due = Math.max(0, subtotal - paid);
+
+  const db = firestore();
+  const shopRef = db.collection(SHOPS).doc(shopId);
+  const purchaseRef = shopRef.collection(PURCHASES).doc();
+  const createdAt = firestore.FieldValue.serverTimestamp();
+
+  await db.runTransaction(async (tx) => {
+    // Reads first
+    const invRefs = normalizedItems.map((it) => shopRef.collection('inventory').doc(it.barcode));
+    const invSnaps = await Promise.all(invRefs.map((ref) => tx.get(ref)));
+    const prodRefs = normalizedItems.map((it) => db.collection(PRODUCTS).doc(it.barcode));
+    const prodSnaps = await Promise.all(prodRefs.map((ref) => tx.get(ref)));
+
+    // Writes
+    tx.set(purchaseRef, {
+      supplierId: String(supplierId),
+      invoiceNo: String(invoiceNo || '').trim(),
+      items: normalizedItems.map((it, idx) => ({
+        ...it,
+        name: it.name || (prodSnaps[idx].exists ? (prodSnaps[idx].data()?.name || '') : ''),
+      })),
+      subtotal,
+      paidAmount: paid,
+      dueAmount: due,
+      paymentType,
+      createdAt,
+    });
+
+    normalizedItems.forEach((it, idx) => {
+      const invSnap = invSnaps[idx];
+      const existing = invSnap.exists ? invSnap.data() : {};
+      const prevStock = Number(existing.stock) || 0;
+      const newStock = prevStock + it.qty;
+      const sellingPrice = existing.sellingPrice != null ? Number(existing.sellingPrice) || 0 : 0;
+      const expiry = existing.expiry || '';
+
+      tx.set(
+        invRefs[idx],
+        {
+          barcode: it.barcode,
+          sellingPrice,
+          purchasePrice: it.purchasePrice,
+          stock: newStock,
+          expiry,
+          supplierId: String(supplierId),
+          lastPurchasePrice: it.purchasePrice,
+          lastPurchaseDate: createdAt,
+          lastUpdated: createdAt,
+        },
+        { merge: true }
+      );
+    });
+  });
+
+  const snap = await purchaseRef.get();
+  const exists = typeof snap.exists === 'function' ? snap.exists() : snap.exists;
+  if (!exists) return null;
+  return { id: snap.id, ...snap.data() };
 }
 
 // ─── Bills & Settings ─────────────────────────────────────────────────────
@@ -354,4 +573,30 @@ export async function createBillDoc(shopId, {
   await ref.set(data);
   const snap = await ref.get();
   return { id: snap.id, ...snap.data() };
+}
+
+export async function updateSupplier(shopId, supplierId, data) {
+  return firestore()
+    .collection('billing_shops')
+    .doc(shopId)
+    .collection('suppliers')
+    .doc(String(supplierId))
+    .set(
+      {
+        ...(data?.name != null && { name: String(data.name).trim() }),
+        ...(data?.phone != null && { phone: String(data.phone).trim() }),
+        ...(data?.address != null && { address: String(data.address).trim() }),
+        ...(data?.gstNumber != null && { gstNumber: String(data.gstNumber).trim() }),
+      },
+      { merge: true }
+    );
+}
+
+export async function deleteSupplier(shopId, supplierId) {
+  return firestore()
+    .collection('billing_shops')
+    .doc(shopId)
+    .collection('suppliers')
+    .doc(String(supplierId))
+    .set({ isActive: false }, { merge: true });
 }

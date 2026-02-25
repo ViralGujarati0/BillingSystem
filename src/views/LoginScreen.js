@@ -14,15 +14,9 @@ const LoginScreen = ({ navigation }) => {
   const { loading, error, signInWithGoogle } = useAuthViewModel();
 
   const handleOwnerLogin = async () => {
-    const result = await signInWithGoogle();
-
-if (result) {
-  if (result.userDoc.shopId) {
-    navigation.replace('OwnerTabs', { userDoc: result.userDoc });
-  } else {
-    navigation.replace('CreateShop', { userDoc: result.userDoc });
-  }
-}
+    await signInWithGoogle();
+    // DO NOTHING ELSE
+    // AppNavigator will redirect automatically
   };
 
   return (
