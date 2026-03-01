@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useAtomValue, useSetAtom } from 'jotai';
 import auth from '@react-native-firebase/auth';
@@ -30,51 +30,88 @@ import SupplierEditScreen from '../views/SupplierEditScreen';
 import PurchaseCreateScreen from '../views/PurchaseCreateScreen';
 import PurchaseSuccessScreen from '../views/PurchaseSuccessScreen';
 
+// ── Global navigation ref — use this to navigate from outside React tree ──────
+export const navigationRef = createNavigationContainerRef();
+
 const Stack = createStackNavigator();
 
+// ── Helper: reset stack to a single route ─────────────────────────────────────
+const resetTo = (name, params) => {
+  navigationRef.reset({
+    index: 0,
+    routes: [{ name, params }],
+  });
+};
+
 const AppNavigator = () => {
-  const initializing = useAtomValue(appInitializingAtom);
-  const initialRoute = useAtomValue(appInitialRouteAtom);
-  const initialParams = useAtomValue(appInitialParamsAtom);
+  const initializing    = useAtomValue(appInitializingAtom);
+  const initialRoute    = useAtomValue(appInitialRouteAtom);
+  const initialParams   = useAtomValue(appInitialParamsAtom);
   const setInitializing = useSetAtom(appInitializingAtom);
   const setInitialRoute = useSetAtom(appInitialRouteAtom);
   const setInitialParams = useSetAtom(appInitialParamsAtom);
 
   useEffect(() => {
     const unsubscribe = auth().onAuthStateChanged(async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
+      try {
+        if (firebaseUser) {
           const userDoc = await getUser(firebaseUser.uid);
-          if (userDoc && userDoc.role === 'OWNER') {
-            if (!userDoc.shopId) {
-              setInitialRoute('CreateShop');
-              setInitialParams({ userDoc });
+
+          if (userDoc?.role === 'OWNER') {
+            const route = userDoc.shopId ? 'OwnerTabs' : 'CreateShop';
+
+            if (navigationRef.isReady()) {
+              resetTo(route, { userDoc });
             } else {
-              setInitialRoute('OwnerTabs');
+              setInitialRoute(route);
               setInitialParams({ userDoc });
             }
-          } else if (userDoc && userDoc.role === 'STAFF') {
+
+          } else if (userDoc?.role === 'STAFF') {
             if (!userDoc.isActive) {
               await auth().signOut();
-              setInitialRoute('Login');
+              // onAuthStateChanged will fire again with null → handled below
               return;
             }
-            setInitialRoute('StaffHome');
-            setInitialParams({ userDoc });
+
+            if (navigationRef.isReady()) {
+              resetTo('StaffHome', { userDoc });
+            } else {
+              setInitialRoute('StaffHome');
+              setInitialParams({ userDoc });
+            }
+
+          } else {
+            // Logged in but no valid user doc
+            if (navigationRef.isReady()) {
+              resetTo('Login');
+            } else {
+              setInitialRoute('Login');
+            }
+          }
+
+        } else {
+          // Signed out
+          if (navigationRef.isReady()) {
+            resetTo('Login');
           } else {
             setInitialRoute('Login');
           }
-        } catch (e) {
+        }
+      } catch (e) {
+        console.error('AppNavigator auth error:', e);
+        if (navigationRef.isReady()) {
+          resetTo('Login');
+        } else {
           setInitialRoute('Login');
         }
-      } else {
-        setInitialRoute('Login');
+      } finally {
+        setInitializing(false);
       }
-      setInitializing(false);
     });
 
     return unsubscribe;
-  }, [setInitializing, setInitialRoute, setInitialParams]);
+  }, []);
 
   if (initializing) {
     return (
@@ -85,12 +122,14 @@ const AppNavigator = () => {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator
         screenOptions={{ headerShown: false }}
         initialRouteName={initialRoute}
       >
-        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Login"        component={LoginScreen} />
+        <Stack.Screen name="StaffLogin"   component={StaffLoginScreen} />
+
         <Stack.Screen
           name="OwnerTabs"
           component={OwnerTabNavigator}
@@ -106,24 +145,24 @@ const AppNavigator = () => {
           component={StaffHomeScreen}
           initialParams={initialRoute === 'StaffHome' ? initialParams : undefined}
         />
-        <Stack.Screen name="StaffLogin" component={StaffLoginScreen} />
-        <Stack.Screen name="AddStaff" component={AddStaffScreen} />
-        <Stack.Screen name="StaffList" component={StaffListScreen} />
-        <Stack.Screen name="EditStaff" component={EditStaffScreen} />
-        <Stack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} />
-        <Stack.Screen name="ProductScanResult" component={ProductScanResultScreen} />
-        <Stack.Screen name="InventoryForm" component={InventoryFormScreen} />
-        <Stack.Screen name="UpdateInventory" component={UpdateInventoryScreen} />
-        <Stack.Screen name="CreateProduct" component={CreateProductScreen} />
-        <Stack.Screen name="BillingScanner" component={BillingScannerScreen} />
-        <Stack.Screen name="ManualItem" component={ManualItemScreen} />
-        <Stack.Screen name="BillingCart" component={BillingCartScreen} />
-        <Stack.Screen name="BillSuccess" component={BillSuccessScreen} />
-        <Stack.Screen name="SupplierList" component={SupplierListScreen} />
-        <Stack.Screen name="SupplierCreate" component={SupplierCreateScreen} />
-        <Stack.Screen name="SupplierEdit" component={SupplierEditScreen} />
-        <Stack.Screen name="PurchaseCreate" component={PurchaseCreateScreen} />
-        <Stack.Screen name="PurchaseSuccess" component={PurchaseSuccessScreen} />
+
+        <Stack.Screen name="AddStaff"           component={AddStaffScreen} />
+        <Stack.Screen name="StaffList"           component={StaffListScreen} />
+        <Stack.Screen name="EditStaff"           component={EditStaffScreen} />
+        <Stack.Screen name="BarcodeScanner"      component={BarcodeScannerScreen} />
+        <Stack.Screen name="ProductScanResult"   component={ProductScanResultScreen} />
+        <Stack.Screen name="InventoryForm"       component={InventoryFormScreen} />
+        <Stack.Screen name="UpdateInventory"     component={UpdateInventoryScreen} />
+        <Stack.Screen name="CreateProduct"       component={CreateProductScreen} />
+        <Stack.Screen name="BillingScanner"      component={BillingScannerScreen} />
+        <Stack.Screen name="ManualItem"          component={ManualItemScreen} />
+        <Stack.Screen name="BillingCart"         component={BillingCartScreen} />
+        <Stack.Screen name="BillSuccess"         component={BillSuccessScreen} />
+        <Stack.Screen name="SupplierList"        component={SupplierListScreen} />
+        <Stack.Screen name="SupplierCreate"      component={SupplierCreateScreen} />
+        <Stack.Screen name="SupplierEdit"        component={SupplierEditScreen} />
+        <Stack.Screen name="PurchaseCreate"      component={PurchaseCreateScreen} />
+        <Stack.Screen name="PurchaseSuccess"     component={PurchaseSuccessScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

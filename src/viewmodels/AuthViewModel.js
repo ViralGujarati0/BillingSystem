@@ -20,16 +20,20 @@ const useAuthViewModel = () => {
       setLoading(true);
       setError(null);
       await GoogleSignin.hasPlayServices();
+  
+      // ✅ Force fresh sign-in — prevents stale cached token after logout
+      try { await GoogleSignin.signOut(); } catch (_) {}
+  
       const signInResult = await GoogleSignin.signIn();
       const idToken = signInResult?.data?.idToken ?? signInResult?.idToken;
       if (!idToken) throw new Error('No ID token received');
+      
       const credential = auth.GoogleAuthProvider.credential(idToken);
       const userCredential = await auth().signInWithCredential(credential);
       const userDoc = await createOrUpdateOwnerUser(userCredential.user);
       return { firebaseUser: userCredential.user, userDoc };
     } catch (err) {
       setError(err.message);
-      console.error('Sign-in error:', err);
       return null;
     } finally {
       setLoading(false);
@@ -61,14 +65,20 @@ const useAuthViewModel = () => {
     }
   };
 
-  const signOut = async () => {
-    try {
-      await GoogleSignin.signOut(); // works for owner
-    } catch (e) {
-      // staff never used Google → ignore
-    }
+  // const signOut = async () => {
+  //   try {
+  //     await GoogleSignin.signOut(); // works for owner
+  //   } catch (e) {
+  //     // staff never used Google → ignore
+  //   }
   
-    await auth().signOut(); // ALWAYS runs
+  //   await auth().signOut(); // ALWAYS runs
+  // };
+
+  const signOut = async () => {
+    try { await GoogleSignin.revokeAccess(); } catch (_) {}
+    try { await GoogleSignin.signOut(); } catch (_) {}
+    await auth().signOut();
   };
 
   return { loading, error, signInWithGoogle, signInWithEmailPassword, signOut };

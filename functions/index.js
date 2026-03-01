@@ -92,37 +92,59 @@ exports.createBill = onCall(async (request) => {
   const shopId = userSnap.data().shopId;
   if (!shopId) throw new HttpsError("failed-precondition");
 
-  const year = new Date().getFullYear().toString();
+  const now = new Date();
+  const year = now.getFullYear().toString();
 
-  // ✅ Prepare all refs BEFORE entering the transaction
+  // 🔹 Start-of-day timestamp (00:00:00)
+  const startOfDay = new Date(now);
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const todayKey = startOfDay.toISOString().slice(0, 10).replace(/-/g, "_");
+
+  const statsRef = db
+    .collection(SHOPS)
+    .doc(shopId)
+    .collection("stats")
+    .doc(`daily_${todayKey}`);
+
+  // 🔹 Prepare refs BEFORE transaction
   const barcodeItems = items.filter((it) => it.type === "BARCODE");
+
   const invRefs = barcodeItems.map((it) =>
     db.collection(SHOPS).doc(shopId).collection("inventory").doc(String(it.barcode))
   );
+
   const prodRefs = barcodeItems.map((it) =>
     db.collection(PRODUCTS).doc(String(it.barcode))
   );
-  const counterRef = db.collection(SHOPS).doc(shopId).collection("meta").doc("counters");
+
+  const counterRef = db
+    .collection(SHOPS)
+    .doc(shopId)
+    .collection("meta")
+    .doc("counters");
 
   const billNoFormatted = await db.runTransaction(async (tx) => {
-    // ✅ All reads first, in parallel
+
+    // ✅ ALL READS FIRST
     const [counterSnap, ...snaps] = await Promise.all([
       tx.get(counterRef),
       ...invRefs.map((r) => tx.get(r)),
       ...prodRefs.map((r) => tx.get(r)),
+      tx.get(statsRef),
     ]);
 
     const invSnaps = snaps.slice(0, invRefs.length);
-    const prodSnaps = snaps.slice(invRefs.length);
+    const prodSnaps = snaps.slice(invRefs.length, invRefs.length + prodRefs.length);
 
-    // Counter logic
+    // 🔹 Counter logic
     const counterData = counterSnap.exists ? counterSnap.data() : {};
     const billSeries = counterData.billSeries || {};
     const nextNo = (billSeries[year] || 0) + 1;
     const formatted = `${year}-${String(nextNo).padStart(5, "0")}`;
 
-    // ✅ All validation + writes after all reads
     let subtotal = 0;
+    let totalProfit = 0;
     const finalItems = [];
 
     for (let i = 0; i < items.length; i++) {
@@ -133,8 +155,11 @@ exports.createBill = onCall(async (request) => {
         const invSnap = invSnaps[bIdx];
         const prodSnap = prodSnaps[bIdx];
 
-        if (!invSnap.exists) throw new HttpsError("failed-precondition", "Product not in inventory");
-        if (!prodSnap.exists) throw new HttpsError("not-found", "Product not in catalog");
+        if (!invSnap.exists)
+          throw new HttpsError("failed-precondition", "Product not in inventory");
+
+        if (!prodSnap.exists)
+          throw new HttpsError("not-found", "Product not in catalog");
 
         const inv = invSnap.data();
         const prod = prodSnap.data();
@@ -144,10 +169,23 @@ exports.createBill = onCall(async (request) => {
           throw new HttpsError("failed-precondition", "Insufficient stock");
 
         const rate = Number(inv.sellingPrice);
-        const amount = qty * rate;
-        subtotal += amount;
+        const purchasePrice =
+          Number(inv.lastPurchasePrice || inv.purchasePrice || 0);
 
-        finalItems.push({ barcode: String(it.barcode), name: prod.name, qty, rate, amount });
+        const amount = qty * rate;
+        const profit = qty * (rate - purchasePrice);
+
+        subtotal += amount;
+        totalProfit += profit;
+
+        finalItems.push({
+          barcode: String(it.barcode),
+          name: prod.name,
+          qty,
+          rate,
+          amount,
+          profit,
+        });
 
         tx.update(invRefs[bIdx], {
           stock: admin.firestore.FieldValue.increment(-qty),
@@ -159,18 +197,45 @@ exports.createBill = onCall(async (request) => {
       }
     }
 
-    // Writes
+    const totalItemsSold = items.reduce(
+      (sum, i) => sum + Number(i.qty || 0),
+      0
+    );
+
+    // ✅ WRITES AFTER ALL READS
+
+    // Update counter
     tx.set(counterRef, { [`billSeries.${year}`]: nextNo }, { merge: true });
-    tx.set(db.collection(SHOPS).doc(shopId).collection("bills").doc(), {
-      billNo: nextNo,
-      billNoFormatted: formatted,
-      customerName,
-      paymentType,
-      items: finalItems,
-      grandTotal: subtotal,
-      createdBy: uid,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+
+    // Save bill
+    tx.set(
+      db.collection(SHOPS).doc(shopId).collection("bills").doc(),
+      {
+        billNo: nextNo,
+        billNoFormatted: formatted,
+        customerName,
+        paymentType,
+        items: finalItems,
+        grandTotal: subtotal,
+        profit: totalProfit,
+        createdBy: uid,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      }
+    );
+
+    // 🔹 Update daily stats (with date field)
+    tx.set(
+      statsRef,
+      {
+        date: admin.firestore.Timestamp.fromDate(startOfDay),
+        totalSales: admin.firestore.FieldValue.increment(subtotal),
+        totalProfit: admin.firestore.FieldValue.increment(totalProfit),
+        totalBills: admin.firestore.FieldValue.increment(1),
+        totalItemsSold: admin.firestore.FieldValue.increment(totalItemsSold),
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
 
     return formatted;
   });
