@@ -2,152 +2,252 @@ import React, { useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   Alert,
+  Linking,
 } from 'react-native';
-import { Camera, useCodeScanner, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
-import { useAtomValue } from 'jotai';
-import { billingCartItemsAtom } from '../atoms/billing';
+import {
+  useCodeScanner,
+  useCameraDevice,
+  useCameraPermission,
+} from 'react-native-vision-camera';
+import { useSetAtom } from 'jotai';
+import { useIsFocused } from '@react-navigation/native';
+
+import { purchaseScannedBarcodeAtom } from '../atoms/purchase';
+import { barcodeScannerRequestingPermissionAtom } from '../atoms/forms';
 import useBillingViewModel from '../viewmodels/BillingViewModel';
+import { colors } from '../theme/colors';
+
+import ScannerHeaderCart from '../components/ScannerHeaderCart';
+import ScannerFrame from '../components/ScannerFrame';
+import ScannerBottomActions from '../components/ScannerBottomActions';
 
 const BillingScannerScreen = ({ navigation, route }) => {
-  const { userDoc } = route.params || {};
+  const mode = route?.params?.mode || 'default';
+  const userDoc = route?.params?.userDoc;
   const shopId = userDoc?.shopId;
+
   const device = useCameraDevice('back');
   const { hasPermission, requestPermission } = useCameraPermission();
-  const cartItems = useAtomValue(billingCartItemsAtom);
-  const vm = useBillingViewModel();
-  const hasScanned = useRef(false);
-  const scanningRef = useRef(false);
 
+  const setPurchaseScannedBarcode = useSetAtom(purchaseScannedBarcodeAtom);
+  const setRequestingPermission = useSetAtom(
+    barcodeScannerRequestingPermissionAtom
+  );
+
+  const vm = useBillingViewModel();
+  const isFocused = useIsFocused();
+
+  /* ───────── STABLE VM REF ───────── */
+
+  const vmRef = useRef(vm);
   useEffect(() => {
-    hasScanned.current = false;
-  }, []);
+    vmRef.current = vm;
+  }, [vm]);
+
+  /* ───────── STABLE FOCUS REF + RESET ON BLUR ───────── */
+
+  const isFocusedRef = useRef(isFocused);
+  useEffect(() => {
+    isFocusedRef.current = isFocused;
+    if (!isFocused) {
+      lastScanTime.current = 0;
+      lastScannedBarcode.current = null;
+      isProcessing.current = false;
+    }
+  }, [isFocused]);
+
+  /* ───────── SCAN THROTTLE REFS ───────── */
+
+  const lastScanTime = useRef(0);
+  const lastScannedBarcode = useRef(null);
+  const isProcessing = useRef(false);
+
+  /* ───────── CONTINUOUS THROTTLED SCANNING ───────── */
 
   const onCodeScanned = useCallback(
     async (codes) => {
-      if (scanningRef.current || !codes.length || !shopId) return;
-      const barcode = codes[0]?.value;
-      if (!barcode) return;
-      scanningRef.current = true;
-      hasScanned.current = true;
+      // ✅ HARD GATE: immediately reject if screen not focused
+      if (!isFocusedRef.current) return;
+      if (!codes.length || !shopId) return;
+
+      const value = codes[0]?.value;
+      if (!value) return;
+
+      const cleanValue = String(value).trim();
+      const now = Date.now();
+
+      // ✅ Reset throttle instantly when barcode changes
+      if (cleanValue !== lastScannedBarcode.current) {
+        lastScanTime.current = 0;
+        lastScannedBarcode.current = cleanValue;
+        isProcessing.current = false;
+      }
+
+      // ✅ Throttle same barcode to every 300ms
+      if (now - lastScanTime.current < 300) return;
+
+      // ✅ Prevent overlapping async calls
+      if (isProcessing.current) return;
+
+      lastScanTime.current = now;
+
+      console.log('📸 CAMERA DETECTED', cleanValue);
+
+      if (mode === 'updateInventory') {
+        navigation.replace('UpdateInventory', { barcode: cleanValue });
+        return;
+      }
+
+      if (mode === 'purchaseItem') {
+        setPurchaseScannedBarcode(cleanValue);
+        navigation.goBack();
+        return;
+      }
+
+      // ✅ Billing mode — use stable vmRef, not vm
+      isProcessing.current = true;
       try {
-        await vm.addScannedBarcode({ shopId, barcode });
+        await vmRef.current.addScannedBarcode({ shopId, barcode: cleanValue });
       } catch (e) {
-        Alert.alert('Error', e?.message || 'Failed to add item.');
+        Alert.alert('Error', e.message);
       } finally {
-        scanningRef.current = false;
-        hasScanned.current = false;
+        isProcessing.current = false;
       }
     },
-    [shopId, vm]
+    [navigation, setPurchaseScannedBarcode, mode, shopId] // ✅ vm NOT in deps
   );
 
   const codeScanner = useCodeScanner({
     codeTypes: ['qr', 'ean-13', 'ean-8', 'code-128', 'code-39', 'upc-a'],
-    onCodeScanned: onCodeScanned,
-    scanInterval: 800,
+    onCodeScanned,
+    scanInterval: 300,
   });
 
-  const itemCount = cartItems.reduce((s, i) => s + i.qty, 0);
+  /* ───────── PERMISSION HANDLING ───────── */
 
-  if (!shopId) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.message}>No shop.</Text>
-        <TouchableOpacity style={styles.btn} onPress={() => navigation.goBack()}>
-          <Text style={styles.btnText}>Back</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  const handleRequestPermission = async () => {
+    setRequestingPermission(true);
+    try {
+      const result = await requestPermission();
+      if (!result) {
+        Alert.alert(
+          'Camera permission denied',
+          'Enable camera access in settings to scan barcodes.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Linking.openSettings() },
+          ]
+        );
+      }
+    } catch (e) {
+      Alert.alert('Error', e?.message ?? 'Permission request failed.');
+    } finally {
+      setRequestingPermission(false);
+    }
+  };
+
+  /* ───────── PERMISSION UI ───────── */
 
   if (!hasPermission) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.message}>Camera permission needed.</Text>
-        <TouchableOpacity style={styles.btn} onPress={requestPermission}>
-          <Text style={styles.btnText}>Grant</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.btn} onPress={() => navigation.goBack()}>
-          <Text style={styles.btnText}>Back</Text>
-        </TouchableOpacity>
+      <View style={styles.permissionContainer}>
+        <Text style={styles.permissionText}>
+          Camera permission is required to scan.
+        </Text>
+
+        <Text style={styles.permissionButton} onPress={handleRequestPermission}>
+          Grant Permission
+        </Text>
+
+        <Text
+          style={styles.cancelText}
+          onPress={() => navigation.goBack()}
+        >
+          Cancel
+        </Text>
       </View>
     );
   }
 
   if (!device) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.message}>No camera.</Text>
-        <TouchableOpacity style={styles.btn} onPress={() => navigation.goBack()}>
-          <Text style={styles.btnText}>Back</Text>
-        </TouchableOpacity>
+      <View style={styles.permissionContainer}>
+        <Text style={styles.permissionText}>
+          No camera device found.
+        </Text>
+
+        <Text
+          style={styles.cancelText}
+          onPress={() => navigation.goBack()}
+        >
+          Back
+        </Text>
       </View>
     );
   }
 
+  /* ───────── MAIN UI ───────── */
+
   return (
     <View style={styles.container}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.cartPreview}>Current items: {itemCount}</Text>
-      </View>
-      <Camera
-        style={StyleSheet.absoluteFill}
-        device={device}
-        isActive={true}
-        codeScanner={codeScanner}
+
+      {/* 🔹 Live Cart Preview */}
+      <ScannerHeaderCart />
+
+      {/* 🔹 Limited Scanner Area */}
+      <ScannerFrame device={device} codeScanner={codeScanner} isActive={isFocused} />
+
+      {/* 🔹 Bottom Actions */}
+      <ScannerBottomActions
+        navigation={navigation}
+        userDoc={userDoc}
       />
-      <View style={styles.overlay}>
-        <TouchableOpacity
-          style={styles.primaryBtn}
-          onPress={() => navigation.navigate('ManualItem')}
-        >
-          <Text style={styles.btnText}>Add Manual Item</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.primaryBtn, styles.secondaryBtn]}
-          onPress={() => navigation.navigate('BillingCart', { userDoc })}
-          disabled={itemCount === 0}
-        >
-          <Text style={styles.btnText}>Go To Bill ({itemCount} items)</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  message: { color: '#fff', marginBottom: 16 },
-  topBar: {
-    position: 'absolute',
-    top: 48,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    zIndex: 10,
-  },
-  backText: { color: '#fff', fontSize: 16 },
-  cartPreview: { color: '#fff', fontSize: 14 },
-  overlay: {
-    position: 'absolute',
-    bottom: 48,
-    left: 16,
-    right: 16,
-  },
-  btn: { padding: 12, alignItems: 'center' },
-  primaryBtn: { backgroundColor: '#1a73e8', padding: 14, borderRadius: 8, alignItems: 'center', marginBottom: 12 },
-  secondaryBtn: { backgroundColor: '#0d7377', opacity: 0.9, marginBottom: 0 },
-  btnText: { color: '#fff', fontWeight: '600' },
-});
-
 export default BillingScannerScreen;
+
+/* ───────── STYLES ───────── */
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+    paddingTop: 50,
+    paddingHorizontal: 16,
+  },
+
+  permissionContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 30,
+  },
+
+  permissionText: {
+    fontSize: 16,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+
+  permissionButton: {
+    backgroundColor: colors.primary,
+    color: colors.textLight,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 10,
+    fontWeight: '600',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+
+  cancelText: {
+    color: colors.textSecondary,
+    fontSize: 16,
+  },
+});

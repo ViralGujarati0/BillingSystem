@@ -30,59 +30,89 @@ const useBillingViewModel = () => {
 
   const addScannedBarcode = async ({ shopId, barcode }) => {
     if (!shopId || !barcode) return;
-
+  
     const cleanBarcode = String(barcode).trim();
-
+  
+    console.log('🔵 SCAN START', {
+      inputBarcode: barcode,
+      cleanBarcode,
+      shopId,
+    });
+  
     const [product, inventory] = await Promise.all([
       getProductByBarcode(cleanBarcode),
       getInventoryItem(shopId, cleanBarcode),
     ]);
+  
+    console.log('🟡 FIRESTORE RESULT', {
+      productFound: !!product,
+      inventoryFound: !!inventory,
+      product,
+      inventory,
+    });
+  
+    // if (!product) {
+    //   console.log('🔴 ERROR: Product not in catalog');
+    //   throw new Error('Product not in catalog.');
+    // }
 
     if (!product) {
-      throw new Error('Product not in catalog.');
+      console.log('⚠️ Ignored unknown barcode:', cleanBarcode);
+      return; // silently ignore
     }
+  
+    // if (!inventory) {
+    //   console.log('🔴 ERROR: Not in inventory');
+    //   throw new Error('Add this product to your shop inventory first.');
+    // }
 
     if (!inventory) {
-      throw new Error('Add this product to your shop inventory first.');
+      console.log('⚠️ Not in inventory:', cleanBarcode);
+      return;
     }
-
+  
     const stock = Number(inventory.stock) || 0;
     const rate = Number(inventory.sellingPrice ?? product.mrp ?? 0);
-
-    const existingQty =
-      cartItems.find(
-        (i) => i.type === 'BARCODE' && i.barcode === cleanBarcode
-      )?.qty ?? 0;
-
-    if (existingQty + 1 > stock) {
-      throw new Error(`Only ${stock} available.`);
-    }
-
-    const item = {
-      type: 'BARCODE',
-      barcode: cleanBarcode,
-      name: product.name || 'Item',
-      qty: 1,
+  
+    console.log('🟢 STOCK CHECK', {
+      stock,
       rate,
-      mrp: product.mrp ?? rate,
-      amount: rate,
-    };
-
+    });
+  
     setCartItems((prev) => {
       const existing = prev.find(
         (i) => i.type === 'BARCODE' && i.barcode === cleanBarcode
       );
-
+  
       if (existing) {
         const newQty = existing.qty + 1;
+  
+        console.log('🟢 INCREMENTING', {
+          barcode: cleanBarcode,
+          newQty,
+        });
+  
         return prev.map((i) =>
           i.barcode === cleanBarcode
             ? { ...i, qty: newQty, amount: newQty * i.rate }
             : i
         );
       }
-
-      return [...prev, item];
+  
+      console.log('🟢 ADDING NEW ITEM', cleanBarcode);
+  
+      return [
+        {
+          type: 'BARCODE',
+          barcode: cleanBarcode,
+          name: product.name || 'Item',
+          qty: 1,
+          rate,
+          mrp: product.mrp ?? rate,
+          amount: rate,
+        },
+        ...prev,
+      ];
     });
   };
 

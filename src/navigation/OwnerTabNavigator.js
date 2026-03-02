@@ -2,9 +2,9 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
 import HomeScreen from '../views/HomeScreen';
-import SecondScreen from '../views/SecondScreen';
 import ThirdScreen from '../views/ThirdScreen';
 import FourthScreen from '../views/FourthScreen';
+import SalesScreen from '../views/SalesScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -35,11 +35,11 @@ const OwnerTabNavigator = ({ route }) => {
         initialParams={{ userDoc }}
       />
       <Tab.Screen
-        name="SecondTab"
-        component={SecondScreen}
+        name="SalesTab"
+        component={SalesScreen}
         options={{
-          title: 'Second',
-          tabBarLabel: 'Second',
+          title: 'Sales',
+          tabBarLabel: 'Sales',
           tabBarIcon: ({ focused, color, size }) => tabIcon(focused ? 'list' : 'list-outline', focused, color, size),
         }}
       />
