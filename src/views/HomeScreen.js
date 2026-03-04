@@ -11,6 +11,9 @@ import { useSetAtom } from 'jotai';
 import useAuthViewModel from '../viewmodels/AuthViewModel';
 import { currentOwnerAtom } from '../atoms/owner';
 import firestore from '@react-native-firebase/firestore';
+import AppHeaderLayout from '../components/AppHeaderLayout';
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { colors } from '../theme/colors';
 
 const HomeScreen = ({ navigation, route }) => {
   const userDoc = route.params?.userDoc;
@@ -54,12 +57,36 @@ const HomeScreen = ({ navigation, route }) => {
   };
 
   return (
+    <AppHeaderLayout
+    title={userDoc?.name}
+    subtitle="Good Morning"
+
+
+    // leftComponent={
+    //   <TouchableOpacity onPress={() => navigation.openDrawer()}>
+    //     <Ionicons name="menu-outline" size={26} color={colors.textLight} />
+    //   </TouchableOpacity>
+    // }
+
+    // // ── Right slot: search + notifications ──
+    // rightComponent={
+    //   <View style={{ flexDirection: "row", gap: 12 }}>
+    //     <TouchableOpacity onPress={() => navigation.navigate("Search")}>
+    //       <Ionicons name="search-outline" size={22} color={colors.textLight} />
+    //     </TouchableOpacity>
+    //     <TouchableOpacity onPress={() => navigation.navigate("Notifications")}>
+    //       <Ionicons name="notifications-outline" size={22} color={colors.textLight} />
+    //     </TouchableOpacity>
+    //   </View>
+    // }
+
+  >
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.title}>Welcome {userDoc?.name}</Text>
+      {/* <Text style={styles.title}>Welcome {userDoc?.name}</Text> */}
 
       {/* 🔹 Stats Section */}
       {userDoc?.shopId && (
@@ -173,13 +200,14 @@ const HomeScreen = ({ navigation, route }) => {
         <Text style={styles.logoutText}>Sign Out</Text>
       </TouchableOpacity>
     </ScrollView>
+    </AppHeaderLayout>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
 
   contentContainer: {

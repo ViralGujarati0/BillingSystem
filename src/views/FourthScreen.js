@@ -1,10 +1,16 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import AppHeaderLayout from '../components/AppHeaderLayout';
 
 const FourthScreen = () => (
+  <AppHeaderLayout
+  title="Profile"
+  subtitle="Screen"
+  >
   <View style={styles.container}>
     <Text style={styles.text}>Fourth Screen</Text>
   </View>
+  </AppHeaderLayout>
 );
 
 const styles = StyleSheet.create({
