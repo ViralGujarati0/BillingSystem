@@ -1,93 +1,155 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   Alert,
-} from 'react-native';
-import { useAtom } from 'jotai';
-import { manualItemFormAtom } from '../atoms/billing';
-import useBillingViewModel from '../viewmodels/BillingViewModel';
+} from "react-native";
+
+import { useAtom } from "jotai";
+import { manualItemFormAtom } from "../atoms/billing";
+
+import useBillingViewModel from "../viewmodels/BillingViewModel";
+
+import ManualItemForm from "../components/ManualItemForm";
 
 const ManualItemScreen = ({ navigation }) => {
+
   const vm = useBillingViewModel();
+
   const [form, setForm] = useAtom(manualItemFormAtom);
-  const name = form.name;
-  const qty = form.qty;
-  const rate = form.rate;
+
+  const { name, qty, mrp, rate } = form;
+
+  /* 🔹 LIVE AMOUNT CALCULATION */
+
+  const quantity = parseInt(qty, 10) || 0;
+  const price = parseFloat(rate) || 0;
+
+  const amount = quantity * price;
 
   const handleAdd = () => {
+
     const n = name.trim();
     const q = parseInt(qty, 10);
     const r = parseFloat(rate);
+    const m = parseFloat(mrp);
+
     if (!n) {
-      Alert.alert('Error', 'Item name required.');
+      Alert.alert("Error", "Item name required.");
       return;
     }
+
     if (isNaN(q) || q < 1) {
-      Alert.alert('Error', 'Valid quantity required.');
+      Alert.alert("Error", "Valid quantity required.");
       return;
     }
+
     if (isNaN(r) || r < 0) {
-      Alert.alert('Error', 'Valid rate required.');
+      Alert.alert("Error", "Valid rate required.");
       return;
     }
+
     try {
-      vm.addManualItem({ name: n, qty: q, rate: r });
-      setForm({ name: '', qty: '1', rate: '' });
+
+      vm.addManualItem({
+        name: n,
+        qty: q,
+        rate: r,
+        mrp: isNaN(m) ? r : m,
+      });
+
+      setForm({
+        name: "",
+        qty: "1",
+        mrp: "",
+        rate: "",
+      });
+
       navigation.goBack();
+
     } catch (e) {
-      Alert.alert('Error', e?.message || 'Failed to add item.');
+
+      Alert.alert("Error", e?.message || "Failed to add item.");
+
     }
   };
 
   return (
+
     <View style={styles.container}>
-      <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+
+      <TouchableOpacity
+        style={styles.backBtn}
+        onPress={() => navigation.goBack()}
+      >
         <Text style={styles.backText}>← Back</Text>
       </TouchableOpacity>
+
       <Text style={styles.title}>Add manual item</Text>
-      <Text style={styles.label}>Item name *</Text>
-      <TextInput
-        style={styles.input}
-        value={name}
-        onChangeText={(v) => setForm((prev) => ({ ...prev, name: v }))}
-        placeholder="e.g. Service charge"
+
+      <ManualItemForm
+        name={name}
+        qty={qty}
+        mrp={mrp}
+        rate={rate}
+        amount={amount}
+        onChangeName={(v) => setForm((p) => ({ ...p, name: v }))}
+        onChangeQty={(v) => setForm((p) => ({ ...p, qty: v }))}
+        onChangeMrp={(v) => setForm((p) => ({ ...p, mrp: v }))}
+        onChangeRate={(v) => setForm((p) => ({ ...p, rate: v }))}
       />
-      <Text style={styles.label}>Quantity *</Text>
-      <TextInput
-        style={styles.input}
-        value={qty}
-        onChangeText={(v) => setForm((prev) => ({ ...prev, qty: v }))}
-        keyboardType="number-pad"
-        placeholder="1"
-      />
-      <Text style={styles.label}>Rate (₹) *</Text>
-      <TextInput
-        style={styles.input}
-        value={rate}
-        onChangeText={(v) => setForm((prev) => ({ ...prev, rate: v }))}
-        keyboardType="decimal-pad"
-        placeholder="0"
-      />
-      <TouchableOpacity style={styles.button} onPress={handleAdd}>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handleAdd}
+      >
         <Text style={styles.buttonText}>Add to bill</Text>
       </TouchableOpacity>
+
     </View>
+
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 24, paddingTop: 56 },
-  backBtn: { alignSelf: 'flex-start', marginBottom: 20 },
-  backText: { color: '#1a73e8', fontSize: 16 },
-  title: { fontSize: 22, fontWeight: '600', marginBottom: 20 },
-  label: { fontSize: 14, marginBottom: 6, color: '#333' },
-  input: { borderWidth: 1, borderColor: '#ccc', padding: 12, borderRadius: 6, marginBottom: 16 },
-  button: { backgroundColor: '#1a73e8', padding: 14, borderRadius: 6, alignItems: 'center' },
-  buttonText: { color: '#fff', fontWeight: '600' },
-});
-
 export default ManualItemScreen;
+
+const styles = StyleSheet.create({
+
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+    padding: 24,
+    paddingTop: 56,
+  },
+
+  backBtn: {
+    alignSelf: "flex-start",
+    marginBottom: 20,
+  },
+
+  backText: {
+    color: "#1a73e8",
+    fontSize: 16,
+  },
+
+  title: {
+    fontSize: 22,
+    fontWeight: "600",
+    marginBottom: 20,
+  },
+
+  button: {
+    backgroundColor: "#1a73e8",
+    padding: 14,
+    borderRadius: 6,
+    alignItems: "center",
+  },
+
+  buttonText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+
+});

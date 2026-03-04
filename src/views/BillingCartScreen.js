@@ -163,6 +163,8 @@ const BillingCartScreen = ({ navigation, route }) => {
       <BillingItemsTable
         cartItems={cartItems}
         updateItemQty={updateItemQty}
+        updateManualItemField={vm.updateManualItemField}
+        removeItem={vm.removeItem}
       />
 
       <BillingTotalCard total={grandTotal} cartItems={cartItems} />

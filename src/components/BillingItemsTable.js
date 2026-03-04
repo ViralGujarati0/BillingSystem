@@ -1,7 +1,23 @@
 import React from "react";
-import { View, Text, TextInput, StyleSheet } from "react-native";
+import { View, Text, TextInput, StyleSheet, TouchableOpacity } from "react-native";
+import { Swipeable } from "react-native-gesture-handler";
 
-const BillingItemsTable = ({ cartItems, updateItemQty }) => {
+const BillingItemsTable = ({
+  cartItems,
+  updateItemQty,
+  updateManualItemField,
+  removeItem,
+}) => {
+
+  const renderRightActions = (index) => (
+    <TouchableOpacity
+      style={styles.deleteBtn}
+      onPress={() => removeItem(index)}
+    >
+      <Text style={styles.deleteText}>Delete</Text>
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
       
@@ -17,33 +33,74 @@ const BillingItemsTable = ({ cartItems, updateItemQty }) => {
 
       {/* ROWS */}
       {cartItems.map((item, index) => (
-        <View key={index} style={styles.row}>
-          <Text style={styles.colNo}>{index + 1}</Text>
 
-          <Text style={styles.colName} numberOfLines={1}>
-            {item.name}
-          </Text>
+        <Swipeable
+          key={index}
+          renderRightActions={() => renderRightActions(index)}
+        >
 
-          <TextInput
-            style={styles.qtyInput}
-            value={String(item.qty)}
-            keyboardType="number-pad"
-            onChangeText={(v) => updateItemQty(index, v)}
-          />
+          <View style={styles.row}>
 
-          <Text style={styles.colMrp}>
-            ₹{item.mrp ?? item.rate}
-          </Text>
+            <Text style={styles.colNo}>
+              {index + 1}
+            </Text>
 
-          <Text style={styles.colRate}>
-            ₹{item.rate}
-          </Text>
+            <Text
+              style={styles.colName}
+              numberOfLines={1}
+            >
+              {item.name}
+            </Text>
 
-          <Text style={styles.colAmt}>
-            ₹{item.amount}
-          </Text>
-        </View>
+            <TextInput
+              style={styles.qtyInput}
+              value={String(item.qty)}
+              keyboardType="number-pad"
+              onChangeText={(v) =>
+                updateItemQty(index, v)
+              }
+            />
+
+            {item.type === "MANUAL" ? (
+              <TextInput
+                style={styles.input}
+                value={String(item.mrp)}
+                keyboardType="decimal-pad"
+                onChangeText={(v) =>
+                  updateManualItemField(index, "mrp", v)
+                }
+              />
+            ) : (
+              <Text style={styles.colMrp}>
+                ₹{item.mrp ?? item.rate}
+              </Text>
+            )}
+
+            {item.type === "MANUAL" ? (
+              <TextInput
+                style={styles.input}
+                value={String(item.rate)}
+                keyboardType="decimal-pad"
+                onChangeText={(v) =>
+                  updateManualItemField(index, "rate", v)
+                }
+              />
+            ) : (
+              <Text style={styles.colRate}>
+                ₹{item.rate}
+              </Text>
+            )}
+
+            <Text style={styles.colAmt}>
+              ₹{item.amount}
+            </Text>
+
+          </View>
+
+        </Swipeable>
+
       ))}
+
     </View>
   );
 };
@@ -53,6 +110,7 @@ export default BillingItemsTable;
 /* ───────── STYLES ───────── */
 
 const styles = StyleSheet.create({
+
   container: {
     marginTop: 10,
   },
@@ -69,6 +127,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 10,
+    backgroundColor: "#fff",
   },
 
   colNo: {
@@ -81,13 +140,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  colQty: {
-    width: 45,
-    textAlign: "center",
-  },
-
   qtyInput: {
     width: 45,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    textAlign: "center",
+    borderRadius: 6,
+    paddingVertical: 4,
+  },
+
+  input: {
+    width: 60,
     borderWidth: 1,
     borderColor: "#ddd",
     textAlign: "center",
@@ -112,4 +175,19 @@ const styles = StyleSheet.create({
     textAlign: "right",
     fontWeight: "600",
   },
+
+  deleteBtn: {
+    backgroundColor: "#ff3b30",
+    justifyContent: "center",
+    alignItems: "center",
+    width: 90,
+    marginBottom: 10,
+    borderRadius: 6,
+  },
+
+  deleteText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+
 });

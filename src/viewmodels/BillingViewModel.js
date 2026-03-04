@@ -141,6 +141,37 @@ const useBillingViewModel = () => {
     });
   };
 
+  /* ───────── UPDATE MANUAL ITEM FIELD ───────── */
+
+const updateManualItemField = (index, field, value) => {
+
+  setCartItems((prev) => {
+
+    const next = [...prev];
+    const item = next[index];
+
+    if (!item || item.type !== "MANUAL") return prev;
+
+    const num = parseFloat(value);
+
+    if (Number.isNaN(num)) return prev;
+
+    next[index] = {
+      ...item,
+      [field]: num,
+    };
+
+    const qty = next[index].qty || 0;
+    const rate = next[index].rate || 0;
+
+    next[index].amount = qty * rate;
+
+    return next;
+
+  });
+
+};
+
   /* ───────── LOAD SHOP + SETTINGS ───────── */
 
   const loadShopAndSettings = async (shopId) => {
@@ -201,25 +232,38 @@ const useBillingViewModel = () => {
 
   /* ───────── ADD MANUAL ITEM ───────── */
 
-  const addManualItem = ({ name, qty, rate }) => {
+  const addManualItem = ({ name, qty, rate, mrp }) => {
     const n = String(name || '').trim();
     const q = parseInt(String(qty), 10);
     const r = parseFloat(String(rate));
-
+    const m = parseFloat(String(mrp));
+  
     if (!n) throw new Error('Item name required.');
     if (!q || q < 1) throw new Error('Valid quantity required.');
     if (Number.isNaN(r) || r < 0) throw new Error('Valid rate required.');
-
+  
+    const finalMrp = Number.isNaN(m) ? r : m;
+  
     setCartItems((prev) => [
       ...prev,
       {
         type: 'MANUAL',
         name: n,
         qty: q,
+        mrp: finalMrp,   // ✅ store mrp
         rate: r,
         amount: q * r,
       },
     ]);
+  };
+
+
+  const removeItem = (index) => {
+    setCartItems((prev) => {
+      const next = [...prev];
+      next.splice(index, 1);
+      return next;
+    });
   };
 
   return {
@@ -231,9 +275,11 @@ const useBillingViewModel = () => {
     loading,
     addScannedBarcode,
     updateItemQty,
+    updateManualItemField,
     loadShopAndSettings,
     generateBill,
     addManualItem,
+    removeItem,
   };
 };
 
