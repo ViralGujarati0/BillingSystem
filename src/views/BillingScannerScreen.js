@@ -5,6 +5,8 @@ import {
   StyleSheet,
   Alert,
   Linking,
+  TouchableOpacity,
+  Dimensions,
 } from 'react-native';
 import {
   useCodeScanner,
@@ -19,56 +21,58 @@ import { barcodeScannerRequestingPermissionAtom } from '../atoms/forms';
 import useBillingViewModel from '../viewmodels/BillingViewModel';
 import { colors } from '../theme/colors';
 
-import ScannerHeaderCart from '../components/ScannerHeaderCart';
-import ScannerFrame from '../components/ScannerFrame';
-import ScannerBottomActions from '../components/ScannerBottomActions';
+import ScannerHeaderCart     from '../components/ScannerHeaderCart';
+import ScannerFrame          from '../components/ScannerFrame';
+import ScannerBottomActions  from '../components/ScannerBottomActions';
+import AppHeaderLayout       from '../components/AppHeaderLayout';
 
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+// ─── Responsive helpers (base 390×844) ───────────────────────────────────────
+const scale = SCREEN_W / 390;
+const vs    = SCREEN_H / 844;
+const rs    = (n) => Math.round(n * scale);
+const rvs   = (n) => Math.round(n * vs);
+const rfs   = (n) => Math.round(n * Math.min(scale, vs));
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
 const BillingScannerScreen = ({ navigation, route }) => {
-  const mode = route?.params?.mode || 'default';
+  const mode   = route?.params?.mode || 'default';
   const userDoc = route?.params?.userDoc;
-  const shopId = userDoc?.shopId;
+  const shopId  = userDoc?.shopId;
 
   const device = useCameraDevice('back');
   const { hasPermission, requestPermission } = useCameraPermission();
 
   const setPurchaseScannedBarcode = useSetAtom(purchaseScannedBarcodeAtom);
-  const setRequestingPermission = useSetAtom(
-    barcodeScannerRequestingPermissionAtom
-  );
+  const setRequestingPermission   = useSetAtom(barcodeScannerRequestingPermissionAtom);
 
-  const vm = useBillingViewModel();
+  const vm       = useBillingViewModel();
   const isFocused = useIsFocused();
 
-  /* ───────── STABLE VM REF ───────── */
-
+  /* ── Stable VM ref ── */
   const vmRef = useRef(vm);
-  useEffect(() => {
-    vmRef.current = vm;
-  }, [vm]);
+  useEffect(() => { vmRef.current = vm; }, [vm]);
 
-  /* ───────── STABLE FOCUS REF + RESET ON BLUR ───────── */
-
+  /* ── Focus ref + reset on blur ── */
   const isFocusedRef = useRef(isFocused);
   useEffect(() => {
     isFocusedRef.current = isFocused;
     if (!isFocused) {
-      lastScanTime.current = 0;
+      lastScanTime.current       = 0;
       lastScannedBarcode.current = null;
-      isProcessing.current = false;
+      isProcessing.current       = false;
     }
   }, [isFocused]);
 
-  /* ───────── SCAN THROTTLE REFS ───────── */
-
-  const lastScanTime = useRef(0);
+  /* ── Scan throttle refs ── */
+  const lastScanTime       = useRef(0);
   const lastScannedBarcode = useRef(null);
-  const isProcessing = useRef(false);
+  const isProcessing       = useRef(false);
 
-  /* ───────── CONTINUOUS THROTTLED SCANNING ───────── */
-
+  /* ── Continuous throttled scanning — logic unchanged ── */
   const onCodeScanned = useCallback(
     async (codes) => {
-      // ✅ HARD GATE: immediately reject if screen not focused
       if (!isFocusedRef.current) return;
       if (!codes.length || !shopId) return;
 
@@ -78,21 +82,16 @@ const BillingScannerScreen = ({ navigation, route }) => {
       const cleanValue = String(value).trim();
       const now = Date.now();
 
-      // ✅ Reset throttle instantly when barcode changes
       if (cleanValue !== lastScannedBarcode.current) {
-        lastScanTime.current = 0;
+        lastScanTime.current       = 0;
         lastScannedBarcode.current = cleanValue;
-        isProcessing.current = false;
+        isProcessing.current       = false;
       }
 
-      // ✅ Throttle same barcode to every 300ms
       if (now - lastScanTime.current < 300) return;
-
-      // ✅ Prevent overlapping async calls
       if (isProcessing.current) return;
 
       lastScanTime.current = now;
-
       console.log('📸 CAMERA DETECTED', cleanValue);
 
       if (mode === 'updateInventory') {
@@ -106,7 +105,6 @@ const BillingScannerScreen = ({ navigation, route }) => {
         return;
       }
 
-      // ✅ Billing mode — use stable vmRef, not vm
       isProcessing.current = true;
       try {
         await vmRef.current.addScannedBarcode({ shopId, barcode: cleanValue });
@@ -116,7 +114,7 @@ const BillingScannerScreen = ({ navigation, route }) => {
         isProcessing.current = false;
       }
     },
-    [navigation, setPurchaseScannedBarcode, mode, shopId] // ✅ vm NOT in deps
+    [navigation, setPurchaseScannedBarcode, mode, shopId]
   );
 
   const codeScanner = useCodeScanner({
@@ -125,8 +123,7 @@ const BillingScannerScreen = ({ navigation, route }) => {
     scanInterval: 300,
   });
 
-  /* ───────── PERMISSION HANDLING ───────── */
-
+  /* ── Permission handler — logic unchanged ── */
   const handleRequestPermission = async () => {
     setRequestingPermission(true);
     try {
@@ -148,106 +145,177 @@ const BillingScannerScreen = ({ navigation, route }) => {
     }
   };
 
-  /* ───────── PERMISSION UI ───────── */
-
+  /* ── Permission screen ── */
   if (!hasPermission) {
     return (
-      <View style={styles.permissionContainer}>
-        <Text style={styles.permissionText}>
-          Camera permission is required to scan.
-        </Text>
-
-        <Text style={styles.permissionButton} onPress={handleRequestPermission}>
-          Grant Permission
-        </Text>
-
-        <Text
-          style={styles.cancelText}
-          onPress={() => navigation.goBack()}
-        >
-          Cancel
-        </Text>
-      </View>
+      <AppHeaderLayout title="Add Items">
+        <View style={styles.permissionContainer}>
+          <View style={styles.permissionIconWrap}>
+            <Text style={styles.permissionIcon}>📷</Text>
+          </View>
+          <Text style={styles.permissionTitle}>Camera Access Needed</Text>
+          <Text style={styles.permissionText}>
+            Camera permission is required to scan barcodes and add items to your bill.
+          </Text>
+          <TouchableOpacity
+            style={styles.permissionBtn}
+            activeOpacity={0.82}
+            onPress={handleRequestPermission}
+          >
+            <Text style={styles.permissionBtnText}>Grant Permission</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.cancelTouchable}
+            activeOpacity={0.6}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.cancelText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </AppHeaderLayout>
     );
   }
 
+  /* ── No device screen ── */
   if (!device) {
     return (
-      <View style={styles.permissionContainer}>
-        <Text style={styles.permissionText}>
-          No camera device found.
-        </Text>
-
-        <Text
-          style={styles.cancelText}
-          onPress={() => navigation.goBack()}
-        >
-          Back
-        </Text>
-      </View>
+      <AppHeaderLayout title="Add Items">
+        <View style={styles.permissionContainer}>
+          <View style={styles.permissionIconWrap}>
+            <Text style={styles.permissionIcon}>🚫</Text>
+          </View>
+          <Text style={styles.permissionTitle}>No Camera Found</Text>
+          <Text style={styles.permissionText}>
+            Could not detect a camera on this device.
+          </Text>
+          <TouchableOpacity
+            style={styles.cancelTouchable}
+            activeOpacity={0.6}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.backBtnText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </AppHeaderLayout>
     );
   }
 
-  /* ───────── MAIN UI ───────── */
-
+  /* ── Main UI ── */
   return (
-    <View style={styles.container}>
+    <AppHeaderLayout title="Add Items">
+      <View style={styles.container}>
 
-      {/* 🔹 Live Cart Preview */}
-      <ScannerHeaderCart />
+        {/* Live cart preview */}
+        <ScannerHeaderCart />
 
-      {/* 🔹 Limited Scanner Area */}
-      <ScannerFrame device={device} codeScanner={codeScanner} isActive={isFocused} />
+        {/* Camera scanner */}
+        <ScannerFrame
+          device={device}
+          codeScanner={codeScanner}
+          isActive={isFocused}
+        />
 
-      {/* 🔹 Bottom Actions */}
-      <ScannerBottomActions
-        navigation={navigation}
-        userDoc={userDoc}
-      />
-    </View>
+        {/* Bottom actions */}
+        <ScannerBottomActions
+          navigation={navigation}
+          userDoc={userDoc}
+        />
+
+      </View>
+    </AppHeaderLayout>
   );
 };
 
 export default BillingScannerScreen;
 
-/* ───────── STYLES ───────── */
-
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+
+  // ── Main container ────────────────────────────────────
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingTop: 50,
-    paddingHorizontal: 16,
+    paddingTop: rvs(10),
+    paddingHorizontal: rs(18),
+    paddingBottom: rvs(8),
   },
 
+  // ── Permission / No-device screens ───────────────────
   permissionContainer: {
     flex: 1,
     backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 30,
+    paddingHorizontal: rs(32),
+    gap: rvs(16),
+  },
+
+  permissionIconWrap: {
+    width: rs(80),
+    height: rs(80),
+    borderRadius: rs(24),
+    backgroundColor: 'rgba(45,74,82,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: rvs(4),
+  },
+
+  permissionIcon: {
+    fontSize: rfs(36),
+  },
+
+  permissionTitle: {
+    fontSize: rfs(18),
+    fontWeight: '700',
+    color: colors.textPrimary,
+    letterSpacing: 0.2,
+    textAlign: 'center',
   },
 
   permissionText: {
-    fontSize: 16,
-    color: colors.textPrimary,
+    fontSize: rfs(13),
+    color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 20,
+    lineHeight: rfs(20),
+    fontWeight: '400',
   },
 
-  permissionButton: {
+  permissionBtn: {
+    height: rvs(50),
+    width: '100%',
+    borderRadius: rs(14),
     backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: rvs(8),
+    shadowColor: colors.shadowPrimary,
+    shadowOffset: { width: 0, height: rvs(6) },
+    shadowOpacity: 0.30,
+    shadowRadius: rs(12),
+    elevation: 6,
+  },
+
+  permissionBtnText: {
+    fontSize: rfs(15),
+    fontWeight: '700',
     color: colors.textLight,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 10,
-    fontWeight: '600',
-    marginBottom: 20,
-    textAlign: 'center',
+    letterSpacing: 0.3,
+  },
+
+  cancelTouchable: {
+    paddingVertical: rvs(8),
+    paddingHorizontal: rs(24),
   },
 
   cancelText: {
+    fontSize: rfs(13),
+    fontWeight: '500',
     color: colors.textSecondary,
-    fontSize: 16,
+  },
+
+  backBtnText: {
+    fontSize: rfs(14),
+    fontWeight: '600',
+    color: colors.primary,
   },
 });

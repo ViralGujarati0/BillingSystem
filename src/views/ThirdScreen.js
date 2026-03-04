@@ -4,8 +4,8 @@ import AppHeaderLayout from '../components/AppHeaderLayout';
 
 const ThirdScreen = () => (
   <AppHeaderLayout
-    title="Analytics"
-    subtitle="Screen"
+    title="Inventory"
+    // subtitle="Screen"
   >
   <View style={styles.container}>
     <Text style={styles.text}>Third Screen</Text>

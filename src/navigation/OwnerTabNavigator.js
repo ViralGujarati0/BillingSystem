@@ -5,9 +5,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
-  Easing,
   Dimensions,
   Platform,
+  StatusBar,
 } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -19,12 +19,34 @@ import FourthScreen from '../views/FourthScreen';
 import SalesScreen  from '../views/SalesScreen';
 
 const Tab = createBottomTabNavigator();
-const { width: SCREEN_W } = Dimensions.get('window');
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
-// ─── Layout ───────────────────────────────────────────────────────────────────
-const NAV_H     = 64;   // white bar height
-const PLUS_D    = 54;   // amber circle diameter
-const PLUS_LIFT = 20;   // how much plus floats above bar top
+// ─── Responsive scale helpers (base: 390×844) ────────────────────────────────
+const scale = SCREEN_W / 390;
+const vs    = SCREEN_H / 844;
+const rs    = (n) => Math.round(n * scale);
+const rvs   = (n) => Math.round(n * vs);
+const rfs   = (n) => Math.round(n * Math.min(scale, vs));
+
+// ─── Layout — all derived, zero hardcoded ────────────────────────────────────
+const NAV_H        = rvs(64);              // bar height
+const PLUS_D       = rs(54);              // amber circle diameter
+const PLUS_RING_D  = PLUS_D + rs(8);      // ring around plus
+const CENTER_GAP   = PLUS_RING_D + rs(28);// gap in tab row for plus
+const ICON_SIZE    = rs(22);              // tab icon size
+const PLUS_ICON_SZ = rs(30);             // plus icon size
+const TAB_PY       = rvs(10);            // tab vertical padding
+const TAB_GAP      = rvs(4);             // gap between icon and label
+const NAV_RADIUS   = rs(24);             // top corner radius of bar
+const NAV_ELEV     = 16;                 // elevation (unitless)
+const PLUS_ELEV    = 14;                 // plus button elevation
+const SHADOW_R     = rs(20);             // nav bar shadow radius
+const PLUS_SHADOW_R= rs(14);            // plus shadow radius
+const PLUS_SHADOW_Y= rvs(6);            // plus shadow offset y
+// Plus vertically centered within bar (button straddles bar top edge)
+const PLUS_BOTTOM  = NAV_H / 2 - PLUS_RING_D / 2;
+// Total outer height = bar height only; overflow:visible handles the rest
+const OUTER_H      = NAV_H;
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 const TABS = [
@@ -36,32 +58,36 @@ const TABS = [
 
 // ─── Amber Plus Button ────────────────────────────────────────────────────────
 function PlusButton({ onPress }) {
-  const scale  = useRef(new Animated.Value(1)).current;
-  const rotate = useRef(new Animated.Value(0)).current;
+  const scaleAnim  = useRef(new Animated.Value(1)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
 
   const handlePress = () => {
     Animated.sequence([
       Animated.parallel([
-        Animated.timing(scale,  { toValue: 0.88, duration: 90,  useNativeDriver: true }),
-        Animated.timing(rotate, { toValue: 1,    duration: 200, useNativeDriver: true }),
+        Animated.timing(scaleAnim,  { toValue: 0.88, duration: 90,  useNativeDriver: true }),
+        Animated.timing(rotateAnim, { toValue: 1,    duration: 200, useNativeDriver: true }),
       ]),
       Animated.parallel([
-        Animated.spring(scale,  { toValue: 1, friction: 5, tension: 200, useNativeDriver: true }),
-        Animated.timing(rotate, { toValue: 0, duration: 200, useNativeDriver: true }),
+        Animated.spring(scaleAnim,  { toValue: 1, friction: 5, tension: 200, useNativeDriver: true }),
+        Animated.timing(rotateAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
       ]),
     ]).start();
     onPress?.();
   };
 
-  const spin = rotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '45deg'] });
+  const spin = rotateAnim.interpolate({
+    inputRange:  [0, 1],
+    outputRange: ['0deg', '45deg'],
+  });
 
   return (
     <View style={styles.plusWrap}>
-      {/* White ring acts as border + separates from bar */}
       <View style={styles.plusRing}>
         <TouchableOpacity activeOpacity={0.85} onPress={handlePress}>
-          <Animated.View style={[styles.plusBtn, { transform: [{ scale }, { rotate: spin }] }]}>
-            <Icon name="add" size={30} color="#ffffff" />
+          <Animated.View
+            style={[styles.plusBtn, { transform: [{ scale: scaleAnim }, { rotate: spin }] }]}
+          >
+            <Icon name="add" size={PLUS_ICON_SZ} color="#ffffff" />
           </Animated.View>
         </TouchableOpacity>
       </View>
@@ -85,26 +111,19 @@ function TabItem({ tab, focused, onPress }) {
 
   const handlePress = () => {
     Animated.sequence([
-      Animated.timing(scaleAnim, { toValue: 0.88, duration: 80, useNativeDriver: true }),
-      Animated.spring(scaleAnim, { toValue: 1, friction: 5, tension: 200, useNativeDriver: true }),
+      Animated.timing(scaleAnim, { toValue: 0.88, duration: 80,  useNativeDriver: true }),
+      Animated.spring(scaleAnim, { toValue: 1,    friction: 5, tension: 200, useNativeDriver: true }),
     ]).start();
     onPress();
   };
 
-  const iconColor = colorAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [colors.textSecondary, colors.primary],
-  });
-
   return (
     <TouchableOpacity style={styles.tab} activeOpacity={1} onPress={handlePress}>
       <Animated.View style={[styles.tabIconWrap, { transform: [{ scale: scaleAnim }] }]}>
-        {/* Active indicator dot above icon */}
-        {focused && <View style={styles.activeDot} />}
         <Icon
           name={focused ? tab.icon.replace('-outline', '') : tab.icon}
-          size={22}
-          color={focused ? colors.primary : colors.textSecondary}
+          size={ICON_SIZE}
+          color={focused ? '#FFFFFF' : 'rgba(255,255,255,0.45)'}
         />
       </Animated.View>
       <Text style={[styles.tabLbl, focused && styles.tabLblActive]}>
@@ -118,12 +137,22 @@ function TabItem({ tab, focused, onPress }) {
 function CustomTabBar({ state, navigation, userDoc }) {
   const activeIdx = state.index;
 
+  // Set Android bottom nav bar color to match tab bar
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      try {
+        const NavBar = require('react-native-navigation-bar-color').default;
+        NavBar.setNavigationBarColor(colors.primary, true);
+        NavBar.setNavigationBarDividerColor('transparent');
+      } catch (_) { /* package not installed — skip */ }
+    }
+  }, []);
+
   return (
     <View style={styles.navOuter}>
-      {/* White bar */}
       <View style={styles.navBar}>
 
-        {/* Left two tabs */}
+        {/* Left: Home + Sales */}
         <View style={styles.tabGroup}>
           {[0, 1].map(idx => (
             <TabItem
@@ -135,10 +164,10 @@ function CustomTabBar({ state, navigation, userDoc }) {
           ))}
         </View>
 
-        {/* Center gap — space for plus button */}
+        {/* Center gap for plus button */}
         <View style={styles.centerGap} />
 
-        {/* Right two tabs */}
+        {/* Right: Stock + Profile */}
         <View style={styles.tabGroup}>
           {[2, 3].map(idx => (
             <TabItem
@@ -152,7 +181,7 @@ function CustomTabBar({ state, navigation, userDoc }) {
 
       </View>
 
-      {/* Floating amber plus — centered above bar */}
+      {/* Floating amber plus */}
       <PlusButton
         onPress={() =>
           navigation.navigate('BillingScanner', { userDoc: userDoc ?? null })
@@ -181,38 +210,34 @@ const OwnerTabNavigator = ({ route }) => {
 
 export default OwnerTabNavigator;
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// ─── Styles — all values from layout constants above ─────────────────────────
 const styles = StyleSheet.create({
 
-  // ── Outer container ────────────────────────────────────
   navOuter: {
     width: SCREEN_W,
-    height: NAV_H,              // exact same as white bar — no extra space
+    height: OUTER_H,
     backgroundColor: 'transparent',
-    overflow: 'visible',        // lets plus button float above without clipping
+    overflow: 'visible',
   },
 
-  // ── White bar ──────────────────────────────────────────
   navBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     height: NAV_H,
-    backgroundColor: '#FFFFFF',
-    // Only round the top corners
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: colors.primary,
+    borderTopLeftRadius: NAV_RADIUS,
+    borderTopRightRadius: NAV_RADIUS,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: 'rgba(26,43,48,0.10)',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 1,
-    shadowRadius: 20,
-    elevation: 16,
+    shadowColor: colors.shadowPrimary,
+    shadowOffset: { width: 0, height: -rvs(4) },
+    shadowOpacity: 0.15,
+    shadowRadius: SHADOW_R,
+    elevation: NAV_ELEV,
   },
 
-  // ── Tab groups ─────────────────────────────────────────
   tabGroup: {
     flex: 1,
     flexDirection: 'row',
@@ -220,60 +245,48 @@ const styles = StyleSheet.create({
   },
 
   centerGap: {
-    width: PLUS_D + 32,   // matches plusRing width + breathing room
+    width: CENTER_GAP,
+    flexShrink: 0,
   },
 
-  // ── Single tab ─────────────────────────────────────────
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    gap: 4,
+    paddingVertical: TAB_PY,
+    gap: TAB_GAP,
   },
 
   tabIconWrap: {
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
-  },
-
-  // Small dot above active icon
-  activeDot: {
-    position: 'absolute',
-    top: -8,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.primary,
   },
 
   tabLbl: {
-    fontSize: 10,
+    fontSize: rfs(10),
     fontWeight: '600',
     letterSpacing: 0.3,
-    color: colors.textSecondary,
+    color: 'rgba(255,255,255,0.45)',
   },
 
   tabLblActive: {
-    color: colors.primary,
+    color: '#FFFFFF',
     fontWeight: '700',
   },
 
-  // ── Amber plus button ──────────────────────────────────
   plusWrap: {
     position: 'absolute',
-    left: SCREEN_W / 2 - (PLUS_D + 10) / 2,
-    bottom: NAV_H / 2 - (PLUS_D + 10) / 2,  // vertically centered on bar top edge
+    left: SCREEN_W / 2 - PLUS_RING_D / 2,
+    bottom: PLUS_BOTTOM,
     alignItems: 'center',
     zIndex: 10,
   },
 
   plusRing: {
-    width: PLUS_D + 10,
-    height: PLUS_D + 10,
-    borderRadius: (PLUS_D + 10) / 2,
-    backgroundColor: '#FFFFFF',   // white — matches nav bar, no gray ring
+    width: PLUS_RING_D,
+    height: PLUS_RING_D,
+    borderRadius: PLUS_RING_D / 2,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -286,17 +299,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: PLUS_SHADOW_Y },
     shadowOpacity: 0.50,
-    shadowRadius: 14,
-    elevation: 14,
+    shadowRadius: PLUS_SHADOW_R,
+    elevation: PLUS_ELEV,
   },
 
   plusLbl: {
-    marginTop: 2,
-    fontSize: 10,
+    marginTop: rvs(4),
+    fontSize: rfs(10),
     fontWeight: '700',
-    color: '#c47c0a',
+    color: colors.accent,
     letterSpacing: 0.4,
   },
 });

@@ -1,7 +1,17 @@
 import React, { useEffect, useRef } from "react";
-import { View, Text, StyleSheet, Animated, Easing, StatusBar, Platform, useWindowDimensions } from "react-native";
+import { View, Text, StyleSheet, Animated, Easing, StatusBar, Platform, Dimensions } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import { colors } from "../theme/colors";
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+// ─── Responsive scale helpers ─────────────────────────────────────────────────
+// Base design is 390×844 (iPhone 14)
+const scale     = SCREEN_W / 390;
+const vs        = SCREEN_H / 844;
+const rs        = (size) => Math.round(size * scale);   // horizontal scale
+const rvs       = (size) => Math.round(size * vs);      // vertical scale
+const rfs       = (size) => Math.round(size * Math.min(scale, vs)); // font scale
 
 // ─── Subtitle pill ────────────────────────────────────────────────────────────
 function AccentPill({ subtitle }) {
@@ -44,31 +54,31 @@ export default function AppHeaderLayout({
   return (
     <View style={styles.container}>
 
-      {/* ── Status Bar — matches header gradient start color ── */}
+      {/* ── Status Bar ── */}
       <StatusBar
         translucent={true}
         backgroundColor="transparent"
         barStyle="light-content"
       />
 
-      {/* ── Gradient Header ───────────────────────────── */}
+      {/* ── Gradient Header ── */}
       <LinearGradient
         colors={["#1E3A42", "#2D4A52", "#354E58"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
       >
-        {/* Subtle teal orb — bottom left only */}
+        {/* Subtle teal orb */}
         <View style={styles.orbBottomLeft} />
 
         {/* Mesh lines */}
         <View style={styles.meshOverlay} pointerEvents="none">
           {[0, 1, 2].map((i) => (
-            <View key={i} style={[styles.meshLine, { top: 8 + i * 18 }]} />
+            <View key={i} style={[styles.meshLine, { top: rvs(8) + i * rvs(18) }]} />
           ))}
         </View>
 
-        {/* ── Single row: left · title · right ── */}
+        {/* ── Header row ── */}
         <Animated.View
           style={[
             styles.headerRow,
@@ -98,7 +108,7 @@ export default function AppHeaderLayout({
         <View style={styles.glowBorder} />
       </LinearGradient>
 
-      {/* ── Body — sits flush under header ────────────── */}
+      {/* ── Body ── */}
       <View style={styles.body}>{children}</View>
 
     </View>
@@ -106,6 +116,9 @@ export default function AppHeaderLayout({
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
+const HEADER_PADDING_BOTTOM = rvs(35);
+const BODY_OVERLAP          = rvs(18);   // body pulls up over header by this amount
+
 const styles = StyleSheet.create({
 
   container: {
@@ -113,30 +126,27 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
 
-  // ── Header: paddingTop accounts for translucent status bar ──
   header: {
     paddingTop: Platform.OS === 'android'
-      ? (StatusBar.currentHeight ?? 24) + 12
-      : 20,
-    paddingHorizontal: 20,
-    paddingBottom: 35,
+      ? (StatusBar.currentHeight ?? rvs(24)) + rvs(12)
+      : rvs(20),
+    paddingHorizontal: rs(20),
+    paddingBottom: HEADER_PADDING_BOTTOM,
     overflow: "hidden",
     position: "relative",
   },
 
-  // Teal orb
   orbBottomLeft: {
     position: "absolute",
-    width: 80,
-    height: 80,
+    width: rs(80),
+    height: rs(80),
     borderRadius: 999,
-    bottom: -28,
-    left: 8,
+    bottom: -rvs(28),
+    left: rs(8),
     backgroundColor: "#5BBCD4",
     opacity: 0.10,
   },
 
-  // Mesh overlay
   meshOverlay: {
     ...StyleSheet.absoluteFillObject,
   },
@@ -148,11 +158,10 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.04)",
   },
 
-  // ── Single header row ──
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: rs(12),
   },
 
   leftSlot: {
@@ -164,27 +173,27 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: rs(10),
   },
 
   accentBar: {
-    width: 3,
-    height: 36,
+    width: rs(3),
+    height: rvs(36),
     borderRadius: 2,
     backgroundColor: colors.accent,
     shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.9,
-    shadowRadius: 8,
+    shadowRadius: rs(8),
   },
 
   titleInner: {
     flex: 1,
-    gap: 4,
+    gap: rvs(4),
   },
 
   title: {
-    fontSize: 20,
+    fontSize: rfs(20),
     fontWeight: "700",
     color: colors.textLight,
     letterSpacing: 0.3,
@@ -193,58 +202,55 @@ const styles = StyleSheet.create({
   rightSlot: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: rs(12),
   },
 
-  // Subtitle pill
   pill: {
     alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
+    gap: rs(5),
     backgroundColor: "rgba(245,166,35,0.14)",
     borderWidth: 1,
     borderColor: "rgba(245,166,35,0.30)",
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
+    borderRadius: rs(20),
+    paddingHorizontal: rs(10),
+    paddingVertical: rvs(3),
   },
   pillDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
+    width: rs(5),
+    height: rs(5),
+    borderRadius: rs(3),
     backgroundColor: colors.accent,
   },
   pillText: {
-    fontSize: 11,
+    fontSize: rfs(11),
     fontWeight: "500",
     color: "rgba(245,166,35,0.90)",
     letterSpacing: 0.4,
   },
 
-  // Bottom glow border
   glowBorder: {
     position: "absolute",
     bottom: 0,
-    left: 20,
-    right: 20,
+    left: rs(20),
+    right: rs(20),
     height: 1.5,
     borderRadius: 2,
     backgroundColor: "rgba(245,166,35,0.22)",
     shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.7,
-    shadowRadius: 6,
+    shadowRadius: rs(6),
   },
 
-  // ── Body: NO marginTop, rounded top corners only ──
   body: {
     flex: 1,
     backgroundColor: colors.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    marginTop: -18,
-    paddingTop: 18,
+    borderTopLeftRadius: rs(24),
+    borderTopRightRadius: rs(24),
+    marginTop: -BODY_OVERLAP,
+    paddingTop: BODY_OVERLAP,
     overflow: "hidden",
   },
 });

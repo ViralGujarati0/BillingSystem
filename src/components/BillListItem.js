@@ -5,8 +5,18 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
+  Dimensions,
 } from 'react-native';
 import { colors } from '../theme/colors';
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+// ─── Responsive helpers (base 390×844) ───────────────────────────────────────
+const scale = SCREEN_W / 390;
+const vs    = SCREEN_H / 844;
+const rs    = (n) => Math.round(n * scale);
+const rvs   = (n) => Math.round(n * vs);
+const rfs   = (n) => Math.round(n * Math.min(scale, vs));
 
 // ─── Payment config ───────────────────────────────────────────────────────────
 const PAY_CONFIG = {
@@ -37,7 +47,7 @@ const DEFAULT_PAY = {
   badgeColor: colors.textSecondary,
 };
 
-// ─── Format time from Firestore timestamp ─────────────────────────────────────
+// ─── Format time ──────────────────────────────────────────────────────────────
 function formatTime(timestamp) {
   if (!timestamp) return null;
   try {
@@ -67,7 +77,7 @@ const BillListItem = ({ bill, onPress }) => {
     Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, friction: 8, tension: 200 }).start();
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }], marginBottom: 10 }}>
+    <Animated.View style={{ transform: [{ scale: scaleAnim }], marginBottom: rvs(10) }}>
       <TouchableOpacity
         style={styles.card}
         activeOpacity={1}
@@ -88,8 +98,6 @@ const BillListItem = ({ bill, onPress }) => {
           <Text style={styles.billNo} numberOfLines={1}>
             Bill #{bill?.billNo}
           </Text>
-
-          {/* Customer + time row */}
           <View style={styles.metaRow}>
             <Text style={styles.customer} numberOfLines={1}>
               {bill?.customerName || 'Walk-in'}
@@ -129,94 +137,93 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: rs(16),
     borderWidth: 1,
     borderColor: colors.borderCard,
     overflow: 'hidden',
     shadowColor: colors.shadowCard,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: rvs(2) },
     shadowOpacity: 1,
-    shadowRadius: 10,
+    shadowRadius: rs(10),
     elevation: 3,
   },
 
   stripe: {
-    width: 3,
+    width: rs(3),
     alignSelf: 'stretch',
   },
 
   iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: rs(40),
+    height: rs(40),
+    borderRadius: rs(12),
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 12,
+    marginLeft: rs(12),
     flexShrink: 0,
   },
   iconEmoji: {
-    fontSize: 17,
+    fontSize: rfs(17),
   },
 
   info: {
     flex: 1,
-    paddingVertical: 14,
-    paddingLeft: 10,
+    paddingVertical: rvs(14),
+    paddingLeft: rs(10),
     minWidth: 0,
   },
   billNo: {
-    fontSize: 14,
+    fontSize: rfs(14),
     fontWeight: '700',
     color: colors.textPrimary,
     letterSpacing: 0.2,
   },
 
-  // Customer name + time on same row
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 3,
-    gap: 5,
+    marginTop: rvs(3),
+    gap: rs(5),
   },
   customer: {
-    fontSize: 11,
+    fontSize: rfs(11),
     fontWeight: '500',
     color: colors.textSecondary,
     flexShrink: 1,
   },
   metaDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
+    width: rs(3),
+    height: rs(3),
+    borderRadius: rs(2),
     backgroundColor: colors.border,
     flexShrink: 0,
   },
   time: {
-    fontSize: 11,
+    fontSize: rfs(11),
     color: colors.textSecondary,
     flexShrink: 0,
   },
 
   right: {
     alignItems: 'flex-end',
-    paddingRight: 14,
-    paddingVertical: 14,
-    gap: 5,
+    paddingRight: rs(14),
+    paddingVertical: rvs(14),
+    gap: rvs(5),
     flexShrink: 0,
   },
   amount: {
-    fontSize: 15,
+    fontSize: rfs(15),
     fontWeight: '700',
     color: colors.textPrimary,
     letterSpacing: 0.3,
   },
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
+    paddingHorizontal: rs(8),
+    paddingVertical: rvs(2),
+    borderRadius: rs(8),
   },
   badgeText: {
-    fontSize: 10,
+    fontSize: rfs(10),
     fontWeight: '700',
     letterSpacing: 0.5,
   },

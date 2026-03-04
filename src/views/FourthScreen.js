@@ -5,7 +5,7 @@ import AppHeaderLayout from '../components/AppHeaderLayout';
 const FourthScreen = () => (
   <AppHeaderLayout
   title="Profile"
-  subtitle="Screen"
+  // subtitle="Screen"
   >
   <View style={styles.container}>
     <Text style={styles.text}>Fourth Screen</Text>
