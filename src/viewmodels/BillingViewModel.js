@@ -1,251 +1,277 @@
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-
 import {
-  billingCartItemsAtom,
-  billingCustomerNameAtom,
-  billingPaymentTypeAtom,
-  billSuccessDataAtom,
-  billingGenerateLoadingAtom,
+billingCartItemsAtom,
+billingCustomerNameAtom,
+billingPaymentTypeAtom,
+billSuccessDataAtom,
+billingGenerateLoadingAtom,
 } from '../atoms/billing';
 
-import { getProductByBarcode } from '../services/productService';
-import { getInventoryItem } from '../services/inventoryService';
-import { getShop, getShopSettings } from '../services/shopService';
-import { createBill } from '../services/billingService';
+import { productCacheAtom } from '../atoms/productCache';
 
+import {
+getInventoryItem,
+getShop,
+getShopSettings,
+} from '../services/firestore';
+
+import { createBill } from '../services/createBill';
 import { createBillSuccessModel } from '../models/BillModel';
 
-/* ───────── helpers ───────── */
-
-const toInt = (v) => parseInt(String(v), 10) || 0;
-const toFloat = (v) => Number.parseFloat(String(v)) || 0;
-
-const cleanBarcodeValue = (barcode) => String(barcode || '').trim();
-
-/* ───────── view model ───────── */
-
 const useBillingViewModel = () => {
-  const [cartItems, setCartItems] = useAtom(billingCartItemsAtom);
-  const [customerName, setCustomerName] = useAtom(billingCustomerNameAtom);
-  const [paymentType, setPaymentType] = useAtom(billingPaymentTypeAtom);
 
-  const setBillSuccessData = useSetAtom(billSuccessDataAtom);
+const products = useAtomValue(productCacheAtom);
 
-  const loading = useAtomValue(billingGenerateLoadingAtom);
-  const setLoading = useSetAtom(billingGenerateLoadingAtom);
+const [cartItems, setCartItems] = useAtom(billingCartItemsAtom);
+const [customerName, setCustomerName] = useAtom(billingCustomerNameAtom);
+const [paymentType, setPaymentType] = useAtom(billingPaymentTypeAtom);
 
-  /* ───────── ADD SCANNED BARCODE ───────── */
+const setBillSuccessData = useSetAtom(billSuccessDataAtom);
+const loading = useAtomValue(billingGenerateLoadingAtom);
+const setLoading = useSetAtom(billingGenerateLoadingAtom);
 
-  const addScannedBarcode = async ({ shopId, barcode }) => {
-    if (!shopId || !barcode) return;
+const addScannedBarcode = async ({ shopId, barcode }) => {
 
-    const cleanBarcode = cleanBarcodeValue(barcode);
+```
+if (!shopId || !barcode) return;
 
-    const [product, inventory] = await Promise.all([
-      getProductByBarcode(cleanBarcode),
-      getInventoryItem(shopId, cleanBarcode),
-    ]);
+const cleanBarcode = String(barcode).trim();
 
-    if (!product || !inventory) return;
+const product = products[cleanBarcode];
 
-    const rate = toFloat(inventory.sellingPrice ?? product.mrp ?? 0);
+const inventory = await getInventoryItem(shopId, cleanBarcode);
 
-    setCartItems((prev) => {
-      const existing = prev.find(
-        (i) => i.type === 'BARCODE' && i.barcode === cleanBarcode
-      );
+if (!product) {
+  console.log("Unknown barcode:", cleanBarcode);
+  return;
+}
 
-      if (existing) {
-        const newQty = existing.qty + 1;
+if (!inventory) {
+  console.log("Not in inventory:", cleanBarcode);
+  return;
+}
 
-        return prev.map((i) =>
-          i.barcode === cleanBarcode
-            ? { ...i, qty: newQty, amount: newQty * i.rate }
-            : i
-        );
-      }
+const rate = Number(inventory.sellingPrice ?? product.mrp ?? 0);
 
-      return [
-        {
-          type: 'BARCODE',
-          barcode: cleanBarcode,
-          name: product.name || 'Item',
-          qty: 1,
-          rate,
-          mrp: product.mrp ?? rate,
-          amount: rate,
-        },
-        ...prev,
-      ];
-    });
+setCartItems((prev) => {
+
+  const existing = prev.find(
+    (i) => i.type === "BARCODE" && i.barcode === cleanBarcode
+  );
+
+  if (existing) {
+
+    const newQty = existing.qty + 1;
+
+    return prev.map((i) =>
+      i.barcode === cleanBarcode
+        ? { ...i, qty: newQty, amount: newQty * i.rate }
+        : i
+    );
+
+  }
+
+  return [
+    {
+      type: "BARCODE",
+      barcode: cleanBarcode,
+      name: product.name || "Item",
+      qty: 1,
+      rate,
+      mrp: product.mrp ?? rate,
+      amount: rate,
+    },
+    ...prev,
+  ];
+
+});
+```
+
+};
+
+const updateItemQty = (index, newQty) => {
+
+```
+setCartItems((prev) => {
+
+  const next = [...prev];
+  const it = next[index];
+
+  if (!it) return prev;
+
+  const qty = Math.max(0, parseInt(String(newQty), 10) || 0);
+
+  if (qty === 0) {
+    next.splice(index, 1);
+    return next;
+  }
+
+  next[index] = {
+    ...it,
+    qty,
+    amount: qty * it.rate,
   };
 
-  /* ───────── UPDATE ITEM QTY ───────── */
+  return next;
 
-  const updateItemQty = (index, newQty) => {
-    setCartItems((prev) => {
-      const next = [...prev];
-      const item = next[index];
-      if (!item) return prev;
+});
+```
 
-      const qty = Math.max(0, toInt(newQty));
+};
 
-      if (qty === 0) {
-        next.splice(index, 1);
-        return next;
-      }
+const updateManualItemField = (index, field, value) => {
 
-      next[index] = {
-        ...item,
-        qty,
-        amount: qty * item.rate,
-      };
+```
+setCartItems((prev) => {
 
-      return next;
-    });
+  const next = [...prev];
+  const item = next[index];
+
+  if (!item || item.type !== "MANUAL") return prev;
+
+  const num = parseFloat(value);
+
+  if (Number.isNaN(num)) return prev;
+
+  next[index] = {
+    ...item,
+    [field]: num,
   };
 
-  /* ───────── UPDATE MANUAL ITEM FIELD ───────── */
+  const qty = next[index].qty || 0;
+  const rate = next[index].rate || 0;
 
-  const updateManualItemField = (index, field, value) => {
-    setCartItems((prev) => {
-      const next = [...prev];
-      const item = next[index];
+  next[index].amount = qty * rate;
 
-      if (!item || item.type !== 'MANUAL') return prev;
+  return next;
 
-      const num = toFloat(value);
+});
+```
 
-      next[index] = {
-        ...item,
-        [field]: num,
-      };
+};
 
-      const qty = next[index].qty || 0;
-      const rate = next[index].rate || 0;
+const loadShopAndSettings = async (shopId) => {
 
-      next[index].amount = qty * rate;
+```
+if (!shopId) return { shop: null, settings: null };
 
-      return next;
-    });
-  };
+const [shop, settings] = await Promise.all([
+  getShop(shopId),
+  getShopSettings(shopId),
+]);
 
-  /* ───────── LOAD SHOP + SETTINGS ───────── */
+return { shop, settings };
+```
 
-  const loadShopAndSettings = async (shopId) => {
-    if (!shopId) return { shop: null, settings: null };
+};
 
-    const [shop, settings] = await Promise.all([
-      getShop(shopId),
-      getShopSettings(shopId),
-    ]);
+const generateBill = async ({ userDoc, shop, settings }) => {
 
-    return { shop, settings };
-  };
+```
+if (!cartItems.length) {
+  throw new Error("Add at least one item.");
+}
 
-  /* ───────── GENERATE BILL ───────── */
+const payload = {
+  items: cartItems.map((i) =>
+    i.type === "MANUAL"
+      ? {
+          type: "MANUAL",
+          name: i.name,
+          qty: i.qty,
+          rate: i.rate,
+        }
+      : {
+          type: "BARCODE",
+          barcode: String(i.barcode).trim(),
+          qty: i.qty,
+        }
+  ),
+  paymentType,
+  customerName: customerName.trim() || "Walk-in",
+};
 
-  const generateBill = async ({ userDoc, shop, settings }) => {
-    if (!cartItems.length) {
-      throw new Error('Add at least one item.');
-    }
+const result = await createBill(payload);
 
-    setLoading(true);
+const model = createBillSuccessModel({
+  shop,
+  settings,
+  customerName,
+  billNo: result?.billNo,
+  paymentType,
+  cartItems,
+});
 
-    try {
-      const payload = {
-        items: cartItems.map((i) =>
-          i.type === 'MANUAL'
-            ? {
-                type: 'MANUAL',
-                name: i.name,
-                qty: i.qty,
-                rate: i.rate,
-              }
-            : {
-                type: 'BARCODE',
-                barcode: cleanBarcodeValue(i.barcode),
-                qty: i.qty,
-              }
-        ),
-        paymentType,
-        customerName: customerName.trim() || 'Walk-in',
-      };
+setBillSuccessData(model);
 
-      const result = await createBill(payload);
+setCartItems([]);
+setCustomerName("Walk-in");
+setPaymentType("CASH");
 
-      const model = createBillSuccessModel({
-        shop,
-        settings,
-        customerName,
-        billNo: result?.billNo,
-        paymentType,
-        cartItems,
-      });
+return { success: true };
+```
 
-      setBillSuccessData(model);
+};
 
-      setCartItems([]);
-      setCustomerName('Walk-in');
-      setPaymentType('CASH');
+const addManualItem = ({ name, qty, rate, mrp }) => {
 
-      return { success: true };
+```
+const n = String(name || "").trim();
+const q = parseInt(String(qty), 10);
+const r = parseFloat(String(rate));
+const m = parseFloat(String(mrp));
 
-    } finally {
-      setLoading(false);
-    }
-  };
+if (!n) throw new Error("Item name required.");
+if (!q || q < 1) throw new Error("Valid quantity required.");
+if (Number.isNaN(r) || r < 0) throw new Error("Valid rate required.");
 
-  /* ───────── ADD MANUAL ITEM ───────── */
+const finalMrp = Number.isNaN(m) ? r : m;
 
-  const addManualItem = ({ name, qty, rate, mrp }) => {
-    const n = String(name || '').trim();
-    const q = toInt(qty);
-    const r = toFloat(rate);
-    const m = toFloat(mrp);
+setCartItems((prev) => [
+  ...prev,
+  {
+    type: "MANUAL",
+    name: n,
+    qty: q,
+    mrp: finalMrp,
+    rate: r,
+    amount: q * r,
+  },
+]);
+```
 
-    if (!n) throw new Error('Item name required.');
-    if (!q || q < 1) throw new Error('Valid quantity required.');
-    if (Number.isNaN(r) || r < 0) throw new Error('Valid rate required.');
+};
 
-    const finalMrp = Number.isNaN(m) ? r : m;
+const removeItem = (index) => {
 
-    setCartItems((prev) => [
-      ...prev,
-      {
-        type: 'MANUAL',
-        name: n,
-        qty: q,
-        mrp: finalMrp,
-        rate: r,
-        amount: q * r,
-      },
-    ]);
-  };
+```
+setCartItems((prev) => {
 
-  const removeItem = (index) => {
-    setCartItems((prev) => {
-      const next = [...prev];
-      next.splice(index, 1);
-      return next;
-    });
-  };
+  const next = [...prev];
+  next.splice(index, 1);
+  return next;
 
-  return {
-    cartItems,
-    customerName,
-    setCustomerName,
-    paymentType,
-    setPaymentType,
-    loading,
-    addScannedBarcode,
-    updateItemQty,
-    updateManualItemField,
-    loadShopAndSettings,
-    generateBill,
-    addManualItem,
-    removeItem,
-  };
+});
+```
+
+};
+
+return {
+cartItems,
+customerName,
+setCustomerName,
+paymentType,
+setPaymentType,
+loading,
+addScannedBarcode,
+updateItemQty,
+updateManualItemField,
+loadShopAndSettings,
+generateBill,
+addManualItem,
+removeItem,
+};
+
 };
 
 export default useBillingViewModel;

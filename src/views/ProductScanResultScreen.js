@@ -7,7 +7,9 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
+
 import { useAtomValue, useSetAtom } from 'jotai';
+
 import {
   currentOwnerAtom,
   scanResultBarcodeAtom,
@@ -16,7 +18,9 @@ import {
   scanResultLoadingAtom,
   scanResultErrorAtom,
 } from '../atoms/owner';
-import { getProductByBarcode, getInventoryItem } from '../services/firestore';
+
+import { getProductByBarcode } from '../services/productService';
+import { getInventoryItem } from '../services/inventoryService';
 
 const LOG = true;
 const log = (...args) => { if (LOG) console.log('[ProductScanResult]', ...args); };

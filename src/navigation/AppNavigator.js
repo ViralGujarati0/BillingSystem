@@ -6,7 +6,10 @@ import { useAtomValue, useSetAtom } from 'jotai';
 import auth from '@react-native-firebase/auth';
 
 import { appInitializingAtom, appInitialRouteAtom, appInitialParamsAtom } from '../atoms/auth';
-import { getUser } from '../services/userService'; // ✅ UPDATED
+import { getUser } from '../services/userService'
+import { productCacheAtom, productCacheLoadedAtom } from '../atoms/productCache';
+import { loadProductCache } from '../services/productCacheService';
+
 import LoginScreen from '../views/LoginScreen';
 import StaffLoginScreen from '../views/StaffLoginScreen';
 import StaffHomeScreen from '../views/StaffHomeScreen';
@@ -30,12 +33,10 @@ import SupplierEditScreen from '../views/SupplierEditScreen';
 import PurchaseCreateScreen from '../views/PurchaseCreateScreen';
 import PurchaseSuccessScreen from '../views/PurchaseSuccessScreen';
 
-// ── Global navigation ref — use this to navigate from outside React tree ──────
 export const navigationRef = createNavigationContainerRef();
 
 const Stack = createStackNavigator();
 
-// ── Helper: reset stack to a single route ─────────────────────────────────────
 const resetTo = (name, params) => {
   navigationRef.reset({
     index: 0,
@@ -44,20 +45,47 @@ const resetTo = (name, params) => {
 };
 
 const AppNavigator = () => {
-  const initializing    = useAtomValue(appInitializingAtom);
-  const initialRoute    = useAtomValue(appInitialRouteAtom);
-  const initialParams   = useAtomValue(appInitialParamsAtom);
+
+  const initializing = useAtomValue(appInitializingAtom);
+  const initialRoute = useAtomValue(appInitialRouteAtom);
+  const initialParams = useAtomValue(appInitialParamsAtom);
+
   const setInitializing = useSetAtom(appInitializingAtom);
   const setInitialRoute = useSetAtom(appInitialRouteAtom);
   const setInitialParams = useSetAtom(appInitialParamsAtom);
 
+  // Product cache atoms
+  const setProductCache = useSetAtom(productCacheAtom);
+  const setCacheLoaded = useSetAtom(productCacheLoadedAtom);
+
   useEffect(() => {
+
     const unsubscribe = auth().onAuthStateChanged(async (firebaseUser) => {
+
       try {
+
         if (firebaseUser) {
+
           const userDoc = await getUser(firebaseUser.uid);
 
+          /*
+           ─────────────────────────────────────────────
+           LOAD PRODUCT CACHE AFTER USER LOGIN
+           ─────────────────────────────────────────────
+          */
+
+          const products = await loadProductCache();
+          setProductCache(products);
+          setCacheLoaded(true);
+
+          /*
+           ─────────────────────────────────────────────
+           NAVIGATION BASED ON USER ROLE
+           ─────────────────────────────────────────────
+          */
+
           if (userDoc?.role === 'OWNER') {
+
             const route = userDoc.shopId ? 'OwnerTabs' : 'CreateShop';
 
             if (navigationRef.isReady()) {
@@ -68,6 +96,7 @@ const AppNavigator = () => {
             }
 
           } else if (userDoc?.role === 'STAFF') {
+
             if (!userDoc.isActive) {
               await auth().signOut();
               return;
@@ -81,21 +110,27 @@ const AppNavigator = () => {
             }
 
           } else {
+
             if (navigationRef.isReady()) {
               resetTo('Login');
             } else {
               setInitialRoute('Login');
             }
+
           }
 
         } else {
+
           if (navigationRef.isReady()) {
             resetTo('Login');
           } else {
             setInitialRoute('Login');
           }
+
         }
+
       } catch (e) {
+
         console.error('AppNavigator auth error:', e);
 
         if (navigationRef.isReady()) {
@@ -103,28 +138,34 @@ const AppNavigator = () => {
         } else {
           setInitialRoute('Login');
         }
+
       } finally {
         setInitializing(false);
       }
+
     });
 
     return unsubscribe;
+
   }, []);
 
   if (initializing) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex:1, justifyContent:'center', alignItems:'center' }}>
         <ActivityIndicator size="large" color="#1a73e8" />
       </View>
     );
   }
 
   return (
+
     <NavigationContainer ref={navigationRef}>
+
       <Stack.Navigator
-        screenOptions={{ headerShown: false }}
+        screenOptions={{ headerShown:false }}
         initialRouteName={initialRoute}
       >
+
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="StaffLogin" component={StaffLoginScreen} />
 
@@ -149,23 +190,33 @@ const AppNavigator = () => {
         <Stack.Screen name="AddStaff" component={AddStaffScreen} />
         <Stack.Screen name="StaffList" component={StaffListScreen} />
         <Stack.Screen name="EditStaff" component={EditStaffScreen} />
+
         <Stack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} />
         <Stack.Screen name="ProductScanResult" component={ProductScanResultScreen} />
+
         <Stack.Screen name="InventoryForm" component={InventoryFormScreen} />
         <Stack.Screen name="UpdateInventory" component={UpdateInventoryScreen} />
+
         <Stack.Screen name="CreateProduct" component={CreateProductScreen} />
+
         <Stack.Screen name="BillingScanner" component={BillingScannerScreen} />
         <Stack.Screen name="ManualItem" component={ManualItemScreen} />
         <Stack.Screen name="BillingCart" component={BillingCartScreen} />
         <Stack.Screen name="BillSuccess" component={BillSuccessScreen} />
+
         <Stack.Screen name="SupplierList" component={SupplierListScreen} />
         <Stack.Screen name="SupplierCreate" component={SupplierCreateScreen} />
         <Stack.Screen name="SupplierEdit" component={SupplierEditScreen} />
+
         <Stack.Screen name="PurchaseCreate" component={PurchaseCreateScreen} />
         <Stack.Screen name="PurchaseSuccess" component={PurchaseSuccessScreen} />
+
       </Stack.Navigator>
+
     </NavigationContainer>
+
   );
+
 };
 
 export default AppNavigator;

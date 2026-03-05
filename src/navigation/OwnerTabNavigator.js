@@ -14,9 +14,9 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../theme/colors';
 
 import HomeScreen   from '../views/HomeScreen';
-import ThirdScreen  from '../views/ThirdScreen';
 import FourthScreen from '../views/FourthScreen';
 import SalesScreen  from '../views/SalesScreen';
+import StockScreen from '../views/StockScreen';
 
 const Tab = createBottomTabNavigator();
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -52,7 +52,7 @@ const OUTER_H      = NAV_H;
 const TABS = [
   { name: 'HomeTab',   label: 'Home',    icon: 'home-outline'   },
   { name: 'SalesTab',  label: 'Sales',   icon: 'list-outline'   },
-  { name: 'ThirdTab',  label: 'Stock',   icon: 'grid-outline'   },
+  { name: 'StockTab',  label: 'Stock',   icon: 'grid-outline'   },
   { name: 'FourthTab', label: 'Profile', icon: 'person-outline' },
 ];
 
@@ -202,7 +202,7 @@ const OwnerTabNavigator = ({ route }) => {
     >
       <Tab.Screen name="HomeTab"   component={HomeScreen}   initialParams={{ userDoc }} />
       <Tab.Screen name="SalesTab"  component={SalesScreen}  />
-      <Tab.Screen name="ThirdTab"  component={ThirdScreen}  />
+      <Tab.Screen name="StockTab"  component={StockScreen}  />
       <Tab.Screen name="FourthTab" component={FourthScreen} />
     </Tab.Navigator>
   );
