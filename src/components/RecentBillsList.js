@@ -4,9 +4,12 @@ import {
   Text,
   FlatList,
   ActivityIndicator,
+  TouchableOpacity,
   StyleSheet,
   Dimensions,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 import BillListItem from './BillListItem';
 import { colors } from '../theme/colors';
@@ -38,12 +41,23 @@ function SectionHeader({ count }) {
 /* ─── Empty State ────────────────────────────────────────────────────────── */
 
 function EmptyState() {
+  const navigation = useNavigation();
+
   return (
     <View style={styles.emptyWrap}>
-      <Text style={styles.emptyIcon}>🧾</Text>
+      <View style={styles.emptyIconWrap}>
+        <Icon name="receipt-outline" size={rfs(38)} color={colors.primary} />
+      </View>
       <Text style={styles.emptyTitle}>No bills yet</Text>
       <Text style={styles.emptySubtitle}>
-        Tap <Text style={styles.emptyAccent}>New Bill</Text> to create your first sale
+        Tap{' '}
+        <Text
+          style={styles.emptyAccent}
+          onPress={() => navigation.navigate('BillingScanner')}
+        >
+          New Bill
+        </Text>
+        {' '}to create your first sale
       </Text>
     </View>
   );
@@ -130,8 +144,13 @@ const styles = StyleSheet.create({
     gap: rvs(8),
   },
 
-  emptyIcon: {
-    fontSize: rfs(40),
+  emptyIconWrap: {
+    width: rs(72),
+    height: rs(72),
+    borderRadius: rs(20),
+    backgroundColor: 'rgba(45,74,82,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: rvs(4),
   },
 

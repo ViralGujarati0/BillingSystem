@@ -7,6 +7,7 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../theme/colors';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -90,7 +91,7 @@ const BillListItem = ({ bill, onPress }) => {
 
         {/* Icon circle */}
         <View style={[styles.iconCircle, { backgroundColor: pay.iconBg }]}>
-          <Text style={styles.iconEmoji}>🧾</Text>
+          <Icon name="receipt-outline" size={rfs(18)} color={pay.stripe} />
         </View>
 
         {/* Bill info */}
@@ -161,9 +162,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: rs(12),
     flexShrink: 0,
-  },
-  iconEmoji: {
-    fontSize: rfs(17),
   },
 
   info: {
