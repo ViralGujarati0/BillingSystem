@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,40 +8,53 @@ import {
   Alert,
 } from 'react-native';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { currentOwnerAtom, editingStaffNameAtom, savingStaffAtom } from '../atoms/owner';
-import { updateStaffDoc, updateStaffInShop } from '../services/firestore';
+import {
+  currentOwnerAtom,
+  editingStaffNameAtom,
+  savingStaffAtom,
+} from '../atoms/owner';
+
+import { updateStaff } from '../services/staffService';
 
 const EditStaffScreen = ({ navigation, route }) => {
   const { staff } = route.params;
+
   const owner = useAtomValue(currentOwnerAtom);
   const [name, setName] = useAtom(editingStaffNameAtom);
+
   const saving = useAtomValue(savingStaffAtom);
   const setSaving = useSetAtom(savingStaffAtom);
 
   useEffect(() => {
     setName(staff?.name ?? '');
+
     return () => setName('');
   }, [staff?.name, setName]);
 
-  const handleSave = async () => {
-    if (!name.trim()) {
+  const handleSave = useCallback(async () => {
+    const cleanName = name.trim();
+
+    if (!cleanName) {
       Alert.alert('Error', 'Name is required');
       return;
     }
+
     setSaving(true);
+
     try {
-      await updateStaffDoc(staff.id, { name: name.trim() });
-      if (owner?.shopId) {
-        await updateStaffInShop(owner.shopId, staff.id, { name: name.trim() });
-      }
+      await updateStaff(owner?.shopId, staff.id, {
+        name: cleanName,
+      });
+
       Alert.alert('Success', 'Staff updated');
       navigation.goBack();
+
     } catch (err) {
-      Alert.alert('Error', err.message);
+      Alert.alert('Error', err?.message || 'Failed to update staff');
     } finally {
       setSaving(false);
     }
-  };
+  }, [name, owner?.shopId, staff?.id, navigation, setSaving]);
 
   return (
     <View style={styles.container}>
@@ -51,9 +64,11 @@ const EditStaffScreen = ({ navigation, route }) => {
       >
         <Text style={styles.backText}>← Back</Text>
       </TouchableOpacity>
+
       <Text style={styles.title}>Edit Staff</Text>
 
       <Text style={styles.label}>Name</Text>
+
       <TextInput
         placeholder="Name"
         style={styles.input}
@@ -62,6 +77,7 @@ const EditStaffScreen = ({ navigation, route }) => {
       />
 
       <Text style={styles.label}>Email (cannot be changed)</Text>
+
       <TextInput
         style={[styles.input, styles.inputDisabled]}
         value={staff?.email ?? ''}
@@ -73,7 +89,9 @@ const EditStaffScreen = ({ navigation, route }) => {
         onPress={handleSave}
         disabled={saving}
       >
-        <Text style={styles.buttonText}>{saving ? 'Saving...' : 'Save'}</Text>
+        <Text style={styles.buttonText}>
+          {saving ? 'Saving...' : 'Save'}
+        </Text>
       </TouchableOpacity>
     </View>
   );

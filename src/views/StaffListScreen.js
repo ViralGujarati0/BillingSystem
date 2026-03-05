@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,11 @@ import {
   staffListAtom,
   loadingStaffAtom,
 } from '../atoms/owner';
-import { subscribeStaffByShopId } from '../services/firestore';
-import functions from '@react-native-firebase/functions';
+
+import {
+  subscribeStaffByShopId,
+  deleteStaff,
+} from '../services/staffService';
 
 const StaffListScreen = ({ navigation }) => {
   const owner = useAtomValue(currentOwnerAtom);
@@ -35,10 +38,10 @@ const StaffListScreen = ({ navigation }) => {
       setLoading(false);
     });
 
-    return unsubscribe; // cleanup listener on unmount
+    return unsubscribe;
   }, [owner?.shopId, setStaffList, setLoading]);
 
-  const handleDelete = (staff) => {
+  const handleDelete = useCallback((staff) => {
     Alert.alert(
       'Delete Staff',
       `Delete "${staff.name}" permanently?`,
@@ -49,10 +52,7 @@ const StaffListScreen = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await functions().httpsCallable('deleteStaff')({
-                staffId: staff.id,
-              });
-              // realtime listener auto refreshes list
+              await deleteStaff(staff.id);
             } catch (err) {
               Alert.alert('Error', err.message);
             }
@@ -60,11 +60,14 @@ const StaffListScreen = ({ navigation }) => {
         },
       ]
     );
-  };
+  }, []);
 
-  const handleEdit = (staff) => {
-    navigation.navigate('EditStaff', { staff });
-  };
+  const handleEdit = useCallback(
+    (staff) => {
+      navigation.navigate('EditStaff', { staff });
+    },
+    [navigation]
+  );
 
   if (!owner?.shopId) {
     return (
@@ -98,7 +101,7 @@ const StaffListScreen = ({ navigation }) => {
       ) : (
         <FlatList
           data={staffList}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => String(item.id)}
           renderItem={({ item }) => (
             <View style={styles.row}>
               <View style={styles.info}>

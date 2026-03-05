@@ -6,7 +6,7 @@ import { useAtomValue, useSetAtom } from 'jotai';
 import auth from '@react-native-firebase/auth';
 
 import { appInitializingAtom, appInitialRouteAtom, appInitialParamsAtom } from '../atoms/auth';
-import { getUser } from '../services/firestore';
+import { getUser } from '../services/userService'; // ✅ UPDATED
 import LoginScreen from '../views/LoginScreen';
 import StaffLoginScreen from '../views/StaffLoginScreen';
 import StaffHomeScreen from '../views/StaffHomeScreen';
@@ -70,7 +70,6 @@ const AppNavigator = () => {
           } else if (userDoc?.role === 'STAFF') {
             if (!userDoc.isActive) {
               await auth().signOut();
-              // onAuthStateChanged will fire again with null → handled below
               return;
             }
 
@@ -82,7 +81,6 @@ const AppNavigator = () => {
             }
 
           } else {
-            // Logged in but no valid user doc
             if (navigationRef.isReady()) {
               resetTo('Login');
             } else {
@@ -91,7 +89,6 @@ const AppNavigator = () => {
           }
 
         } else {
-          // Signed out
           if (navigationRef.isReady()) {
             resetTo('Login');
           } else {
@@ -100,6 +97,7 @@ const AppNavigator = () => {
         }
       } catch (e) {
         console.error('AppNavigator auth error:', e);
+
         if (navigationRef.isReady()) {
           resetTo('Login');
         } else {
@@ -127,42 +125,44 @@ const AppNavigator = () => {
         screenOptions={{ headerShown: false }}
         initialRouteName={initialRoute}
       >
-        <Stack.Screen name="Login"        component={LoginScreen} />
-        <Stack.Screen name="StaffLogin"   component={StaffLoginScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="StaffLogin" component={StaffLoginScreen} />
 
         <Stack.Screen
           name="OwnerTabs"
           component={OwnerTabNavigator}
           initialParams={initialRoute === 'OwnerTabs' ? initialParams : undefined}
         />
+
         <Stack.Screen
           name="CreateShop"
           component={CreateShopScreen}
           initialParams={initialRoute === 'CreateShop' ? initialParams : undefined}
         />
+
         <Stack.Screen
           name="StaffHome"
           component={StaffHomeScreen}
           initialParams={initialRoute === 'StaffHome' ? initialParams : undefined}
         />
 
-        <Stack.Screen name="AddStaff"           component={AddStaffScreen} />
-        <Stack.Screen name="StaffList"           component={StaffListScreen} />
-        <Stack.Screen name="EditStaff"           component={EditStaffScreen} />
-        <Stack.Screen name="BarcodeScanner"      component={BarcodeScannerScreen} />
-        <Stack.Screen name="ProductScanResult"   component={ProductScanResultScreen} />
-        <Stack.Screen name="InventoryForm"       component={InventoryFormScreen} />
-        <Stack.Screen name="UpdateInventory"     component={UpdateInventoryScreen} />
-        <Stack.Screen name="CreateProduct"       component={CreateProductScreen} />
-        <Stack.Screen name="BillingScanner"      component={BillingScannerScreen} />
-        <Stack.Screen name="ManualItem"          component={ManualItemScreen} />
-        <Stack.Screen name="BillingCart"         component={BillingCartScreen} />
-        <Stack.Screen name="BillSuccess"         component={BillSuccessScreen} />
-        <Stack.Screen name="SupplierList"        component={SupplierListScreen} />
-        <Stack.Screen name="SupplierCreate"      component={SupplierCreateScreen} />
-        <Stack.Screen name="SupplierEdit"        component={SupplierEditScreen} />
-        <Stack.Screen name="PurchaseCreate"      component={PurchaseCreateScreen} />
-        <Stack.Screen name="PurchaseSuccess"     component={PurchaseSuccessScreen} />
+        <Stack.Screen name="AddStaff" component={AddStaffScreen} />
+        <Stack.Screen name="StaffList" component={StaffListScreen} />
+        <Stack.Screen name="EditStaff" component={EditStaffScreen} />
+        <Stack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} />
+        <Stack.Screen name="ProductScanResult" component={ProductScanResultScreen} />
+        <Stack.Screen name="InventoryForm" component={InventoryFormScreen} />
+        <Stack.Screen name="UpdateInventory" component={UpdateInventoryScreen} />
+        <Stack.Screen name="CreateProduct" component={CreateProductScreen} />
+        <Stack.Screen name="BillingScanner" component={BillingScannerScreen} />
+        <Stack.Screen name="ManualItem" component={ManualItemScreen} />
+        <Stack.Screen name="BillingCart" component={BillingCartScreen} />
+        <Stack.Screen name="BillSuccess" component={BillSuccessScreen} />
+        <Stack.Screen name="SupplierList" component={SupplierListScreen} />
+        <Stack.Screen name="SupplierCreate" component={SupplierCreateScreen} />
+        <Stack.Screen name="SupplierEdit" component={SupplierEditScreen} />
+        <Stack.Screen name="PurchaseCreate" component={PurchaseCreateScreen} />
+        <Stack.Screen name="PurchaseSuccess" component={PurchaseSuccessScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

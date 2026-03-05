@@ -1,5 +1,6 @@
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { currentOwnerAtom } from '../atoms/owner';
+
 import {
   purchaseSupplierIdAtom,
   purchasePaymentTypeAtom,
@@ -9,14 +10,18 @@ import {
   purchaseSuccessDataAtom,
 } from '../atoms/purchase';
 
-import {
-  getShop,
-  getSupplier,
-  listSuppliers,
-  getProductByBarcode,
-} from '../services/firestore';
+import { getShop } from '../services/shopService';
+import { getSupplier, listSuppliers } from '../services/supplierService';
+import { getProductByBarcode } from '../services/productService';
+import { createPurchaseInvoice } from '../services/purchaseService';
 
-import { createPurchaseCF } from '../services/createPurchase';
+/* helpers */
+
+const toFloat = (v) => Number.parseFloat(String(v)) || 0;
+const toInt = (v) => parseInt(String(v), 10) || 0;
+const cleanBarcode = (b) => String(b || '').trim();
+
+/* view model */
 
 const usePurchaseViewModel = () => {
   const owner = useAtomValue(currentOwnerAtom);
@@ -31,10 +36,10 @@ const usePurchaseViewModel = () => {
   const setSaving = useSetAtom(purchaseSavingAtom);
   const setSuccessData = useSetAtom(purchaseSuccessDataAtom);
 
-  /* Load shop + suppliers */
+  /* ───────── LOAD SHOP + SUPPLIERS ───────── */
 
   const loadShopAndSuppliers = async () => {
-    if (!shopId || !owner) return { shop: null, suppliers: [] };
+    if (!shopId) return { shop: null, suppliers: [] };
 
     const [shop, suppliers] = await Promise.all([
       getShop(shopId),
@@ -44,31 +49,38 @@ const usePurchaseViewModel = () => {
     return { shop, suppliers };
   };
 
-  /* Add item by barcode */
+  /* ───────── ADD ITEM BY BARCODE ───────── */
 
   const addItemByBarcode = async ({ barcode, qty, rate }) => {
-    const prod = await getProductByBarcode(barcode);
+    const clean = cleanBarcode(barcode);
+    const product = await getProductByBarcode(clean);
 
-    const name = prod?.name || '';
-    const finalBarcode = prod?.id || barcode;
-    const amount = qty * rate;
+    const name = product?.name || '';
+    const finalBarcode = product?.id || clean;
+
+    const quantity = toInt(qty);
+    const price = toFloat(rate);
+
+    const amount = quantity * price;
 
     setItems((prev) => {
       const idx = prev.findIndex((x) => x.barcode === finalBarcode);
 
       if (idx >= 0) {
         const existing = prev[idx];
-        const newQty = (Number(existing.qty) || 0) + qty;
+        const newQty = toInt(existing.qty) + quantity;
 
         const next = [...prev];
+
         next[idx] = {
           ...existing,
           barcode: finalBarcode,
           name: existing.name || name,
           qty: newQty,
-          purchasePrice: rate,
-          amount: newQty * rate,
+          purchasePrice: price,
+          amount: newQty * price,
         };
+
         return next;
       }
 
@@ -77,15 +89,15 @@ const usePurchaseViewModel = () => {
         {
           barcode: finalBarcode,
           name,
-          qty,
-          purchasePrice: rate,
+          qty: quantity,
+          purchasePrice: price,
           amount,
         },
       ];
     });
   };
 
-  /* Save purchase (ONLY Cloud Function writes DB) */
+  /* ───────── SAVE PURCHASE ───────── */
 
   const savePurchase = async ({ navigation }) => {
     if (!owner || owner.role !== 'OWNER' || !shopId) {
@@ -98,43 +110,53 @@ const usePurchaseViewModel = () => {
     setSaving(true);
 
     try {
-      const paid = Number.parseFloat(String(paidAmount)) || 0;
+      const paid = toFloat(paidAmount);
 
-      const supplier = await getSupplier(shopId, supplierId);
+      const [supplier, shop] = await Promise.all([
+        getSupplier(shopId, supplierId),
+        getShop(shopId),
+      ]);
 
-      const result = await createPurchaseCF({
+      const result = await createPurchaseInvoice({
         supplierId,
         items,
         paidAmount: paid,
       });
 
-      // Local totals ONLY for UI (backend already stores real numbers)
-      const subtotal = items.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+      const subtotal = items.reduce(
+        (s, it) => s + toFloat(it.amount),
+        0
+      );
+
       const dueAmount = Math.max(0, subtotal - paid);
 
       setSuccessData({
-        shopName: (await getShop(shopId))?.businessName || 'Shop',
+        shopName: shop?.businessName || 'Shop',
         supplierName: supplier?.name || 'Supplier',
         invoiceNo: result?.purchaseNo || '—',
         date: new Date().toLocaleDateString(),
+
         items: items.map((it) => ({
           name: it.name,
           qty: it.qty,
           purchasePrice: it.purchasePrice,
           amount: it.amount,
         })),
+
         subtotal,
         paidAmount: paid,
         dueAmount,
       });
 
-      // Reset draft state
+      /* reset state */
+
       setSupplierId('');
       setPaymentType('CASH');
       setPaidAmount('0');
       setItems([]);
 
       navigation.replace('PurchaseSuccess');
+
     } finally {
       setSaving(false);
     }
