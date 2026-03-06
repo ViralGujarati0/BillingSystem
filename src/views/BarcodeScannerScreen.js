@@ -30,23 +30,42 @@ const BarcodeScannerScreen = ({ navigation, route }) => {
 
   const onCodeScanned = useCallback(
     (codes) => {
+  
       if (hasScanned.current || !codes.length) return;
+  
       const value = codes[0]?.value;
-      if (value) {
-        hasScanned.current = true;
-        if (mode === 'updateInventory') {
-          navigation.replace('UpdateInventory', { barcode: value });
-        } else if (mode === 'purchaseItem') {
-          setPurchaseScannedBarcode(value);
-          navigation.goBack();
-        } else {
-          // Default: product scan + add-to-inventory flow
-          setScannedBarcode(value);
-          navigation.replace('ProductScanResult', { barcode: value });
-        }
+  
+      if (!value) return;
+  
+      hasScanned.current = true;
+  
+      // Prevent double scan
+      setTimeout(() => {
+        hasScanned.current = false;
+      }, 1200);
+  
+      if (mode === "createProduct") {
+        navigation.replace("CreateProduct", { barcode: value });
+        return;
       }
+  
+      if (mode === "updateInventory") {
+        navigation.replace("UpdateInventory", { barcode: value });
+        return;
+      }
+  
+      if (mode === "purchaseItem") {
+        setPurchaseScannedBarcode(value);
+        navigation.goBack();
+        return;
+      }
+  
+      // default flow
+      setScannedBarcode(value);
+      navigation.replace("ProductScanResult", { barcode: value });
+  
     },
-    [navigation, setScannedBarcode, setPurchaseScannedBarcode, mode]
+    [navigation, mode, setScannedBarcode, setPurchaseScannedBarcode]
   );
 
   const codeScanner = useCodeScanner({

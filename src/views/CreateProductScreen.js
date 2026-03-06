@@ -126,8 +126,9 @@ const CreateProductScreen = ({ navigation, route }) => {
 
       <Text style={styles.title}>Create Product</Text>
 
-      <Text style={styles.barcode}>Barcode: {barcode}</Text>
-
+      <Text style={styles.barcode}>
+  Barcode: {barcode || "—"}
+</Text>
       <Text style={styles.section}>Product (global)</Text>
 
       <FormInputField

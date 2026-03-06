@@ -1,6 +1,6 @@
 import React from "react";
 import {
-  View,
+  ScrollView,
   Text,
   TouchableOpacity,
   StyleSheet,
@@ -20,9 +20,9 @@ const ManualItemScreen = ({ navigation }) => {
 
   const [form, setForm] = useAtom(manualItemFormAtom);
 
-  const { name, qty, mrp, rate } = form;
+  const { name, category, unit, qty, mrp, rate } = form;
 
-  /* 🔹 LIVE AMOUNT CALCULATION */
+  /* LIVE AMOUNT */
 
   const quantity = parseInt(qty, 10) || 0;
   const price = parseFloat(rate) || 0;
@@ -32,12 +32,20 @@ const ManualItemScreen = ({ navigation }) => {
   const handleAdd = () => {
 
     const n = name.trim();
+    const c = category;
+    const u = unit;
+
     const q = parseInt(qty, 10);
     const r = parseFloat(rate);
     const m = parseFloat(mrp);
 
     if (!n) {
       Alert.alert("Error", "Item name required.");
+      return;
+    }
+
+    if (!c) {
+      Alert.alert("Error", "Category required.");
       return;
     }
 
@@ -55,6 +63,8 @@ const ManualItemScreen = ({ navigation }) => {
 
       vm.addManualItem({
         name: n,
+        category: c,
+        unit: u,
         qty: q,
         rate: r,
         mrp: isNaN(m) ? r : m,
@@ -62,6 +72,8 @@ const ManualItemScreen = ({ navigation }) => {
 
       setForm({
         name: "",
+        category: "",
+        unit: "pcs",
         qty: "1",
         mrp: "",
         rate: "",
@@ -78,7 +90,11 @@ const ManualItemScreen = ({ navigation }) => {
 
   return (
 
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
 
       <TouchableOpacity
         style={styles.backBtn}
@@ -91,14 +107,19 @@ const ManualItemScreen = ({ navigation }) => {
 
       <ManualItemForm
         name={name}
+        category={category}
+        unit={unit}
         qty={qty}
         mrp={mrp}
         rate={rate}
         amount={amount}
-        onChangeName={(v) => setForm((p) => ({ ...p, name: v }))}
-        onChangeQty={(v) => setForm((p) => ({ ...p, qty: v }))}
-        onChangeMrp={(v) => setForm((p) => ({ ...p, mrp: v }))}
-        onChangeRate={(v) => setForm((p) => ({ ...p, rate: v }))}
+
+        onChangeName={(v) => setForm(p => ({ ...p, name: v }))}
+        onChangeCategory={(v) => setForm(p => ({ ...p, category: v }))}
+        onChangeUnit={(v) => setForm(p => ({ ...p, unit: v }))}
+        onChangeQty={(v) => setForm(p => ({ ...p, qty: v }))}
+        onChangeMrp={(v) => setForm(p => ({ ...p, mrp: v }))}
+        onChangeRate={(v) => setForm(p => ({ ...p, rate: v }))}
       />
 
       <TouchableOpacity
@@ -108,7 +129,7 @@ const ManualItemScreen = ({ navigation }) => {
         <Text style={styles.buttonText}>Add to bill</Text>
       </TouchableOpacity>
 
-    </View>
+    </ScrollView>
 
   );
 };
@@ -120,8 +141,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+  },
+
+  content: {
     padding: 24,
     paddingTop: 56,
+    paddingBottom: 40,
   },
 
   backBtn: {
@@ -145,6 +170,7 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 6,
     alignItems: "center",
+    marginTop: 10,
   },
 
   buttonText: {

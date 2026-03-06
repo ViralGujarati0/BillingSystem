@@ -7,7 +7,7 @@ const InventoryFAB = ({ navigation }) => {
   return (
     <TouchableOpacity
       style={styles.fab}
-      onPress={() => navigation.navigate("CreateProduct")}
+      onPress={() => navigation.navigate("BarcodeScanner", { mode: "createProduct" })}
     >
       <Ionicons name="add" size={26} color="#fff" />
     </TouchableOpacity>

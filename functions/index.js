@@ -105,13 +105,21 @@ exports.deleteStaff = onCall(async (request) => {
 /* ───────────────── CREATE BILL ───────────────── */
 
 exports.createBill = onCall(async (request) => {
+
   if (!request.auth) throw new HttpsError("unauthenticated");
 
-  const { items = [], paymentType = "CASH", customerName = "Walk-in" } = request.data;
-  if (!items.length) throw new HttpsError("invalid-argument");
+  const {
+    items = [],
+    paymentType = "CASH",
+    customerName = "Walk-in"
+  } = request.data;
+
+  if (!Array.isArray(items) || !items.length) {
+    throw new HttpsError("invalid-argument", "Items required");
+  }
 
   const uid = request.auth.uid;
-  const db  = admin.firestore();
+  const db = admin.firestore();
 
   const userSnap = await db.collection(USERS).doc(uid).get();
   if (!userSnap.exists) throw new HttpsError("not-found");
@@ -119,64 +127,108 @@ exports.createBill = onCall(async (request) => {
   const shopId = userSnap.data().shopId;
   if (!shopId) throw new HttpsError("failed-precondition");
 
-  // ─── IST date info ───
   const { dateLabel, startOfDayUTC, statsKey } = getISTDateInfo();
 
-  const statsRef  = db.collection(SHOPS).doc(shopId).collection("stats").doc(statsKey);
-  const counterRef = db.collection(SHOPS).doc(shopId).collection("meta").doc("counters");
+  const statsRef = db
+    .collection(SHOPS)
+    .doc(shopId)
+    .collection("stats")
+    .doc(statsKey);
 
-  // ─── Prepare inventory + product refs ───
-  const barcodeItems = items.filter((it) => it.type === "BARCODE");
-  const invRefs  = barcodeItems.map((it) =>
-    db.collection(SHOPS).doc(shopId).collection("inventory").doc(String(it.barcode))
+  const counterRef = db
+    .collection(SHOPS)
+    .doc(shopId)
+    .collection("meta")
+    .doc("counters");
+
+  const newBillRef = db
+    .collection(SHOPS)
+    .doc(shopId)
+    .collection("bills")
+    .doc();
+
+  /* ───── BARCODE ITEM REFERENCES ───── */
+
+  const uniqueBarcodes = [
+    ...new Set(
+      items
+        .filter(i => i.type === "BARCODE")
+        .map(i => String(i.barcode))
+    )
+  ];
+
+  const invRefMap = new Map(
+    uniqueBarcodes.map(barcode => [
+      barcode,
+      db.collection(SHOPS).doc(shopId).collection("inventory").doc(barcode)
+    ])
   );
-  const prodRefs = barcodeItems.map((it) =>
-    db.collection(PRODUCTS).doc(String(it.barcode))
+
+  const prodRefMap = new Map(
+    uniqueBarcodes.map(barcode => [
+      barcode,
+      db.collection(PRODUCTS).doc(barcode)
+    ])
   );
 
-  const billResult = await db.runTransaction(async (tx) => {
+  /* ───────────────── TRANSACTION ───────────────── */
 
-    // ✅ ALL READS FIRST — explicitly indexed, no ambiguous destructuring
-    const allReads = await Promise.all([
-      tx.get(counterRef),                        // index 0
-      ...invRefs.map((r)  => tx.get(r)),         // index 1 … invRefs.length
-      ...prodRefs.map((r) => tx.get(r)),         // next prodRefs.length
+  const { formatted } = await db.runTransaction(async (tx) => {
+
+    /* ───── READ ALL DOCS FIRST ───── */
+
+    const reads = await Promise.all([
+      tx.get(counterRef),
+      tx.get(statsRef),
+      ...uniqueBarcodes.map(b => tx.get(invRefMap.get(b))),
+      ...uniqueBarcodes.map(b => tx.get(prodRefMap.get(b)))
     ]);
 
-    const counterSnap = allReads[0];
-    const invSnaps    = allReads.slice(1, 1 + invRefs.length);
-    const prodSnaps   = allReads.slice(1 + invRefs.length, 1 + invRefs.length + prodRefs.length);
+    const counterSnap = reads[0];
 
-    // ─── Day-change-aware counter ───
+    const invSnapMap = new Map(
+      uniqueBarcodes.map((b, i) => [b, reads[2 + i]])
+    );
+
+    const prodSnapMap = new Map(
+      uniqueBarcodes.map((b, i) => [b, reads[2 + uniqueBarcodes.length + i]])
+    );
+
+    /* ───── BILL NUMBER ───── */
+
     const counterData  = counterSnap.exists ? counterSnap.data() : {};
     const lastBillDate = counterData.lastBillDate || "";
-    const nextNo       = lastBillDate === dateLabel
-      ? (counterData.billCount || 0) + 1
-      : 1; // new day → reset to 1
 
-    const formatted = `${dateLabel}-${nextNo}`; // e.g. "04-03-2026-1"
+    const nextNo =
+      lastBillDate === dateLabel
+        ? (counterData.billCount || 0) + 1
+        : 1;
 
-    // ─── Build final items + totals ───
-    let subtotal      = 0;
-    let totalProfit   = 0;
-    const finalItems  = [];
+    const formatted = `${dateLabel}-${nextNo}`;
 
-    for (let i = 0; i < items.length; i++) {
-      const it = items[i];
+    /* ───── BUILD ITEMS ───── */
 
-      if (it.type === "BARCODE") {
-        const bIdx    = barcodeItems.indexOf(it);
-        const invSnap = invSnaps[bIdx];
-        const prodSnap = prodSnaps[bIdx];
+    let subtotal    = 0;
+    let totalProfit = 0;
+    const finalItems = [];
 
-        if (!invSnap.exists)
+    for (const item of items) {
+
+      if (item.type === "BARCODE") {
+
+        const key      = String(item.barcode);
+        const invSnap  = invSnapMap.get(key);
+        const prodSnap = prodSnapMap.get(key);
+
+        if (!invSnap?.exists)
           throw new HttpsError("failed-precondition", "Product not in inventory");
-        if (!prodSnap.exists)
-          throw new HttpsError("not-found", "Product not in catalog");
+
+        if (!prodSnap?.exists)
+          throw new HttpsError("not-found", "Product not found");
 
         const inv  = invSnap.data();
         const prod = prodSnap.data();
-        const qty  = Number(it.qty);
+        const qty  = Number(item.qty);
 
         if ((inv.stock || 0) < qty)
           throw new HttpsError("failed-precondition", "Insufficient stock");
@@ -190,72 +242,92 @@ exports.createBill = onCall(async (request) => {
         totalProfit += profit;
 
         finalItems.push({
-          barcode: String(it.barcode),
+          type: "BARCODE",
+          barcode: key,
           name: prod.name,
+          category: prod.category || "",
+          unit: prod.unit || "pcs",
           qty,
           rate,
           amount,
-          profit,
+          profit
         });
 
-        tx.update(invRefs[bIdx], {
-          stock: admin.firestore.FieldValue.increment(-qty),
+        tx.update(invRefMap.get(key), {
+          stock: admin.firestore.FieldValue.increment(-qty)
+        });
+
+      } else if (item.type === "MANUAL") {
+
+        const qty    = Number(item.qty);
+        const rate   = Number(item.rate);
+        const amount = qty * rate;
+
+        subtotal += amount;
+
+        finalItems.push({
+          type: "MANUAL",
+          name: item.name || "Item",
+          category: item.category || "",
+          unit: item.unit || "pcs",
+          qty,
+          rate,
+          amount,
+          profit: 0
         });
 
       } else {
-        const amount = Number(it.qty) * Number(it.rate);
-        subtotal += amount;
-        finalItems.push(it);
+        throw new HttpsError("invalid-argument", "Invalid item type");
       }
     }
 
-    const totalItemsSold = items.reduce((sum, i) => sum + Number(i.qty || 0), 0);
-
-    // ✅ ALL WRITES AFTER ALL READS
-
-    // Update counter — flat fields, no nested object accumulation
-    tx.set(counterRef, {
-      lastBillDate: dateLabel,  // "04-03-2026"
-      billCount:    nextNo,     // 1, 2, 3 ...
-    }, { merge: true });
-
-    // Save bill
-    tx.set(
-      db.collection(SHOPS).doc(shopId).collection("bills").doc(),
-      {
-        billNo:           nextNo,
-        billNoFormatted:  formatted,   // "04-03-2026-1"
-        customerName,
-        paymentType,
-        items:            finalItems,
-        grandTotal:       subtotal,
-        profit:           totalProfit,
-        createdBy:        uid,
-        createdAt:        admin.firestore.FieldValue.serverTimestamp(),
-      }
+    const totalItemsSold = finalItems.reduce(
+      (sum, i) => sum + Number(i.qty || 0),
+      0
     );
 
-    return { formatted, subtotalFinal: subtotal, totalProfitFinal: totalProfit, totalItemsSoldFinal: totalItemsSold };
+    /* ───── UPDATE BILL COUNTER ───── */
+
+    tx.set(counterRef, {
+      lastBillDate: dateLabel,
+      billCount: nextNo
+    }, { merge: true });
+
+    /* ───── SAVE BILL ───── */
+
+    tx.set(newBillRef, {
+      billNo: nextNo,
+      billNoFormatted: formatted,
+      customerName,
+      paymentType,
+      items: finalItems,
+      grandTotal: subtotal,
+      profit: totalProfit,
+      createdBy: uid,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    /* ───── UPDATE STATS ───── */
+
+    tx.set(statsRef, {
+      date:          admin.firestore.Timestamp.fromDate(startOfDayUTC),
+      totalSales:    admin.firestore.FieldValue.increment(subtotal),
+      totalProfit:   admin.firestore.FieldValue.increment(totalProfit),
+      totalBills:    admin.firestore.FieldValue.increment(1),
+      totalItemsSold: admin.firestore.FieldValue.increment(totalItemsSold),
+      lastUpdated:   admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    return { formatted };  // ✅ expose to outer scope
+
   });
 
-  const billNoFormatted = billResult.formatted;
-  const billStats = billResult;
+  return {
+    success: true,
+    billNo: formatted  // ✅ now accessible
+  };
 
-  // ─── Update daily stats OUTSIDE transaction ───
-  // FieldValue.increment is atomic on its own — no need to be inside a transaction
-  const { subtotalFinal, totalProfitFinal, totalItemsSoldFinal } = billStats;
-  await statsRef.set({
-    date:           admin.firestore.Timestamp.fromDate(startOfDayUTC),
-    totalSales:     admin.firestore.FieldValue.increment(subtotalFinal),
-    totalProfit:    admin.firestore.FieldValue.increment(totalProfitFinal),
-    totalBills:     admin.firestore.FieldValue.increment(1),
-    totalItemsSold: admin.firestore.FieldValue.increment(totalItemsSoldFinal),
-    lastUpdated:    admin.firestore.FieldValue.serverTimestamp(),
-  }, { merge: true });
-
-  return { success: true, billNo: billNoFormatted };
 });
-
 /* ───────────────── CREATE PURCHASE (SUPPLIER) ───────────────── */
 
 exports.createPurchase = onCall(async (request) => {

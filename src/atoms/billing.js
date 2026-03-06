@@ -16,4 +16,11 @@ export const billSuccessDataAtom = atom(null);
 export const billingGenerateLoadingAtom = atom(false);
 
 /** Manual item form (name, qty, rate). */
-export const manualItemFormAtom = atom({ name: '', qty: '1',mrp: '', rate: '' });
+export const manualItemFormAtom = atom({
+    name: "",
+    category: "",
+    unit: "pcs",
+    qty: "1",
+    mrp: "",
+    rate: "",
+  });

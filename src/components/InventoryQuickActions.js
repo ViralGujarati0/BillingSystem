@@ -27,7 +27,7 @@ const InventoryQuickActions = ({ navigation }) => {
 
       <TouchableOpacity
         style={styles.action}
-        onPress={() => navigation.navigate("CreateProduct")}
+        onPress={() => navigation.navigate("BarcodeScanner", { mode: "createProduct" })}
       >
         <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
         <Text style={styles.label}>Add</Text>
