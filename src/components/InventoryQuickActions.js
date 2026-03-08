@@ -1,45 +1,50 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { colors } from '../theme/colors';
 
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+// ─── Responsive helpers (base 390×844) ───────────────────────────────────────
+const scale = SCREEN_W / 390;
+const vs    = SCREEN_H / 844;
+const rs    = (n) => Math.round(n * scale);
+const rvs   = (n) => Math.round(n * vs);
+const rfs   = (n) => Math.round(n * scale);
+
 /**
+ * Rendered inside AppHeaderLayout's rightComponent prop.
+ *
  * Check → 'check' mode → ProductScanResultScreen
- *   Flow 1: in global + in inventory     → info from both + "Already in inventory" message
- *   Flow 2: in global + NOT in inventory → global info + "Add to Inventory" button
- *   Flow 3: NOT in global                → "Product not found" + "Create Product" button
- *
  * Update → 'updateInventory' mode → UpdateInventoryScreen
- *   Edit selling price, stock, expiry of existing inventory item
- *
  * Add → default mode → ProductScanResultScreen
- *   Flow 1: in global + in inventory     → info from both + "Update Inventory" button
- *   Flow 2: in global + NOT in inventory → global info + "Add to Inventory" button
- *   Flow 3: NOT in global                → "Product not found" + "Create Product" button
  */
 const InventoryQuickActions = ({ navigation }) => {
   return (
-    <View style={styles.container}>
+    <View style={styles.row}>
 
-      <ActionButton
+      <ActionPill
         icon="search-outline"
         label="Check"
-        onPress={() =>
-          navigation.navigate('BarcodeScanner', { mode: 'check' })
-        }
+        onPress={() => navigation.navigate('BarcodeScanner', { mode: 'check' })}
       />
 
-      <ActionButton
+      <ActionPill
         icon="refresh-outline"
         label="Update"
-        onPress={() =>
-          navigation.navigate('BarcodeScanner', { mode: 'updateInventory' })
-        }
+        onPress={() => navigation.navigate('BarcodeScanner', { mode: 'updateInventory' })}
       />
 
-      <ActionButton
-        icon="add-circle-outline"
+      <ActionPill
+        icon="add-outline"
         label="Add"
+        accent
         onPress={() => navigation.navigate('BarcodeScanner')}
       />
 
@@ -47,41 +52,64 @@ const InventoryQuickActions = ({ navigation }) => {
   );
 };
 
-function ActionButton({ icon, label, onPress }) {
+// ─── Single pill ──────────────────────────────────────────────────────────────
+function ActionPill({ icon, label, onPress, accent }) {
   return (
-    <TouchableOpacity style={styles.action} onPress={onPress} activeOpacity={0.7}>
-      <View style={styles.iconWrap}>
-        <Ionicons name={icon} size={22} color={colors.primary} />
-      </View>
-      <Text style={styles.label}>{label}</Text>
+    <TouchableOpacity
+      style={[styles.pill, accent && styles.pillAccent]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Ionicons
+        name={icon}
+        size={rfs(14)}
+        color={accent ? colors.accent : 'rgba(255,255,255,0.80)'}
+      />
+      <Text style={[styles.pillLabel, accent && styles.pillLabelAccent]}>
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 12,
-    paddingHorizontal: 8,
-  },
-  action: {
-    alignItems: 'center',
-    gap: 6,
-  },
-  iconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: '#EEF4FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-});
-
 export default InventoryQuickActions;
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const styles = StyleSheet.create({
+
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(6),
+  },
+
+  pill: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: rvs(3),
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.13)',
+    borderRadius: rs(12),
+    paddingVertical: rvs(7),
+    paddingHorizontal: rs(10),
+    minWidth: rs(46),
+  },
+
+  pillAccent: {
+    backgroundColor: 'rgba(245,166,35,0.15)',
+    borderColor: 'rgba(245,166,35,0.28)',
+  },
+
+  pillLabel: {
+    fontSize: rfs(9),
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.75)',
+    letterSpacing: 0.3,
+  },
+
+  pillLabelAccent: {
+    color: colors.accent,
+  },
+
+});

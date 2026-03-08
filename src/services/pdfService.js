@@ -7,12 +7,21 @@ export const generateBillPdf = async (data) => {
 
   const html = buildReceiptHtml(data);
 
+  // ── Height: base sections + per-item rows ─────────────────────────────────
+  // header(100) + meta(52) + customer(58) + items-header(34)
+  // + totals(80) + grand-total(76) + footer(56) + tears(16) = ~472
+  // Per item ~34px. Min 600 so single-item bills don't clip.
+  const itemCount  = (data.items || []).length;
+  const pdfHeight  = Math.max(600, 472 + itemCount * 34);
+
   const result = await generatePDF({
     html,
-    fileName: `bill_${data.billNo}_${Date.now()}`,
-    width: 320,
-    height: 600,
-    padding: 24,
+    fileName: `Bill_${data.billNo}_${Date.now()}`,
+    width:    360,     // ← matches body width exactly
+    height:   pdfHeight,
+    padding:  0,
+    bgColor:  "#DDE3E6",
+    base64:   false,
   });
 
   if (!result?.filePath) {
@@ -24,9 +33,10 @@ export const generateBillPdf = async (data) => {
     : `file://${result.filePath}`;
 
   await Share.open({
-    url: fileUrl,
-    type: "application/pdf",
-    title: `Bill_${data.billNo}`,
-    filename: `Bill_${data.billNo}.pdf`,
+    url:          fileUrl,
+    type:         "application/pdf",
+    title:        `Bill ${data.billNo}`,
+    filename:     `Bill_${data.billNo}.pdf`,
+    failOnCancel: false,
   });
 };

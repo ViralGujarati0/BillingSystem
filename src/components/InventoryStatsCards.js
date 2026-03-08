@@ -1,72 +1,152 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+} from "react-native";
+import Ionicons from "react-native-vector-icons/Ionicons";
 import { colors } from "../theme/colors";
 
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
+
+// ─── Responsive helpers (base 390×844) ───────────────────────────────────────
+const scale = SCREEN_W / 390;
+const vs    = SCREEN_H / 844;
+const rs    = (n) => Math.round(n * scale);
+const rvs   = (n) => Math.round(n * vs);
+const rfs   = (n) => Math.round(n * scale);
+
+// ─── Card config ─────────────────────────────────────────────────────────────
+const CARD_CONFIG = [
+  {
+    key:       "products",
+    label:     "Products",
+    icon:      "cube-outline",
+    iconBg:    "rgba(45,74,82,0.08)",
+    iconColor: colors.primary,
+    topBar:    colors.primary,
+    getValue:  (inv) => inv.length,
+    format:    (v)   => String(v),
+    valueColor: (v)  => colors.textPrimary,
+  },
+  {
+    key:       "lowstock",
+    label:     "Low Stock",
+    icon:      "warning-outline",
+    iconBg:    "rgba(245,166,35,0.10)",
+    iconColor: colors.accent,
+    topBar:    colors.accent,
+    getValue:  (inv) => inv.filter((i) => (i.stock || 0) <= 10).length,
+    format:    (v)   => String(v),
+    valueColor: (v)  => v > 0 ? colors.accent : colors.textPrimary,
+  },
+  {
+    key:       "value",
+    label:     "Value",
+    icon:      "cash-outline",
+    iconBg:    "rgba(91,158,109,0.10)",
+    iconColor: "#5B9E6D",
+    topBar:    "#5B9E6D",
+    getValue:  (inv) => inv.reduce((sum, item) => sum + (item.stock || 0) * (item.purchasePrice || 0), 0),
+    format:    (v)   => `₹${v.toFixed(0)}`,
+    valueColor: (v)  => "#5B9E6D",
+  },
+];
+
+// ─── Component ────────────────────────────────────────────────────────────────
 const InventoryStatsCards = ({ inventory }) => {
-
-  const totalProducts = inventory.length;
-
-  const lowStock = inventory.filter((i) => (i.stock || 0) <= 10).length;
-
-  const value = inventory.reduce(
-    (sum, item) => sum + (item.stock || 0) * (item.purchasePrice || 0),
-    0
-  );
-
   return (
     <View style={styles.container}>
+      {CARD_CONFIG.map((cfg) => {
+        const val = cfg.getValue(inventory);
+        return (
+          <View key={cfg.key} style={styles.card}>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>Products</Text>
-        <Text style={styles.value}>{totalProducts}</Text>
-      </View>
+            {/* Colored top border bar */}
+            <View style={[styles.topBar, { backgroundColor: cfg.topBar }]} />
 
-      <View style={styles.card}>
-        <Text style={styles.label}>Low Stock</Text>
-        <Text style={[styles.value, { color: colors.warning }]}>
-          {lowStock}
-        </Text>
-      </View>
+            {/* Icon box */}
+            <View style={[styles.iconWrap, { backgroundColor: cfg.iconBg }]}>
+              <Ionicons name={cfg.icon} size={rfs(15)} color={cfg.iconColor} />
+            </View>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>Value</Text>
-        <Text style={styles.value}>₹{value.toFixed(0)}</Text>
-      </View>
+            {/* Label */}
+            <Text style={styles.label}>{cfg.label}</Text>
 
+            {/* Value */}
+            <Text
+              style={[styles.value, { color: cfg.valueColor(val) }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
+              {cfg.format(val)}
+            </Text>
+
+          </View>
+        );
+      })}
     </View>
   );
 };
 
+export default InventoryStatsCards;
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+
   container: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    marginBottom: 12,
+    paddingHorizontal: rs(16),
+    gap: rs(10),
+    marginTop: rvs(10),
+    marginBottom: rvs(4),
   },
 
   card: {
     flex: 1,
-    marginHorizontal: 4,
-    backgroundColor: colors.card,
-    padding: 14,
-    borderRadius: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: rs(14),
     borderWidth: 1,
     borderColor: colors.borderCard,
+    shadowColor: colors.shadowCard,
+    shadowOffset: { width: 0, height: rvs(2) },
+    shadowOpacity: 1,
+    shadowRadius: rs(10),
+    elevation: 2,
+    overflow: "hidden",
+    paddingHorizontal: rs(12),
+    paddingBottom: rvs(12),
+  },
+
+  // Colored top accent bar
+  topBar: {
+    height: rvs(3),
+    borderRadius: rs(14),
+    marginBottom: rvs(10),
+  },
+
+  iconWrap: {
+    width: rs(28),
+    height: rs(28),
+    borderRadius: rs(8),
     alignItems: "center",
+    justifyContent: "center",
+    marginBottom: rvs(6),
   },
 
   label: {
-    fontSize: 12,
+    fontSize: rfs(10),
+    fontWeight: "700",
     color: colors.textSecondary,
+    letterSpacing: 0.5,
+    marginBottom: rvs(3),
   },
 
   value: {
-    marginTop: 4,
-    fontSize: 18,
-    fontWeight: "700",
-    color: colors.textPrimary,
+    fontSize: rfs(18),
+    fontWeight: "900",
+    letterSpacing: -0.5,
   },
-});
 
-export default InventoryStatsCards;
+});

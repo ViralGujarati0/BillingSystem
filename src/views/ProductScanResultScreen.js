@@ -6,12 +6,15 @@ import {
   StyleSheet,
   ActivityIndicator,
   ScrollView,
+  Dimensions,
 } from 'react-native';
 import { useAtomValue, useSetAtom } from 'jotai';
+import Icon from 'react-native-vector-icons/Ionicons';
 
-import AppHeaderLayout    from '../components/AppHeaderLayout';
-import ProductInfoCard    from '../components/ProductInfoCard';
+import AppHeaderLayout   from '../components/AppHeaderLayout';
+import ProductInfoCard   from '../components/ProductInfoCard';
 import ScanStatusBanner  from '../components/ScanStatusBanner';
+import { colors }        from '../theme/colors';
 
 import {
   currentOwnerAtom,
@@ -25,6 +28,84 @@ import {
 import { getProductByBarcode } from '../services/productService';
 import { getInventoryItem }    from '../services/inventoryService';
 
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+// ─── Responsive helpers (base 390×844) ───────────────────────────────────────
+const scale = SCREEN_W / 390;
+const vs    = SCREEN_H / 844;
+const rs    = (n) => Math.round(n * scale);
+const rvs   = (n) => Math.round(n * vs);
+const rfs   = (n) => Math.round(n * Math.min(scale, vs));
+
+// ─── Back pill ────────────────────────────────────────────────────────────────
+const BackPill = ({ onPress }) => (
+  <TouchableOpacity style={styles.backPill} onPress={onPress} activeOpacity={0.75}>
+    <Icon name="chevron-back" size={rfs(16)} color="#FFFFFF" />
+    <Text style={styles.backPillText}>Back</Text>
+  </TouchableOpacity>
+);
+
+// ─── Loading state ────────────────────────────────────────────────────────────
+const LoadingState = () => (
+  <View style={styles.stateWrap}>
+    <View style={styles.stateIconWrap}>
+      <ActivityIndicator size="large" color={colors.primary} />
+    </View>
+    <Text style={styles.stateTitle}>Checking product…</Text>
+    <Text style={styles.stateSub}>Looking up barcode in database</Text>
+  </View>
+);
+
+// ─── Error / guard state ──────────────────────────────────────────────────────
+const ErrorState = ({ message, onBack }) => (
+  <View style={styles.stateWrap}>
+    <View style={[styles.stateIconWrap, styles.stateIconWrapError]}>
+      <Icon name="alert-circle-outline" size={rfs(34)} color="#E05252" />
+    </View>
+    <Text style={styles.stateTitle}>Something went wrong</Text>
+    <Text style={styles.stateSub}>{message}</Text>
+    <TouchableOpacity style={styles.stateBtn} onPress={onBack} activeOpacity={0.8}>
+      <Icon name="arrow-back-outline" size={rfs(15)} color="#FFFFFF" />
+      <Text style={styles.stateBtnText}>Go Back</Text>
+    </TouchableOpacity>
+  </View>
+);
+
+// ─── Barcode box — shown when product not found ───────────────────────────────
+const BarcodeBox = ({ barcode }) => (
+  <View style={styles.barcodeBox}>
+    <View style={styles.barcodeStripe} />
+    <View style={styles.barcodeInner}>
+      <View style={styles.barcodeIconWrap}>
+        <Icon name="barcode-outline" size={rfs(18)} color={colors.primary} />
+      </View>
+      <View style={styles.barcodeTextBlock}>
+        <Text style={styles.barcodeLabel}>SCANNED BARCODE</Text>
+        <Text style={styles.barcodeValue}>{barcode}</Text>
+      </View>
+    </View>
+  </View>
+);
+
+// ─── Primary action button ────────────────────────────────────────────────────
+const PrimaryBtn = ({ label, icon, onPress }) => (
+  <TouchableOpacity style={styles.primaryBtn} onPress={onPress} activeOpacity={0.85}>
+    <View style={styles.primaryIconBox}>
+      <Icon name={icon} size={rfs(15)} color={colors.primary} />
+    </View>
+    <Text style={styles.primaryBtnText}>{label}</Text>
+  </TouchableOpacity>
+);
+
+// ─── Secondary action button ──────────────────────────────────────────────────
+const SecondaryBtn = ({ label, icon, onPress }) => (
+  <TouchableOpacity style={styles.secondaryBtn} onPress={onPress} activeOpacity={0.8}>
+    <Icon name={icon} size={rfs(15)} color={colors.primary} />
+    <Text style={styles.secondaryBtnText}>{label}</Text>
+  </TouchableOpacity>
+);
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 const ProductScanResultScreen = ({ navigation, route }) => {
   const { barcode, mode = 'default' } = route.params || {};
   const isCheckMode = mode === 'check';
@@ -43,6 +124,7 @@ const ProductScanResultScreen = ({ navigation, route }) => {
   const setScanResultLoading   = useSetAtom(scanResultLoadingAtom);
   const setScanResultError     = useSetAtom(scanResultErrorAtom);
 
+  // ── Logic unchanged ──────────────────────────────────────────────────────
   useEffect(() => {
     if (!barcode || !owner?.shopId) {
       setScanResultLoading(false);
@@ -80,17 +162,18 @@ const ProductScanResultScreen = ({ navigation, route }) => {
 
     return () => { cancelled = true; };
   }, [barcode, owner?.shopId]);
+  // ────────────────────────────────────────────────────────────────────────
+
+  const backPill = <BackPill onPress={() => navigation.goBack()} />;
 
   // ── Guard ────────────────────────────────────────────────────────────────
   if (!barcode || !owner?.shopId) {
     return (
-      <AppHeaderLayout title="Scan Result">
-        <View style={styles.center}>
-          <Text style={styles.errorText}>Missing barcode or shop.</Text>
-          <TouchableOpacity style={styles.btn} onPress={() => navigation.goBack()}>
-            <Text style={styles.btnText}>Back</Text>
-          </TouchableOpacity>
-        </View>
+      <AppHeaderLayout title="Scan Result" leftComponent={backPill}>
+        <ErrorState
+          message="Missing barcode or shop information."
+          onBack={() => navigation.goBack()}
+        />
       </AppHeaderLayout>
     );
   }
@@ -98,11 +181,8 @@ const ProductScanResultScreen = ({ navigation, route }) => {
   // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <AppHeaderLayout title="Scan Result">
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#1a73e8" />
-          <Text style={styles.loadingText}>Checking product...</Text>
-        </View>
+      <AppHeaderLayout title="Scan Result" leftComponent={backPill}>
+        <LoadingState />
       </AppHeaderLayout>
     );
   }
@@ -110,13 +190,8 @@ const ProductScanResultScreen = ({ navigation, route }) => {
   // ── Error ────────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <AppHeaderLayout title="Scan Result">
-        <View style={styles.center}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.btn} onPress={() => navigation.goBack()}>
-            <Text style={styles.btnText}>Back</Text>
-          </TouchableOpacity>
-        </View>
+      <AppHeaderLayout title="Scan Result" leftComponent={backPill}>
+        <ErrorState message={error} onBack={() => navigation.goBack()} />
       </AppHeaderLayout>
     );
   }
@@ -127,43 +202,57 @@ const ProductScanResultScreen = ({ navigation, route }) => {
   const hasInventory      = resolvedInventory != null;
 
   // ── FLOW 3: Product not in global ───────────────────────────────────────
-  // Same for both Check and Add — show "Product not found" + Create button
   if (!resolvedProduct) {
     return (
-      <AppHeaderLayout title="Scan Result">
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <AppHeaderLayout
+        title="Scan Result"
+        subtitle="Product not found"
+        leftComponent={backPill}
+      >
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          <ScanStatusBanner
+            type="warning"
+            message="This barcode is not in the database yet."
+          />
 
-          <ScanStatusBanner type="warning" message="Product not found in database" />
+          <BarcodeBox barcode={barcode} />
 
-          <View style={styles.barcodeBox}>
-            <Text style={styles.barcodeLabel}>Scanned barcode</Text>
-            <Text style={styles.barcodeValue}>{barcode}</Text>
-          </View>
-
-          <Text style={styles.hint}>
-            This barcode doesn't exist yet. Create it as a new product and it
-            will be added to your inventory.
+          <Text style={styles.hintText}>
+            Create this as a new product and it will be added to your inventory automatically.
           </Text>
 
-          <TouchableOpacity
-            style={styles.primaryBtn}
+          <PrimaryBtn
+            label="Create Product"
+            icon="add-circle-outline"
             onPress={() => navigation.navigate('CreateProduct', { barcode })}
-          >
-            <Text style={styles.primaryBtnText}>Create Product</Text>
-          </TouchableOpacity>
+          />
 
         </ScrollView>
       </AppHeaderLayout>
     );
   }
 
-  // ── FLOW 1 (Check): In global + in inventory → info only, no action ─────
+  // ── FLOW 1 (Check): In global + in inventory → info only ────────────────
   if (isCheckMode && hasInventory) {
     return (
-      <AppHeaderLayout title="Scan Result">
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-
-          <ScanStatusBanner type="success" message="Product is in your inventory" />
+      <AppHeaderLayout
+        title="Scan Result"
+        subtitle="In your inventory"
+        leftComponent={backPill}
+      >
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          <ScanStatusBanner
+            type="success"
+            message="Product is in your inventory"
+          />
 
           <ProductInfoCard
             product={resolvedProduct}
@@ -176,13 +265,23 @@ const ProductScanResultScreen = ({ navigation, route }) => {
     );
   }
 
-  // ── FLOW 1 (Add): In global + in inventory → show Update Inventory button
+  // ── FLOW 1 (Add): In global + in inventory → Update Inventory ───────────
   if (!isCheckMode && hasInventory) {
     return (
-      <AppHeaderLayout title="Scan Result">
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-
-          <ScanStatusBanner type="success" message="Product is already in your inventory" />
+      <AppHeaderLayout
+        title="Scan Result"
+        subtitle="Already in inventory"
+        leftComponent={backPill}
+      >
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          <ScanStatusBanner
+            type="success"
+            message="Product is already in your inventory"
+          />
 
           <ProductInfoCard
             product={resolvedProduct}
@@ -190,24 +289,33 @@ const ProductScanResultScreen = ({ navigation, route }) => {
             inventory={resolvedInventory}
           />
 
-          <TouchableOpacity
-            style={styles.secondaryBtn}
+          <SecondaryBtn
+            label="Update Inventory"
+            icon="create-outline"
             onPress={() => navigation.navigate('UpdateInventory', { barcode })}
-          >
-            <Text style={styles.secondaryBtnText}>Update Inventory</Text>
-          </TouchableOpacity>
+          />
 
         </ScrollView>
       </AppHeaderLayout>
     );
   }
 
-  // ── FLOW 2: In global but NOT in inventory (same for both modes) ─────────
+  // ── FLOW 2: In global but NOT in inventory (both modes) ─────────────────
   return (
-    <AppHeaderLayout title="Scan Result">
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-
-        <ScanStatusBanner type="info" message="Product found — not yet in your inventory" />
+    <AppHeaderLayout
+      title="Scan Result"
+      subtitle="Not in inventory"
+      leftComponent={backPill}
+    >
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <ScanStatusBanner
+          type="info"
+          message="Product found — not yet in your inventory"
+        />
 
         <ProductInfoCard
           product={resolvedProduct}
@@ -215,17 +323,16 @@ const ProductScanResultScreen = ({ navigation, route }) => {
           inventory={null}
         />
 
-        <TouchableOpacity
-          style={styles.primaryBtn}
+        <PrimaryBtn
+          label="Add to Inventory"
+          icon="add-circle-outline"
           onPress={() =>
             navigation.navigate('InventoryForm', {
               barcode,
               product: resolvedProduct,
             })
           }
-        >
-          <Text style={styles.primaryBtnText}>Add to Inventory</Text>
-        </TouchableOpacity>
+        />
 
       </ScrollView>
     </AppHeaderLayout>
@@ -234,86 +341,229 @@ const ProductScanResultScreen = ({ navigation, route }) => {
 
 export default ProductScanResultScreen;
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+
+  // ── Back pill ────────────────────────────────────────────
+  backPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(4),
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    borderRadius: rs(20),
+    paddingHorizontal: rs(12),
+    paddingVertical: rvs(7),
+  },
+
+  backPillText: {
+    fontSize: rfs(13),
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+
+  // ── Scroll ───────────────────────────────────────────────
   scroll: {
     flex: 1,
   },
+
   content: {
-    padding: 16,
-    paddingBottom: 40,
+    paddingHorizontal: rs(16),
+    paddingTop: rvs(16),
+    paddingBottom: rvs(48),
+    gap: rvs(12),
   },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 15,
-    color: '#666',
-  },
-  errorText: {
-    fontSize: 15,
-    color: '#dc3545',
+
+  // ── Hint text ────────────────────────────────────────────
+  hintText: {
+    fontSize: rfs(13),
+    fontWeight: '500',
+    color: colors.textSecondary,
+    lineHeight: rfs(19),
     textAlign: 'center',
-    marginBottom: 20,
+    paddingHorizontal: rs(8),
   },
+
+  // ── Barcode box ──────────────────────────────────────────
   barcodeBox: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 16,
-    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: rs(14),
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    shadowColor: colors.shadowCard,
+    shadowOffset: { width: 0, height: rvs(2) },
+    shadowOpacity: 1,
+    shadowRadius: rs(10),
+    elevation: 2,
+    flexDirection: 'row',
+    overflow: 'hidden',
   },
+
+  barcodeStripe: {
+    width: rs(3),
+    backgroundColor: colors.accent,
+    flexShrink: 0,
+  },
+
+  barcodeInner: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(12),
+    paddingHorizontal: rs(14),
+    paddingVertical: rvs(14),
+  },
+
+  barcodeIconWrap: {
+    width: rs(40),
+    height: rs(40),
+    borderRadius: rs(11),
+    backgroundColor: 'rgba(45,74,82,0.06)',
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+
+  barcodeTextBlock: {
+    flex: 1,
+    gap: rvs(3),
+  },
+
   barcodeLabel: {
-    fontSize: 12,
-    color: '#888',
-    marginBottom: 4,
+    fontSize: rfs(9),
+    fontWeight: '700',
+    color: colors.textSecondary,
+    letterSpacing: 0.6,
   },
+
   barcodeValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111',
+    fontSize: rfs(16),
+    fontWeight: '800',
+    color: colors.textPrimary,
     letterSpacing: 1,
+    fontVariant: ['tabular-nums'],
   },
-  hint: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-    marginBottom: 24,
-  },
+
+  // ── Primary button ───────────────────────────────────────
   primaryBtn: {
-    backgroundColor: '#1a73e8',
-    paddingVertical: 14,
-    borderRadius: 10,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: rs(10),
+    backgroundColor: colors.primary,
+    borderRadius: rs(14),
+    paddingVertical: rvs(15),
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: rvs(4) },
+    shadowOpacity: 0.30,
+    shadowRadius: rs(12),
+    elevation: 5,
   },
+
+  primaryIconBox: {
+    width: rs(26),
+    height: rs(26),
+    borderRadius: rs(8),
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   primaryBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 15,
+    fontSize: rfs(15),
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
+
+  // ── Secondary button ─────────────────────────────────────
   secondaryBtn: {
-    borderWidth: 1.5,
-    borderColor: '#1a73e8',
-    paddingVertical: 13,
-    borderRadius: 10,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: rs(8),
+    backgroundColor: '#FFFFFF',
+    borderRadius: rs(14),
+    paddingVertical: rvs(14),
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    shadowColor: colors.shadowCard,
+    shadowOffset: { width: 0, height: rvs(2) },
+    shadowOpacity: 1,
+    shadowRadius: rs(8),
+    elevation: 2,
   },
+
   secondaryBtnText: {
-    color: '#1a73e8',
+    fontSize: rfs(14),
     fontWeight: '700',
-    fontSize: 15,
+    color: colors.primary,
   },
-  btn: {
-    backgroundColor: '#1a73e8',
-    paddingVertical: 12,
-    paddingHorizontal: 28,
-    borderRadius: 8,
+
+  // ── Loading / error states ───────────────────────────────
+  stateWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: rs(32),
+    gap: rvs(10),
   },
-  btnText: {
-    color: '#fff',
-    fontWeight: '600',
+
+  stateIconWrap: {
+    width: rs(72),
+    height: rs(72),
+    borderRadius: rs(20),
+    backgroundColor: 'rgba(45,74,82,0.06)',
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: rvs(4),
   },
+
+  stateIconWrapError: {
+    backgroundColor: 'rgba(224,82,82,0.06)',
+    borderColor: 'rgba(224,82,82,0.20)',
+  },
+
+  stateTitle: {
+    fontSize: rfs(17),
+    fontWeight: '800',
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+
+  stateSub: {
+    fontSize: rfs(13),
+    fontWeight: '500',
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: rfs(19),
+  },
+
+  stateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(6),
+    backgroundColor: colors.primary,
+    borderRadius: rs(12),
+    paddingHorizontal: rs(20),
+    paddingVertical: rvs(12),
+    marginTop: rvs(8),
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: rvs(3) },
+    shadowOpacity: 0.25,
+    shadowRadius: rs(8),
+    elevation: 4,
+  },
+
+  stateBtnText: {
+    fontSize: rfs(14),
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
 });
