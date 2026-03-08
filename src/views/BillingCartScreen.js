@@ -6,9 +6,12 @@ import {
   Text,
   TouchableOpacity,
   Alert,
+  Dimensions,
+  Platform,
+  StatusBar,
 } from 'react-native';
-
 import { useAtomValue, useSetAtom } from 'jotai';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 import {
   billingCartItemsAtom,
@@ -19,199 +22,215 @@ import {
 
 import useBillingViewModel from '../viewmodels/BillingViewModel';
 
-import BillingHeader from '../components/BillingHeader';
+import BillingHeader          from '../components/BillingHeader';
 import CustomerPaymentSection from '../components/CustomerPaymentSection';
-import BillingItemsTable from '../components/BillingItemsTable';
-import BillingTotalCard from '../components/BillingTotalCard';
-import BillingActions from '../components/BillingActions';
+import BillingItemsTable      from '../components/BillingItemsTable';
+import BillingTotalCard       from '../components/BillingTotalCard';
+import BillingActions         from '../components/BillingActions';
 
+import { colors } from '../theme/colors';
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+// ─── Responsive helpers (base 390×844) ───────────────────────────────────────
+const scale = SCREEN_W / 390;
+const vs    = SCREEN_H / 844;
+const rs    = (n) => Math.round(n * scale);
+const rvs   = (n) => Math.round(n * vs);
+const rfs   = (n) => Math.round(n * Math.min(scale, vs));
+
+// ─── Component ────────────────────────────────────────────────────────────────
 const BillingCartScreen = ({ navigation, route }) => {
   const { userDoc } = route.params || {};
   const shopId = userDoc?.shopId;
 
-  const cartItems = useAtomValue(billingCartItemsAtom);
+  const cartItems    = useAtomValue(billingCartItemsAtom);
   const customerName = useAtomValue(billingCustomerNameAtom);
-  const paymentType = useAtomValue(billingPaymentTypeAtom);
-  const loading = useAtomValue(billingGenerateLoadingAtom);
+  const paymentType  = useAtomValue(billingPaymentTypeAtom);
+  const loading      = useAtomValue(billingGenerateLoadingAtom);
 
   const setCustomerName = useSetAtom(billingCustomerNameAtom);
-  const setPaymentType = useSetAtom(billingPaymentTypeAtom);
-  const setLoading = useSetAtom(billingGenerateLoadingAtom);
+  const setPaymentType  = useSetAtom(billingPaymentTypeAtom);
+  const setLoading      = useSetAtom(billingGenerateLoadingAtom);
 
   const vm = useBillingViewModel();
 
-  const [shop, setShop] = useState(null);
+  const [shop,     setShop]     = useState(null);
   const [settings, setSettings] = useState(null);
 
   /* ───────── LOAD SHOP + SETTINGS ───────── */
-
   useEffect(() => {
     if (!shopId) return;
-
     let cancelled = false;
-
     (async () => {
       try {
-        const { shop: s, settings: st } =
-          await vm.loadShopAndSettings(shopId);
-
-        if (!cancelled) {
-          setShop(s);
-          setSettings(st);
-        }
+        const { shop: s, settings: st } = await vm.loadShopAndSettings(shopId);
+        if (!cancelled) { setShop(s); setSettings(st); }
       } catch (e) {
         if (!cancelled) setShop(null);
       }
     })();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [shopId]);
 
-  /* ───────── UPDATE QTY ───────── */
-
-  const updateItemQty = (index, qty) => {
-    vm.updateItemQty(index, qty);
-  };
-
   /* ───────── GRAND TOTAL ───────── */
+  const grandTotal = cartItems.reduce((sum, item) => sum + (item.amount || 0), 0);
 
-  const grandTotal = cartItems.reduce(
-    (sum, item) => sum + (item.amount || 0),
-    0
-  );
+  /* ───────── UPDATE QTY ───────── */
+  const updateItemQty = (index, qty) => vm.updateItemQty(index, qty);
 
   /* ───────── GENERATE BILL ───────── */
-
   const handleGenerateBill = async () => {
     setLoading(true);
-
     try {
-      await vm.generateBill({
-        userDoc,
-        shop,
-        settings,
-      });
-
-      const backScreen =
-        userDoc?.role === 'OWNER'
-          ? 'OwnerTabs'
-          : 'StaffHome';
-
-      const backParams = userDoc
-        ? { userDoc }
-        : {};
-
-      navigation.replace('BillSuccess', {
-        backScreen,
-        backParams,
-      });
-
+      await vm.generateBill({ userDoc, shop, settings });
+      const backScreen = userDoc?.role === 'OWNER' ? 'OwnerTabs' : 'StaffHome';
+      const backParams = userDoc ? { userDoc } : {};
+      navigation.replace('BillSuccess', { backScreen, backParams });
     } catch (err) {
-      const msg =
-        err?.message || 'Failed to generate bill';
-
-      const details = err?.details
-        ? ` (${String(err.details)})`
-        : '';
-
+      const msg     = err?.message || 'Failed to generate bill';
+      const details = err?.details ? ` (${String(err.details)})` : '';
       Alert.alert('Error', msg + details);
-
     } finally {
       setLoading(false);
     }
   };
 
   /* ───────── NO SHOP CASE ───────── */
-
   if (!shopId) {
     return (
-      <View style={styles.center}>
-        <Text>No shop found.</Text>
-
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backText}>Back</Text>
-        </TouchableOpacity>
+      <View style={styles.errorCenter}>
+        <View style={styles.errorCard}>
+          <Icon name="storefront-outline" size={rfs(36)} color={colors.textSecondary} />
+          <Text style={styles.errorTitle}>No shop found</Text>
+          <Text style={styles.errorSub}>Unable to load shop information.</Text>
+          <TouchableOpacity
+            style={styles.errorBackBtn}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.8}
+          >
+            <Icon name="chevron-back" size={rfs(14)} color="#FFFFFF" />
+            <Text style={styles.errorBackText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
 
   /* ───────── MAIN UI ───────── */
-
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <BillingHeader
-        navigation={navigation}
-        shop={shop}
-      />
+    <View style={styles.root}>
+      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
 
-      <CustomerPaymentSection
-        customerName={customerName}
-        setCustomerName={setCustomerName}
-        paymentType={paymentType}
-        setPaymentType={setPaymentType}
-      />
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Header — sits flush at top, no extra padding needed */}
+        <BillingHeader navigation={navigation} shop={shop} />
 
-      <BillingItemsTable
-        cartItems={cartItems}
-        updateItemQty={updateItemQty}
-        updateManualItemField={vm.updateManualItemField}
-        removeItem={vm.removeItem}
-      />
+        <CustomerPaymentSection
+          customerName={customerName}
+          setCustomerName={setCustomerName}
+          paymentType={paymentType}
+          setPaymentType={setPaymentType}
+        />
 
-      <BillingTotalCard total={grandTotal} cartItems={cartItems} />
+        <BillingItemsTable
+          cartItems={cartItems}
+          updateItemQty={updateItemQty}
+          updateManualItemField={vm.updateManualItemField}
+          removeItem={vm.removeItem}
+        />
 
-      <BillingActions
-        loading={loading}
-        onAddMore={() =>
-          navigation.navigate(
-            'BillingScanner',
-            { userDoc }
-          )
-        }
-        onGenerate={handleGenerateBill}
-      />
-    </ScrollView>
+        <BillingTotalCard total={grandTotal} cartItems={cartItems} />
+
+        <BillingActions
+          loading={loading}
+          onAddMore={() => navigation.navigate('BillingScanner', { userDoc })}
+          onGenerate={handleGenerateBill}
+        />
+      </ScrollView>
+    </View>
   );
 };
 
 export default BillingCartScreen;
 
 /* ───────── STYLES ───────── */
-
 const styles = StyleSheet.create({
-  container: {
+
+  root: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background ?? '#F2F4F5',
   },
 
+  scroll: {
+    flex: 1,
+  },
+
+  // No top padding — BillingHeader handles its own STATUS_H + paddingTop
   content: {
-    padding: 24,
-    paddingTop: 56,
-    paddingBottom: 40,
+    paddingBottom: rvs(40),
   },
 
-  center: {
+  // ── Error / no-shop state ─────────────────────────────
+  errorCenter: {
     flex: 1,
+    backgroundColor: colors.background ?? '#F2F4F5',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: rs(32),
   },
 
-  backBtn: {
-    marginTop: 20,
-    padding: 12,
+  errorCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: rs(20),
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    alignItems: 'center',
+    paddingVertical: rvs(36),
+    paddingHorizontal: rs(24),
+    gap: rvs(8),
+    shadowColor: colors.shadowCard,
+    shadowOffset: { width: 0, height: rvs(4) },
+    shadowOpacity: 1,
+    shadowRadius: rs(16),
+    elevation: 4,
   },
 
-  backText: {
-    color: '#1a73e8',
-    fontWeight: '600',
+  errorTitle: {
+    fontSize: rfs(17),
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginTop: rvs(8),
+  },
+
+  errorSub: {
+    fontSize: rfs(13),
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: rfs(20),
+  },
+
+  errorBackBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(5),
+    backgroundColor: colors.primary,
+    borderRadius: rs(12),
+    paddingVertical: rvs(10),
+    paddingHorizontal: rs(20),
+    marginTop: rvs(12),
+  },
+
+  errorBackText: {
+    fontSize: rfs(13),
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.2,
   },
 });
