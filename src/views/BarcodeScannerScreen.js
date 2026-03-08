@@ -8,20 +8,34 @@ import {
   ActivityIndicator,
   Linking,
 } from 'react-native';
-import { Camera, useCodeScanner, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
+import {
+  Camera,
+  useCodeScanner,
+  useCameraDevice,
+  useCameraPermission,
+} from 'react-native-vision-camera';
 import { useSetAtom, useAtomValue } from 'jotai';
-import { scannedBarcodeAtom } from '../atoms/owner';
-import { barcodeScannerRequestingPermissionAtom } from '../atoms/forms';
-import { purchaseScannedBarcodeAtom } from '../atoms/purchase';
 
+import { scannedBarcodeAtom }                    from '../atoms/owner';
+import { barcodeScannerRequestingPermissionAtom } from '../atoms/forms';
+import { purchaseScannedBarcodeAtom }             from '../atoms/purchase';
+
+/**
+ * Supported modes:
+ *  - (default)       → ProductScanResultScreen (all 3 flows, Add path)
+ *  - check           → ProductScanResultScreen (all 3 flows, Check path)
+ *  - updateInventory → UpdateInventoryScreen
+ *  - purchaseItem    → sets atom + goBack
+ */
 const BarcodeScannerScreen = ({ navigation, route }) => {
-  const mode = route?.params?.mode || 'default';
+  const mode   = route?.params?.mode || 'default';
   const device = useCameraDevice('back');
   const { hasPermission, requestPermission } = useCameraPermission();
-  const hasScanned = useRef(false);
-  const setScannedBarcode = useSetAtom(scannedBarcodeAtom);
-  const setPurchaseScannedBarcode = useSetAtom(purchaseScannedBarcodeAtom);
-  const requestingPermission = useAtomValue(barcodeScannerRequestingPermissionAtom);
+
+  const hasScanned              = useRef(false);
+  const setScannedBarcode       = useSetAtom(scannedBarcodeAtom);
+  const setPurchaseBarcode      = useSetAtom(purchaseScannedBarcodeAtom);
+  const requestingPermission    = useAtomValue(barcodeScannerRequestingPermissionAtom);
   const setRequestingPermission = useSetAtom(barcodeScannerRequestingPermissionAtom);
 
   useEffect(() => {
@@ -30,58 +44,47 @@ const BarcodeScannerScreen = ({ navigation, route }) => {
 
   const onCodeScanned = useCallback(
     (codes) => {
-  
       if (hasScanned.current || !codes.length) return;
-  
+
       const value = codes[0]?.value;
-  
       if (!value) return;
-  
+
       hasScanned.current = true;
-  
-      // Prevent double scan
-      setTimeout(() => {
-        hasScanned.current = false;
-      }, 1200);
-  
-      if (mode === "createProduct") {
-        navigation.replace("CreateProduct", { barcode: value });
+      setTimeout(() => { hasScanned.current = false; }, 1200);
+
+      if (mode === 'updateInventory') {
+        navigation.replace('UpdateInventory', { barcode: value });
         return;
       }
-  
-      if (mode === "updateInventory") {
-        navigation.replace("UpdateInventory", { barcode: value });
-        return;
-      }
-  
-      if (mode === "purchaseItem") {
-        setPurchaseScannedBarcode(value);
+
+      if (mode === 'purchaseItem') {
+        setPurchaseBarcode(value);
         navigation.goBack();
         return;
       }
-  
-      // default flow
+
+      // both 'check' and 'default' go to ProductScanResultScreen
+      // mode is passed so the screen knows which variant to show for Flow 1
       setScannedBarcode(value);
-      navigation.replace("ProductScanResult", { barcode: value });
-  
+      navigation.replace('ProductScanResult', { barcode: value, mode });
     },
-    [navigation, mode, setScannedBarcode, setPurchaseScannedBarcode]
+    [navigation, mode, setScannedBarcode, setPurchaseBarcode]
   );
 
   const codeScanner = useCodeScanner({
     codeTypes: ['qr', 'ean-13', 'ean-8', 'code-128', 'code-39', 'upc-a'],
-    onCodeScanned: onCodeScanned,
+    onCodeScanned,
     scanInterval: 500,
   });
 
   const handleRequestPermission = async () => {
     setRequestingPermission(true);
     try {
-      const result = await requestPermission();
-      if (!result) {
+      const granted = await requestPermission();
+      if (!granted) {
         Alert.alert(
           'Camera permission denied',
-          'To scan barcodes, please enable camera access in your device settings.',
+          'Enable camera access in your device settings to scan barcodes.',
           [
             { text: 'Cancel', style: 'cancel' },
             { text: 'Open Settings', onPress: () => Linking.openSettings() },
@@ -98,7 +101,9 @@ const BarcodeScannerScreen = ({ navigation, route }) => {
   if (!hasPermission) {
     return (
       <View style={styles.container}>
-        <Text style={styles.message}>Camera permission is needed to scan barcodes.</Text>
+        <Text style={styles.message}>
+          Camera permission is needed to scan barcodes.
+        </Text>
         <TouchableOpacity
           style={[styles.button, requestingPermission && styles.buttonDisabled]}
           onPress={handleRequestPermission}
@@ -142,10 +147,7 @@ const BarcodeScannerScreen = ({ navigation, route }) => {
       />
       <View style={styles.overlay}>
         <Text style={styles.hint}>Point at a barcode to scan</Text>
-        <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()}>
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
       </View>
@@ -165,6 +167,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     marginBottom: 20,
+    paddingHorizontal: 32,
   },
   hint: {
     color: '#fff',

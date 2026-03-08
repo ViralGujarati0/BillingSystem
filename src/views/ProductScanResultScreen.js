@@ -7,8 +7,11 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-
 import { useAtomValue, useSetAtom } from 'jotai';
+
+import AppHeaderLayout    from '../components/AppHeaderLayout';
+import ProductInfoCard    from '../components/ProductInfoCard';
+import ScanStatusBanner  from '../components/ScanStatusBanner';
 
 import {
   currentOwnerAtom,
@@ -20,28 +23,28 @@ import {
 } from '../atoms/owner';
 
 import { getProductByBarcode } from '../services/productService';
-import { getInventoryItem } from '../services/inventoryService';
-
-const LOG = true;
-const log = (...args) => { if (LOG) console.log('[ProductScanResult]', ...args); };
+import { getInventoryItem }    from '../services/inventoryService';
 
 const ProductScanResultScreen = ({ navigation, route }) => {
-  const { barcode } = route.params || {};
+  const { barcode, mode = 'default' } = route.params || {};
+  const isCheckMode = mode === 'check';
+
   const owner = useAtomValue(currentOwnerAtom);
-  const scanResultBarcode = useAtomValue(scanResultBarcodeAtom);
-  const product = useAtomValue(scanResultProductAtom);
-  const inventory = useAtomValue(scanResultInventoryAtom);
-  const loading = useAtomValue(scanResultLoadingAtom);
-  const error = useAtomValue(scanResultErrorAtom);
-  const setScanResultBarcode = useSetAtom(scanResultBarcodeAtom);
-  const setScanResultProduct = useSetAtom(scanResultProductAtom);
+
+  const scanResultBarcode  = useAtomValue(scanResultBarcodeAtom);
+  const product            = useAtomValue(scanResultProductAtom);
+  const inventory          = useAtomValue(scanResultInventoryAtom);
+  const loading            = useAtomValue(scanResultLoadingAtom);
+  const error              = useAtomValue(scanResultErrorAtom);
+
+  const setScanResultBarcode   = useSetAtom(scanResultBarcodeAtom);
+  const setScanResultProduct   = useSetAtom(scanResultProductAtom);
   const setScanResultInventory = useSetAtom(scanResultInventoryAtom);
-  const setScanResultLoading = useSetAtom(scanResultLoadingAtom);
-  const setScanResultError = useSetAtom(scanResultErrorAtom);
+  const setScanResultLoading   = useSetAtom(scanResultLoadingAtom);
+  const setScanResultError     = useSetAtom(scanResultErrorAtom);
 
   useEffect(() => {
     if (!barcode || !owner?.shopId) {
-      log('Missing input:', { barcode: barcode ?? 'null', shopId: owner?.shopId ?? 'null' });
       setScanResultLoading(false);
       setScanResultProduct(null);
       setScanResultInventory(null);
@@ -49,189 +52,268 @@ const ProductScanResultScreen = ({ navigation, route }) => {
       setScanResultBarcode(null);
       return;
     }
+
     let cancelled = false;
-    const shopId = owner.shopId;
-    log('Fetching for barcode:', barcode, 'shopId:', shopId);
+    const shopId  = owner.shopId;
+
     setScanResultError(null);
     setScanResultLoading(true);
     setScanResultProduct(null);
     setScanResultInventory(null);
     setScanResultBarcode(barcode);
+
     (async () => {
       try {
         const [productDoc, inventoryDoc] = await Promise.all([
           getProductByBarcode(barcode),
           getInventoryItem(shopId, barcode),
         ]);
-        if (cancelled) {
-          log('Fetch cancelled for barcode:', barcode);
-          return;
-        }
-        log('Fetch done:', {
-          barcode,
-          productExists: productDoc != null,
-          productId: productDoc?.id,
-          inventoryExists: inventoryDoc != null,
-          inventoryId: inventoryDoc?.id,
-        });
+        if (cancelled) return;
         setScanResultProduct(productDoc);
         setScanResultInventory(inventoryDoc);
       } catch (e) {
-        if (!cancelled) {
-          log('Fetch error:', e.message);
-          setScanResultError(e.message);
-        }
+        if (!cancelled) setScanResultError(e.message);
       } finally {
         if (!cancelled) setScanResultLoading(false);
       }
     })();
+
     return () => { cancelled = true; };
-  }, [barcode, owner?.shopId, setScanResultBarcode, setScanResultProduct, setScanResultInventory, setScanResultLoading, setScanResultError]);
+  }, [barcode, owner?.shopId]);
 
-  const handleAddToInventory = () => {
-    navigation.navigate('InventoryForm', { barcode, product });
-  };
-
-  const handleCreateProduct = () => {
-    navigation.navigate('CreateProduct', { barcode });
-  };
-
-  if (!barcode) {
+  // ── Guard ────────────────────────────────────────────────────────────────
+  if (!barcode || !owner?.shopId) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.message}>No barcode.</Text>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.goBack()}>
-          <Text style={styles.buttonText}>Back</Text>
-        </TouchableOpacity>
-      </View>
+      <AppHeaderLayout title="Scan Result">
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Missing barcode or shop.</Text>
+          <TouchableOpacity style={styles.btn} onPress={() => navigation.goBack()}>
+            <Text style={styles.btnText}>Back</Text>
+          </TouchableOpacity>
+        </View>
+      </AppHeaderLayout>
     );
   }
 
-  if (!owner?.shopId) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.message}>No shop. Create a shop first.</Text>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.goBack()}>
-          <Text style={styles.buttonText}>Back</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
+  // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#1a73e8" />
-        <Text style={styles.loadingText}>Checking product...</Text>
-      </View>
+      <AppHeaderLayout title="Scan Result">
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#1a73e8" />
+          <Text style={styles.loadingText}>Checking product...</Text>
+        </View>
+      </AppHeaderLayout>
     );
   }
 
+  // ── Error ────────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.goBack()}>
-          <Text style={styles.buttonText}>Back</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  // Only use product/inventory if they are for THIS barcode (avoid showing stale result from another scan)
-  const isResultForThisBarcode = scanResultBarcode === barcode;
-  const productForThisScan = isResultForThisBarcode ? product : null;
-  const inventoryForThisScan = isResultForThisBarcode ? inventory : null;
-
-  // Case 2: Product does NOT exist globally → Create Product
-  if (!productForThisScan) {
-    log('Showing branch: Create Product (product not in billing_products)', { barcode, scanResultBarcode });
-    return (
-      <View style={styles.container}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Product not found</Text>
-        <Text style={styles.barcode}>Barcode: {barcode}</Text>
-        <Text style={styles.hint}>Create this product and add it to your inventory.</Text>
-        <TouchableOpacity style={styles.primaryButton} onPress={handleCreateProduct}>
-          <Text style={styles.buttonText}>Create Product</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  // Case 1: Product exists in global billing_products
-  // "Already present in inventory" ONLY when this shop's inventory doc exists for this barcode
-  const hasInventoryInThisShop = inventoryForThisScan != null && typeof inventoryForThisScan === 'object';
-  log('Showing branch:', hasInventoryInThisShop ? 'Already present in inventory' : 'Add To Inventory', {
-    barcode,
-    scanResultBarcode,
-    hasInventoryInThisShop,
-    inventoryIsNull: inventoryForThisScan === null,
-    inventoryType: typeof inventoryForThisScan,
-  });
-
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-        <Text style={styles.backText}>← Back</Text>
-      </TouchableOpacity>
-      <Text style={styles.title}>Product details</Text>
-      <View style={styles.card}>
-        <Text style={styles.label}>Barcode</Text>
-        <Text style={styles.value}>{product.barcode || barcode}</Text>
-        <Text style={styles.label}>Name</Text>
-        <Text style={styles.value}>{product.name}</Text>
-        <Text style={styles.label}>Category</Text>
-        <Text style={styles.value}>{product.category}</Text>
-        <Text style={styles.label}>MRP</Text>
-        <Text style={styles.value}>₹{product.mrp}</Text>
-        <Text style={styles.label}>GST %</Text>
-        <Text style={styles.value}>{product.gstPercent}%</Text>
-        {hasInventoryInThisShop && inventoryForThisScan && (
-          <>
-            <Text style={styles.label}>Selling price</Text>
-            <Text style={styles.value}>₹{inventoryForThisScan.sellingPrice}</Text>
-            <Text style={styles.label}>Stock</Text>
-            <Text style={styles.value}>{inventoryForThisScan.stock}</Text>
-          </>
-        )}
-      </View>
-
-      {hasInventoryInThisShop ? (
-        <View style={styles.messageBox}>
-          <Text style={styles.messageBoxText}>Already present in inventory</Text>
+      <AppHeaderLayout title="Scan Result">
+        <View style={styles.center}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.btn} onPress={() => navigation.goBack()}>
+            <Text style={styles.btnText}>Back</Text>
+          </TouchableOpacity>
         </View>
-      ) : (
-        <TouchableOpacity style={styles.primaryButton} onPress={handleAddToInventory}>
-          <Text style={styles.buttonText}>Add To Inventory</Text>
+      </AppHeaderLayout>
+    );
+  }
+
+  const isMatchingResult  = scanResultBarcode === barcode;
+  const resolvedProduct   = isMatchingResult ? product   : null;
+  const resolvedInventory = isMatchingResult ? inventory : null;
+  const hasInventory      = resolvedInventory != null;
+
+  // ── FLOW 3: Product not in global ───────────────────────────────────────
+  // Same for both Check and Add — show "Product not found" + Create button
+  if (!resolvedProduct) {
+    return (
+      <AppHeaderLayout title="Scan Result">
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
+          <ScanStatusBanner type="warning" message="Product not found in database" />
+
+          <View style={styles.barcodeBox}>
+            <Text style={styles.barcodeLabel}>Scanned barcode</Text>
+            <Text style={styles.barcodeValue}>{barcode}</Text>
+          </View>
+
+          <Text style={styles.hint}>
+            This barcode doesn't exist yet. Create it as a new product and it
+            will be added to your inventory.
+          </Text>
+
+          <TouchableOpacity
+            style={styles.primaryBtn}
+            onPress={() => navigation.navigate('CreateProduct', { barcode })}
+          >
+            <Text style={styles.primaryBtnText}>Create Product</Text>
+          </TouchableOpacity>
+
+        </ScrollView>
+      </AppHeaderLayout>
+    );
+  }
+
+  // ── FLOW 1 (Check): In global + in inventory → info only, no action ─────
+  if (isCheckMode && hasInventory) {
+    return (
+      <AppHeaderLayout title="Scan Result">
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
+          <ScanStatusBanner type="success" message="Product is in your inventory" />
+
+          <ProductInfoCard
+            product={resolvedProduct}
+            barcode={barcode}
+            inventory={resolvedInventory}
+          />
+
+        </ScrollView>
+      </AppHeaderLayout>
+    );
+  }
+
+  // ── FLOW 1 (Add): In global + in inventory → show Update Inventory button
+  if (!isCheckMode && hasInventory) {
+    return (
+      <AppHeaderLayout title="Scan Result">
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
+          <ScanStatusBanner type="success" message="Product is already in your inventory" />
+
+          <ProductInfoCard
+            product={resolvedProduct}
+            barcode={barcode}
+            inventory={resolvedInventory}
+          />
+
+          <TouchableOpacity
+            style={styles.secondaryBtn}
+            onPress={() => navigation.navigate('UpdateInventory', { barcode })}
+          >
+            <Text style={styles.secondaryBtnText}>Update Inventory</Text>
+          </TouchableOpacity>
+
+        </ScrollView>
+      </AppHeaderLayout>
+    );
+  }
+
+  // ── FLOW 2: In global but NOT in inventory (same for both modes) ─────────
+  return (
+    <AppHeaderLayout title="Scan Result">
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
+        <ScanStatusBanner type="info" message="Product found — not yet in your inventory" />
+
+        <ProductInfoCard
+          product={resolvedProduct}
+          barcode={barcode}
+          inventory={null}
+        />
+
+        <TouchableOpacity
+          style={styles.primaryBtn}
+          onPress={() =>
+            navigation.navigate('InventoryForm', {
+              barcode,
+              product: resolvedProduct,
+            })
+          }
+        >
+          <Text style={styles.primaryBtnText}>Add to Inventory</Text>
         </TouchableOpacity>
-      )}
-    </ScrollView>
+
+      </ScrollView>
+    </AppHeaderLayout>
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  content: { padding: 24, paddingTop: 56 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff', padding: 24 },
-  backBtn: { alignSelf: 'flex-start', marginBottom: 16 },
-  backText: { color: '#1a73e8', fontSize: 16 },
-  title: { fontSize: 22, fontWeight: '600', marginBottom: 8 },
-  barcode: { fontSize: 16, color: '#666', marginBottom: 16 },
-  loadingText: { marginTop: 12, fontSize: 16, color: '#666' },
-  message: { fontSize: 16, color: '#666', marginBottom: 20, textAlign: 'center' },
-  errorText: { fontSize: 16, color: '#c00', marginBottom: 20, textAlign: 'center' },
-  hint: { fontSize: 14, color: '#666', marginBottom: 24 },
-  card: { backgroundColor: '#f8f9fa', padding: 16, borderRadius: 8, marginBottom: 24 },
-  label: { fontSize: 12, color: '#666', marginTop: 8 },
-  value: { fontSize: 16, fontWeight: '500' },
-  button: { backgroundColor: '#1a73e8', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 8 },
-  primaryButton: { backgroundColor: '#1a73e8', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  buttonText: { color: '#fff', fontWeight: '600' },
-  messageBox: { backgroundColor: '#e8f5e9', padding: 16, borderRadius: 8, alignItems: 'center' },
-  messageBoxText: { fontSize: 16, color: '#2e7d32', fontWeight: '500' },
-});
-
 export default ProductScanResultScreen;
+
+const styles = StyleSheet.create({
+  scroll: {
+    flex: 1,
+  },
+  content: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 15,
+    color: '#666',
+  },
+  errorText: {
+    fontSize: 15,
+    color: '#dc3545',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  barcodeBox: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+    padding: 16,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  barcodeLabel: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 4,
+  },
+  barcodeValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111',
+    letterSpacing: 1,
+  },
+  hint: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  primaryBtn: {
+    backgroundColor: '#1a73e8',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  primaryBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  secondaryBtn: {
+    borderWidth: 1.5,
+    borderColor: '#1a73e8',
+    paddingVertical: 13,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  secondaryBtnText: {
+    color: '#1a73e8',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  btn: {
+    backgroundColor: '#1a73e8',
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 8,
+  },
+  btnText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+});
