@@ -1,4 +1,5 @@
 import firestore from '@react-native-firebase/firestore';
+import functions from '@react-native-firebase/functions';
 import { COLLECTIONS } from '../constants/collections';
 
 /**
@@ -71,7 +72,18 @@ export async function removeStaffFromShop(shopId, staffId) {
     .delete();
 }
 
-import functions from '@react-native-firebase/functions';
+/**
+ * Create staff using cloud function
+ */
+export async function createStaff({ name, email, password }) {
+  const res = await functions().httpsCallable('createStaff')({
+    name,
+    email,
+    password,
+  });
+
+  return res.data;
+}
 
 /**
  * Delete staff using cloud function
@@ -85,14 +97,26 @@ export async function deleteStaff(staffId) {
 }
 
 /**
+ * Reset staff password using cloud function
+ */
+export async function resetStaffPassword(staffId, newPassword) {
+  const res = await functions().httpsCallable('resetStaffPassword')({
+    staffId,
+    newPassword,
+  });
+
+  return res.data;
+}
+
+/**
  * Update staff everywhere (user doc + shop subcollection)
  */
 export async function updateStaff(shopId, staffId, data) {
-    await updateStaffDoc(staffId, data);
-  
-    if (shopId) {
-      await updateStaffInShop(shopId, staffId, data);
-    }
-  
-    return true;
+  await updateStaffDoc(staffId, data);
+
+  if (shopId) {
+    await updateStaffInShop(shopId, staffId, data);
   }
+
+  return true;
+}

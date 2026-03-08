@@ -64,6 +64,7 @@ exports.createStaff = onCall(async (request) => {
     shopId,
     name,
     email,
+    password,
     role: "STAFF",
     isActive: true,
     permissions,
@@ -73,6 +74,7 @@ exports.createStaff = onCall(async (request) => {
   await db.collection(SHOPS).doc(shopId).collection("staff").doc(user.uid).set({
     name,
     email,
+    password,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 
@@ -403,4 +405,38 @@ exports.createPurchase = onCall(async (request) => {
   });
 
   return { success: true, purchaseNo: result };
+});
+
+/* ───────────────── RESET STAFF PASSWORD ───────────────── */
+
+exports.resetStaffPassword = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError("unauthenticated");
+
+  const { staffId, newPassword } = request.data;
+
+  if (!staffId || !newPassword)
+    throw new HttpsError("invalid-argument");
+
+  const db = admin.firestore();
+
+  const ownerSnap = await db.collection(USERS).doc(request.auth.uid).get();
+  if (!ownerSnap.exists || ownerSnap.data().role !== "OWNER")
+    throw new HttpsError("permission-denied");
+
+  const shopId = ownerSnap.data().shopId;
+  if (!shopId) throw new HttpsError("failed-precondition");
+
+  await admin.auth().updateUser(staffId, { password: newPassword });
+
+  await db.collection(USERS).doc(staffId).set(
+    { password: newPassword },
+    { merge: true }
+  );
+
+  await db.collection(SHOPS).doc(shopId).collection("staff").doc(staffId).set(
+    { password: newPassword },
+    { merge: true }
+  );
+
+  return { success: true };
 });

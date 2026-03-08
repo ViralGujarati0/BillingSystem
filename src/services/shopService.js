@@ -40,48 +40,72 @@ export async function createShopAndAssignToOwner(ownerId, shopData) {
     ...shopData,
   });
 
+  // assign shopId to user
   await firestore()
     .collection(COLLECTIONS.USERS)
     .doc(ownerId)
     .set({ shopId }, { merge: true });
 
+  // create default settings
+  await firestore()
+    .collection(COLLECTIONS.SHOPS)
+    .doc(shopId)
+    .collection(COLLECTIONS.SETTINGS)
+    .doc('main')
+    .set({
+      billMessage: shopData.billMessage || '',
+      billTerms: shopData.billTerms || '',
+    });
+
   return shopId;
 }
 
 /**
- * Get shop document
+ * Update shop info
+ */
+export async function updateShop(shopId, data) {
+
+  await firestore()
+    .collection(COLLECTIONS.SHOPS)
+    .doc(shopId)
+    .update(data);
+}
+
+/**
+ * Update shop settings
+ */
+export async function updateShopSettings(shopId, data) {
+
+  await firestore()
+    .collection(COLLECTIONS.SHOPS)
+    .doc(shopId)
+    .collection(COLLECTIONS.SETTINGS)
+    .doc('main')
+    .update(data);
+}
+
+/**
+ * Get shop data
  */
 export async function getShop(shopId) {
-
-  const snap = await firestore()
+  const doc = await firestore()
     .collection(COLLECTIONS.SHOPS)
     .doc(shopId)
     .get();
 
-  if (!snap.exists) return null;
-
-  return {
-    id: snap.id,
-    ...snap.data(),
-  };
+  return doc.exists ? { id: doc.id, ...doc.data() } : null;
 }
 
 /**
  * Get shop settings
  */
 export async function getShopSettings(shopId) {
-
-  const snap = await firestore()
+  const doc = await firestore()
     .collection(COLLECTIONS.SHOPS)
     .doc(shopId)
     .collection(COLLECTIONS.SETTINGS)
     .doc('main')
     .get();
 
-  if (!snap.exists) return null;
-
-  return {
-    id: snap.id,
-    ...snap.data(),
-  };
+  return doc.exists ? doc.data() : null;
 }

@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useAtom } from 'jotai';
 import { addStaffFormAtom } from '../atoms/forms';
-import { createStaff } from '../services/createStaff';
+import { createStaff } from '../services/staffService';
 
 const AddStaffScreen = ({ navigation }) => {
   const [form, setForm] = useAtom(addStaffFormAtom);

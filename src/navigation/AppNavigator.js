@@ -27,11 +27,14 @@ import BillingScannerScreen from '../views/BillingScannerScreen';
 import ManualItemScreen from '../views/ManualItemScreen';
 import BillingCartScreen from '../views/BillingCartScreen';
 import BillSuccessScreen from '../views/BillSuccessScreen';
-import SupplierListScreen from '../views/SupplierListScreen';
-import SupplierCreateScreen from '../views/SupplierCreateScreen';
-import SupplierEditScreen from '../views/SupplierEditScreen';
 import PurchaseCreateScreen from '../views/PurchaseCreateScreen';
 import PurchaseSuccessScreen from '../views/PurchaseSuccessScreen';
+import ShopInfoScreen from '../views/ShopInfoScreen';
+import EditShopInfoScreen from '../views/EditShopInfoScreen';
+import StaffManagementScreen from '../views/StaffManagementScreen'; 
+import SupplierManagementScreen from '../views/SupplierManagementScreen';
+import SupplierFormScreen from '../views/SupplierFormScreen';
+
 
 export const navigationRef = createNavigationContainerRef();
 
@@ -181,6 +184,14 @@ const AppNavigator = () => {
           initialParams={initialRoute === 'CreateShop' ? initialParams : undefined}
         />
 
+        <Stack.Screen 
+        name="ShopInfo"
+        component={ShopInfoScreen}
+        />
+        <Stack.Screen 
+        name="EditShopInfo"
+        component={EditShopInfoScreen}
+        />
         <Stack.Screen
           name="StaffHome"
           component={StaffHomeScreen}
@@ -190,6 +201,11 @@ const AppNavigator = () => {
         <Stack.Screen name="AddStaff" component={AddStaffScreen} />
         <Stack.Screen name="StaffList" component={StaffListScreen} />
         <Stack.Screen name="EditStaff" component={EditStaffScreen} />
+       <Stack.Screen name="StaffManagement" component={StaffManagementScreen} />
+
+<Stack.Screen name="SupplierManagement" component={SupplierManagementScreen} />
+<Stack.Screen name="SupplierForm" component={SupplierFormScreen} />
+
 
         <Stack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} />
         <Stack.Screen name="ProductScanResult" component={ProductScanResultScreen} />
@@ -204,9 +220,6 @@ const AppNavigator = () => {
         <Stack.Screen name="BillingCart" component={BillingCartScreen} />
         <Stack.Screen name="BillSuccess" component={BillSuccessScreen} />
 
-        <Stack.Screen name="SupplierList" component={SupplierListScreen} />
-        <Stack.Screen name="SupplierCreate" component={SupplierCreateScreen} />
-        <Stack.Screen name="SupplierEdit" component={SupplierEditScreen} />
 
         <Stack.Screen name="PurchaseCreate" component={PurchaseCreateScreen} />
         <Stack.Screen name="PurchaseSuccess" component={PurchaseSuccessScreen} />
