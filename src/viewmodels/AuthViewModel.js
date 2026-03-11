@@ -1,36 +1,40 @@
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import auth from '@react-native-firebase/auth';
 import { useSetAtom, useAtomValue } from 'jotai';
+
 import { authLoadingAtom, authErrorAtom } from '../atoms/auth';
-import { createOrUpdateOwnerUser, getUser } from '../services/firestore';
+
+// ✅ correct imports — both functions live in userService
+import { createOrUpdateOwnerUser, getUser } from '../services/userService';
 
 GoogleSignin.configure({
-  webClientId: '365406749603-3ulea8cc0psm28s1dmp55vektg41rs04.apps.googleusercontent.com', // Web client ID for Google Sign-In
+  webClientId: '365406749603-3ulea8cc0psm28s1dmp55vektg41rs04.apps.googleusercontent.com',
 });
 
 const useAuthViewModel = () => {
   const setLoading = useSetAtom(authLoadingAtom);
-  const setError = useSetAtom(authErrorAtom);
-  const loading = useAtomValue(authLoadingAtom);
-  const error = useAtomValue(authErrorAtom);
+  const setError   = useSetAtom(authErrorAtom);
+  const loading    = useAtomValue(authLoadingAtom);
+  const error      = useAtomValue(authErrorAtom);
 
-  /** Owner: sign in with Google → create/update owner user doc in Firestore */
+  // ── Owner: Google sign in ─────────────────────────────────────────────────
   const signInWithGoogle = async () => {
     try {
       setLoading(true);
       setError(null);
       await GoogleSignin.hasPlayServices();
-  
-      // ✅ Force fresh sign-in — prevents stale cached token after logout
+
+      // Force fresh sign-in — prevents stale cached token after logout
       try { await GoogleSignin.signOut(); } catch (_) {}
-  
-      const signInResult = await GoogleSignin.signIn();
-      const idToken = signInResult?.data?.idToken ?? signInResult?.idToken;
+
+      const signInResult  = await GoogleSignin.signIn();
+      const idToken       = signInResult?.data?.idToken ?? signInResult?.idToken;
       if (!idToken) throw new Error('No ID token received');
-      
-      const credential = auth.GoogleAuthProvider.credential(idToken);
+
+      const credential    = auth.GoogleAuthProvider.credential(idToken);
       const userCredential = await auth().signInWithCredential(credential);
-      const userDoc = await createOrUpdateOwnerUser(userCredential.user);
+      const userDoc       = await createOrUpdateOwnerUser(userCredential.user);
+
       return { firebaseUser: userCredential.user, userDoc };
     } catch (err) {
       setError(err.message);
@@ -40,13 +44,15 @@ const useAuthViewModel = () => {
     }
   };
 
-  /** Staff: sign in with email/password (credentials set by owner). Returns Firebase user + Firestore user doc. */
+  // ── Staff: email/password sign in ─────────────────────────────────────────
   const signInWithEmailPassword = async (email, password) => {
     try {
       setLoading(true);
       setError(null);
+
       const userCredential = await auth().signInWithEmailAndPassword(email, password);
-      const userDoc = await getUser(userCredential.user.uid);
+      const userDoc        = await getUser(userCredential.user.uid);
+
       if (!userDoc || userDoc.role !== 'STAFF') {
         await auth().signOut();
         throw new Error('Invalid staff account');
@@ -55,6 +61,7 @@ const useAuthViewModel = () => {
         await auth().signOut();
         throw new Error('Account is deactivated');
       }
+
       return { firebaseUser: userCredential.user, userDoc };
     } catch (err) {
       setError(err.message);
@@ -65,16 +72,7 @@ const useAuthViewModel = () => {
     }
   };
 
-  // const signOut = async () => {
-  //   try {
-  //     await GoogleSignin.signOut(); // works for owner
-  //   } catch (e) {
-  //     // staff never used Google → ignore
-  //   }
-  
-  //   await auth().signOut(); // ALWAYS runs
-  // };
-
+  // ── Sign out ──────────────────────────────────────────────────────────────
   const signOut = async () => {
     try { await GoogleSignin.revokeAccess(); } catch (_) {}
     try { await GoogleSignin.signOut(); } catch (_) {}

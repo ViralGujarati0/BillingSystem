@@ -1,95 +1,104 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAtomValue } from "jotai";
 
 import { currentOwnerAtom } from "../atoms/owner";
-import { productCacheAtom } from "../atoms/productCache";
+import { productCacheAtom }  from "../atoms/productCache";
 
-import { listInventory } from "../services/inventoryService";
+import firestore from "@react-native-firebase/firestore";
+import { COLLECTIONS } from "../constants/collections";
 
 const useStockViewModel = () => {
 
-const owner = useAtomValue(currentOwnerAtom);
-const products = useAtomValue(productCacheAtom);
+  const owner    = useAtomValue(currentOwnerAtom);
+  const products = useAtomValue(productCacheAtom);
+  const shopId   = owner?.shopId;
 
-const shopId = owner?.shopId;
+  const [inventory,         setInventory]         = useState([]);
+  const [filteredInventory, setFilteredInventory] = useState([]);
+  const [refreshing,        setRefreshing]         = useState(false);
 
-const [inventory, setInventory] = useState([]);
-const [filteredInventory, setFilteredInventory] = useState([]);
-const [refreshing, setRefreshing] = useState(false);
+  // Keep latest search query so the realtime update respects active filter
+  const searchQueryRef = useRef('');
 
-const loadInventory = useCallback(async () => {
+  const mergeWithProducts = useCallback((docs) => {
+    return docs.map((item) => {
+      const product = products[item.barcode];
+      return {
+        ...item,
+        name: product?.name || 'Unknown Product',
+        mrp:  product?.mrp  || 0,
+      };
+    });
+  }, [products]);
 
+  // ── Realtime listener ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!shopId) return;
 
-if (!shopId) return;
+    const unsubscribe = firestore()
+      .collection(COLLECTIONS.SHOPS)
+      .doc(shopId)
+      .collection(COLLECTIONS.INVENTORY)
+      .onSnapshot((snap) => {
 
-const data = await listInventory(shopId);
+        const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const merged = mergeWithProducts(docs);
 
-const merged = data.map((item) => {
+        setInventory(merged);
 
-  const product = products[item.barcode];
+        // Respect active search filter
+        const q = searchQueryRef.current.toLowerCase();
+        if (q) {
+          setFilteredInventory(
+            merged.filter(
+              (item) =>
+                item.name?.toLowerCase().includes(q) ||
+                item.barcode?.includes(searchQueryRef.current)
+            )
+          );
+        } else {
+          setFilteredInventory(merged);
+        }
 
-  return {
-    ...item,
-    name: product?.name || "Unknown Product",
-    mrp: product?.mrp || 0,
+      });
+
+    return unsubscribe;
+
+  }, [shopId, mergeWithProducts]);
+
+  // ── Pull-to-refresh (just a visual delay — listener already has latest) ──
+  const refreshInventory = async () => {
+    setRefreshing(true);
+    await new Promise((res) => setTimeout(res, 600));
+    setRefreshing(false);
   };
 
-});
+  // ── Search ─────────────────────────────────────────────────────────────────
+  const searchInventory = useCallback((query) => {
+    searchQueryRef.current = query || '';
 
-setInventory(merged);
-setFilteredInventory(merged);
+    if (!query) {
+      setFilteredInventory(inventory);
+      return;
+    }
 
+    const q = query.toLowerCase();
+    setFilteredInventory(
+      inventory.filter(
+        (item) =>
+          item.name?.toLowerCase().includes(q) ||
+          item.barcode?.includes(query)
+      )
+    );
+  }, [inventory]);
 
-}, [shopId, products]);
-
-useEffect(() => {
-loadInventory();
-}, [loadInventory]);
-
-const refreshInventory = async () => {
-
-setRefreshing(true);
-
-await loadInventory();
-
-setRefreshing(false);
-
-};
-
-const searchInventory = (query) => {
-
-
-if (!query) {
-  setFilteredInventory(inventory);
-  return;
-}
-
-const q = query.toLowerCase();
-
-const result = inventory.filter(
-  (item) =>
-    item.name?.toLowerCase().includes(q) ||
-    item.barcode?.includes(query)
-);
-
-setFilteredInventory(result);
-
-
-};
-
-return {
-
-
-inventory,
-filteredInventory,
-refreshing,
-
-refreshInventory,
-searchInventory,
-
-
-};
-
+  return {
+    inventory,
+    filteredInventory,
+    refreshing,
+    refreshInventory,
+    searchInventory,
+  };
 };
 
 export default useStockViewModel;

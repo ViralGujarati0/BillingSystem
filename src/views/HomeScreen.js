@@ -1,268 +1,241 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  ScrollView,
+  Dimensions,
 } from 'react-native';
-import { useSetAtom } from 'jotai';
-import useAuthViewModel from '../viewmodels/AuthViewModel';
-import { currentOwnerAtom } from '../atoms/owner';
-import firestore from '@react-native-firebase/firestore';
-import AppHeaderLayout from '../components/AppHeaderLayout';
-import Ionicons from "react-native-vector-icons/Ionicons";
-import { colors } from '../theme/colors';
+import Icon from 'react-native-vector-icons/Ionicons';
 
+import AppHeaderLayout  from '../components/AppHeaderLayout';
+import useHomeViewModel from '../viewmodels/useHomeViewModel';
+import { colors }       from '../theme/colors';
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const scale = SCREEN_W / 390;
+const vs    = SCREEN_H / 844;
+const rs    = (n) => Math.round(n * scale);
+const rvs   = (n) => Math.round(n * vs);
+const rfs   = (n) => Math.round(n * scale);
+
+// ─── Stat Card ────────────────────────────────────────────────────────────────
+const StatCard = ({ icon, label, value, valueColor }) => (
+  <View style={styles.statCard}>
+    <View style={styles.statIconWrap}>
+      <Icon name={icon} size={rfs(20)} color={colors.primary} />
+    </View>
+    <Text style={styles.statLabel}>{label}</Text>
+    <Text style={[styles.statValue, valueColor && { color: valueColor }]}>
+      {value}
+    </Text>
+  </View>
+);
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 const HomeScreen = ({ navigation, route }) => {
   const userDoc = route.params?.userDoc;
-  const { signOut } = useAuthViewModel();
-  const setCurrentOwner = useSetAtom(currentOwnerAtom);
-
-  const [stats, setStats] = useState(null);
-  const [loadingStats, setLoadingStats] = useState(true);
-
-  useEffect(() => {
-    if (userDoc?.role === 'OWNER') {
-      setCurrentOwner(userDoc);
-    }
-  }, [userDoc, setCurrentOwner]);
-
-  useEffect(() => {
-    if (!userDoc?.shopId) return;
-
-    const todayKey = new Date()
-      .toISOString()
-      .slice(0, 10)
-      .replace(/-/g, "_");
-
-    const ref = firestore()
-      .collection('billing_shops')
-      .doc(userDoc.shopId)
-      .collection('stats')
-      .doc(`daily_${todayKey}`);
-
-    const unsubscribe = ref.onSnapshot((doc) => {
-      setStats(doc.exists ? doc.data() : null);
-      setLoadingStats(false);
-    });
-
-    return unsubscribe;
-  }, [userDoc?.shopId]);
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigation.getParent()?.replace('Login');
-  };
+  const { stats, loadingStats, greeting, hasShop } = useHomeViewModel({ userDoc });
 
   return (
     <AppHeaderLayout
-    title={userDoc?.name}
-    subtitle="Good Morning"
-
-
-    // leftComponent={
-    //   <TouchableOpacity onPress={() => navigation.openDrawer()}>
-    //     <Ionicons name="menu-outline" size={26} color={colors.textLight} />
-    //   </TouchableOpacity>
-    // }
-
-    // // ── Right slot: search + notifications ──
-    // rightComponent={
-    //   <View style={{ flexDirection: "row", gap: 12 }}>
-    //     <TouchableOpacity onPress={() => navigation.navigate("Search")}>
-    //       <Ionicons name="search-outline" size={22} color={colors.textLight} />
-    //     </TouchableOpacity>
-    //     <TouchableOpacity onPress={() => navigation.navigate("Notifications")}>
-    //       <Ionicons name="notifications-outline" size={22} color={colors.textLight} />
-    //     </TouchableOpacity>
-    //   </View>
-    // }
-
-  >
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      showsVerticalScrollIndicator={false}
+      title={userDoc?.name || 'Home'}
+      subtitle={greeting}
     >
-      {/* <Text style={styles.title}>Welcome {userDoc?.name}</Text> */}
+      <View style={styles.container}>
 
-      {/* 🔹 Stats Section */}
-      {userDoc?.shopId && (
-        <View style={styles.statsContainer}>
-          {loadingStats ? (
-            <ActivityIndicator />
-          ) : (
-            <>
-              <View style={styles.statCard}>
-                <Text style={styles.statLabel}>Today Sales</Text>
-                <Text style={styles.statValue}>
-                  ₹{Number(stats?.totalSales || 0).toFixed(2)}
-                </Text>
+        {/* ── No shop yet ── */}
+        {!userDoc?.shopId && (
+          <View style={styles.createShopWrap}>
+            <View style={styles.createShopIconWrap}>
+              <Icon name="storefront-outline" size={rfs(40)} color={colors.primary} />
+            </View>
+            <Text style={styles.createShopTitle}>Set up your shop</Text>
+            <Text style={styles.createShopSub}>
+              Create your shop to start billing, managing inventory and staff.
+            </Text>
+            <TouchableOpacity
+              style={styles.createShopBtn}
+              onPress={() => navigation.getParent()?.navigate('CreateShop', { userDoc })}
+              activeOpacity={0.85}
+            >
+              <Icon name="add-outline" size={rfs(18)} color="#fff" />
+              <Text style={styles.createShopBtnText}>Create Shop</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ── Stats cards ── */}
+        {userDoc?.shopId && (
+          <View style={styles.statsWrap}>
+
+            <Text style={styles.sectionLabel}>TODAY'S OVERVIEW</Text>
+
+            {loadingStats ? (
+              <View style={styles.loadingWrap}>
+                <ActivityIndicator size="large" color={colors.primary} />
               </View>
-
-              <View style={styles.statCard}>
-                <Text style={styles.statLabel}>Today Profit</Text>
-                <Text style={[styles.statValue, { color: 'green' }]}>
-                  ₹{Number(stats?.totalProfit || 0).toFixed(2)}
-                </Text>
+            ) : (
+              <View style={styles.statsGrid}>
+                <StatCard
+                  icon="cash-outline"
+                  label="Total Sales"
+                  value={`₹${Number(stats?.totalSales || 0).toFixed(2)}`}
+                  valueColor={colors.primary}
+                />
+                <StatCard
+                  icon="trending-up-outline"
+                  label="Today Profit"
+                  value={`₹${Number(stats?.totalProfit || 0).toFixed(2)}`}
+                  valueColor="#16a34a"
+                />
+                <StatCard
+                  icon="receipt-outline"
+                  label="Bills"
+                  value={String(stats?.totalBills || 0)}
+                />
               </View>
+            )}
 
-              <View style={styles.statCard}>
-                <Text style={styles.statLabel}>Bills</Text>
-                <Text style={styles.statValue}>
-                  {stats?.totalBills || 0}
-                </Text>
-              </View>
-            </>
-          )}
-        </View>
-      )}
+          </View>
+        )}
 
-      {/* Create Shop */}
-      {!userDoc?.shopId && (
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() =>
-            navigation.getParent()?.navigate('CreateShop', { userDoc })
-          }
-        >
-          <Text style={styles.buttonText}>Create Shop</Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Buttons */}
-      {userDoc?.shopId && (
-        <>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => navigation.getParent()?.navigate('AddStaff')}
-          >
-            <Text style={styles.buttonText}>Add Staff</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => navigation.getParent()?.navigate('StaffList')}
-          >
-            <Text style={styles.buttonText}>See Staffs</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => navigation.getParent()?.navigate('BarcodeScanner')}
-          >
-            <Text style={styles.buttonText}>Scan</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() =>
-              navigation.getParent()?.navigate('BillingScanner', { userDoc })
-            }
-          >
-            <Text style={styles.buttonText}>Create Bill</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() =>
-              navigation.getParent()?.navigate('BarcodeScanner', {
-                mode: 'updateInventory',
-              })
-            }
-          >
-            <Text style={styles.buttonText}>Update Inventory</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() =>
-              navigation.getParent()?.navigate('SupplierList')
-            }
-          >
-            <Text style={styles.buttonText}>Suppliers</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() =>
-              navigation.getParent()?.navigate('PurchaseCreate')
-            }
-          >
-            <Text style={styles.buttonText}>New Purchase</Text>
-          </TouchableOpacity>
-        </>
-      )}
-
-      <TouchableOpacity onPress={handleSignOut}>
-        <Text style={styles.logoutText}>Sign Out</Text>
-      </TouchableOpacity>
-    </ScrollView>
+      </View>
     </AppHeaderLayout>
   );
 };
 
+export default HomeScreen;
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+
   container: {
     flex: 1,
     backgroundColor: colors.background,
+    paddingHorizontal: rs(16),
+    paddingTop: rvs(24),
   },
 
-  contentContainer: {
+  // ── Create shop state ──────────────────────────────────
+  createShopWrap: {
+    flex: 1,
     alignItems: 'center',
-    paddingTop: 60,
-    paddingBottom: 40,
+    justifyContent: 'center',
+    paddingHorizontal: rs(24),
+    gap: rvs(12),
   },
 
-  title: {
-    fontSize: 22,
-    marginBottom: 20,
-    fontWeight: '600',
+  createShopIconWrap: {
+    width: rs(80),
+    height: rs(80),
+    borderRadius: rs(24),
+    backgroundColor: 'rgba(45,74,82,0.07)',
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: rvs(4),
   },
 
-  statsContainer: {
-    width: '90%',
-    marginBottom: 30,
+  createShopTitle: {
+    fontSize: rfs(20),
+    fontWeight: '800',
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+
+  createShopSub: {
+    fontSize: rfs(13),
+    fontWeight: '400',
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: rfs(20),
+  },
+
+  createShopBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(8),
+    backgroundColor: colors.primary,
+    paddingVertical: rvs(13),
+    paddingHorizontal: rs(28),
+    borderRadius: rs(12),
+    marginTop: rvs(8),
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: rvs(4) },
+    shadowOpacity: 0.25,
+    shadowRadius: rs(10),
+    elevation: 4,
+  },
+
+  createShopBtnText: {
+    fontSize: rfs(15),
+    fontWeight: '700',
+    color: '#fff',
+  },
+
+  // ── Stats section ──────────────────────────────────────
+  statsWrap: {
+    gap: rvs(14),
+  },
+
+  sectionLabel: {
+    fontSize: rfs(11),
+    fontWeight: '700',
+    color: colors.textSecondary,
+    letterSpacing: 0.8,
+  },
+
+  loadingWrap: {
+    paddingVertical: rvs(48),
+    alignItems: 'center',
+  },
+
+  statsGrid: {
+    gap: rvs(12),
   },
 
   statCard: {
-    backgroundColor: '#f2f6ff',
-    padding: 16,
-    borderRadius: 10,
-    marginBottom: 12,
+    backgroundColor: '#fff',
+    borderRadius: rs(14),
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    padding: rs(16),
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: rs(14),
+    shadowColor: colors.shadowCard,
+    shadowOffset: { width: 0, height: rvs(2) },
+    shadowOpacity: 1,
+    shadowRadius: rs(8),
+    elevation: 2,
+  },
+
+  statIconWrap: {
+    width: rs(44),
+    height: rs(44),
+    borderRadius: rs(12),
+    backgroundColor: 'rgba(45,74,82,0.07)',
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
 
   statLabel: {
-    fontSize: 14,
-    color: '#555',
+    flex: 1,
+    fontSize: rfs(13),
+    fontWeight: '600',
+    color: colors.textSecondary,
   },
 
   statValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginTop: 4,
+    fontSize: rfs(18),
+    fontWeight: '800',
+    color: colors.textPrimary,
   },
 
-  button: {
-    backgroundColor: '#1a73e8',
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-    borderRadius: 6,
-    marginBottom: 16,
-  },
-
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-
-  logoutText: {
-    color: 'red',
-    marginTop: 20,
-  },
 });
-
-export default HomeScreen;

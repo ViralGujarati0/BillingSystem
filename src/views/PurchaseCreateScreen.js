@@ -7,63 +7,77 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { useAtom } from 'jotai';
+import Icon from 'react-native-vector-icons/Ionicons';
+
+import AppHeaderLayout   from '../components/AppHeaderLayout';
+import SupplierDropdown  from '../components/SupplierDropdown';
+import PurchaseItemRow   from '../components/PurchaseItemRow';
+
 import { purchaseScannedBarcodeAtom } from '../atoms/purchase';
-import usePurchaseViewModel from '../viewmodels/PurchaseViewModel';
+import usePurchaseViewModel           from '../viewmodels/PurchaseViewModel';
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const scale = SCREEN_W / 390;
+const vs    = SCREEN_H / 844;
+const rs    = (n) => Math.round(n * scale);
+const rvs   = (n) => Math.round(n * vs);
+const rfs   = (n) => Math.round(n * scale);
 
 const PAYMENT_TYPES = ['CASH', 'UPI', 'BANK'];
 
-const PurchaseCreateScreen = ({ navigation }) => {
-  const vm = usePurchaseViewModel();
+export default function PurchaseCreateScreen({ navigation }) {
+  const vm    = usePurchaseViewModel();
   const owner = vm.owner;
-  const [scannedPurchaseBarcode, setScannedPurchaseBarcode] = useAtom(purchaseScannedBarcodeAtom);
 
-  const [suppliers, setSuppliers] = useState([]);
+  const [scannedBarcode, setScannedBarcode] = useAtom(purchaseScannedBarcodeAtom);
 
-  // Add item modal-ish local state
+  const [suppliers,  setSuppliers]  = useState([]);
   const [addBarcode, setAddBarcode] = useState('');
-  const [addQty, setAddQty] = useState('1');
-  const [addRate, setAddRate] = useState('');
+  const [addQty,     setAddQty]     = useState('1');
+  const [addRate,    setAddRate]    = useState('');
+  const [adding,     setAdding]     = useState(false);
 
+  // Pre-fill barcode from scanner
   useEffect(() => {
-    if (!scannedPurchaseBarcode) return;
-    setAddBarcode(scannedPurchaseBarcode);
-    setScannedPurchaseBarcode('');
-  }, [scannedPurchaseBarcode, setScannedPurchaseBarcode]);
+    if (!scannedBarcode) return;
+    setAddBarcode(scannedBarcode);
+    setScannedBarcode('');
+  }, [scannedBarcode]);
 
+  // Load suppliers
   useEffect(() => {
-    const ownerRole = owner?.role;
-    const shopId = vm.shopId;
-    const loadShopAndSuppliers = vm.loadShopAndSuppliers;
-    if (!ownerRole || ownerRole !== 'OWNER' || !shopId) return;
+    if (!owner?.shopId) return;
     let cancelled = false;
     (async () => {
       try {
-        const { suppliers: list } = await loadShopAndSuppliers();
+        const { suppliers: list } = await vm.loadShopAndSuppliers();
         if (!cancelled) setSuppliers(list);
-      } catch {
-        // ignore
-      }
+      } catch { /* ignore */ }
     })();
     return () => { cancelled = true; };
-  }, [owner?.role, vm.shopId, vm.loadShopAndSuppliers]);
+  }, [owner?.shopId]);
 
   const subtotal = useMemo(
     () => vm.items.reduce((s, it) => s + (Number(it.amount) || 0), 0),
     [vm.items]
   );
-  const paid = Number.parseFloat(String(vm.paidAmount)) || 0;
-  const due = Math.max(0, subtotal - Math.max(0, paid));
+  const paid = parseFloat(String(vm.paidAmount)) || 0;
+  const due  = Math.max(0, subtotal - Math.max(0, paid));
 
   const handleAddItem = async () => {
     const barcode = String(addBarcode || '').trim();
-    const qty = Number.parseInt(String(addQty), 10) || 0;
-    const rate = Number.parseFloat(String(addRate)) || 0;
-    if (!barcode) { Alert.alert('Error', 'Enter barcode'); return; }
-    if (qty <= 0) { Alert.alert('Error', 'Qty must be 1 or more'); return; }
-    if (rate < 0) { Alert.alert('Error', 'Rate must be 0 or more'); return; }
+    const qty     = parseInt(String(addQty), 10) || 0;
+    const rate    = parseFloat(String(addRate)) || 0;
 
+    if (!barcode)  { Alert.alert('Error', 'Enter or scan a barcode'); return; }
+    if (qty <= 0)  { Alert.alert('Error', 'Qty must be 1 or more'); return; }
+    if (rate < 0)  { Alert.alert('Error', 'Rate must be 0 or more'); return; }
+
+    setAdding(true);
     try {
       await vm.addItemByBarcode({ barcode, qty, rate });
       setAddBarcode('');
@@ -71,38 +85,39 @@ const PurchaseCreateScreen = ({ navigation }) => {
       setAddRate('');
     } catch (e) {
       Alert.alert('Error', e?.message || 'Failed to add item');
+    } finally {
+      setAdding(false);
     }
   };
 
-  const updateQty = (index, v) => {
+  const handleQtyChange = (index, v) => {
     vm.setItems((prev) => {
       const next = [...prev];
-      const it = next[index];
+      const it   = next[index];
       if (!it) return prev;
-      const trimmed = String(v).trim();
-      const n = trimmed === '' ? it.qty : Math.max(0, parseInt(trimmed, 10) || 0);
-      if (n === 0) {
-        next.splice(index, 1);
-        return next;
-      }
+      const n = parseInt(String(v).trim(), 10);
+      if (!n || n <= 0) { next.splice(index, 1); return next; }
       next[index] = { ...it, qty: n, amount: n * (Number(it.purchasePrice) || 0) };
       return next;
     });
   };
 
-  const updateRate = (index, v) => {
+  const handleRateChange = (index, v) => {
     vm.setItems((prev) => {
       const next = [...prev];
-      const it = next[index];
+      const it   = next[index];
       if (!it) return prev;
-      const trimmed = String(v).trim();
-      const r = trimmed === '' ? it.purchasePrice : Math.max(0, Number.parseFloat(trimmed) || 0);
+      const r    = parseFloat(String(v).trim()) || 0;
       next[index] = { ...it, purchasePrice: r, amount: (Number(it.qty) || 0) * r };
       return next;
     });
   };
 
-  const handleSavePurchase = async () => {
+  const handleRemoveItem = (index) => {
+    vm.setItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSave = async () => {
     try {
       await vm.savePurchase({ navigation });
     } catch (e) {
@@ -110,155 +125,392 @@ const PurchaseCreateScreen = ({ navigation }) => {
     }
   };
 
-  if (!owner || owner.role !== 'OWNER') {
-    return (
-      <View style={styles.center}>
-        <Text>Only owners can create purchases.</Text>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.goBack()}>
-          <Text style={styles.buttonText}>Back</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-        <Text style={styles.backText}>← Back</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.title}>New Purchase</Text>
-
-      <Text style={styles.label}>Supplier *</Text>
-      <View style={styles.chipRow}>
-        {suppliers.map((s) => (
-          <TouchableOpacity
-            key={s.id}
-            style={[styles.chip, vm.supplierId === s.id && styles.chipActive]}
-            onPress={() => vm.setSupplierId(s.id)}
-          >
-            <Text style={[styles.chipText, vm.supplierId === s.id && styles.chipTextActive]}>{s.name}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      {!suppliers.length && (
-        <TouchableOpacity style={styles.linkBtn} onPress={() => navigation.navigate('SupplierCreate')}>
-          <Text style={styles.linkText}>+ Create Supplier</Text>
-        </TouchableOpacity>
-      )}
-
-      <Text style={styles.label}>Invoice No</Text>
-      <TextInput style={[styles.input, styles.inputDisabled]} value="Auto-generated on save" editable={false} />
-
-      <Text style={styles.label}>Payment type</Text>
-      <View style={styles.chipRow}>
-        {PAYMENT_TYPES.map((p) => (
-          <TouchableOpacity
-            key={p}
-            style={[styles.chip, vm.paymentType === p && styles.chipActive]}
-            onPress={() => vm.setPaymentType(p)}
-          >
-            <Text style={[styles.chipText, vm.paymentType === p && styles.chipTextActive]}>{p}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <Text style={styles.label}>Paid amount</Text>
-      <TextInput style={styles.input} value={vm.paidAmount} onChangeText={vm.setPaidAmount} keyboardType="decimal-pad" placeholder="0" />
-
-      <Text style={styles.section}>Add item</Text>
-      <TextInput style={styles.input} value={addBarcode} onChangeText={setAddBarcode} placeholder="Barcode" />
-      <TouchableOpacity
-        style={styles.grayBtn}
-        onPress={() => navigation.navigate('BarcodeScanner', { mode: 'purchaseItem' })}
+    <AppHeaderLayout title="New Purchase">
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.grayBtnText}>Scan Barcode</Text>
-      </TouchableOpacity>
-      <View style={styles.row}>
-        <TextInput style={[styles.input, styles.half]} value={addQty} onChangeText={setAddQty} keyboardType="number-pad" placeholder="Qty" />
-        <TextInput style={[styles.input, styles.half]} value={addRate} onChangeText={setAddRate} keyboardType="decimal-pad" placeholder="Purchase price" />
-      </View>
-      <TouchableOpacity style={styles.grayBtn} onPress={handleAddItem}>
-        <Text style={styles.grayBtnText}>Add to list</Text>
-      </TouchableOpacity>
 
-      <Text style={styles.section}>Items</Text>
-      {vm.items.length === 0 ? (
-        <Text style={styles.muted}>No items added.</Text>
-      ) : (
-        vm.items.map((it, idx) => (
-          <View key={`${it.barcode}_${idx}`} style={styles.itemRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.itemName}>{it.name || it.barcode}</Text>
-              <Text style={styles.itemMeta}>Barcode: {it.barcode}</Text>
-            </View>
+        {/* ── Supplier ── */}
+        <SectionLabel icon="business-outline" label="SUPPLIER" />
+        <SupplierDropdown
+          suppliers={suppliers}
+          selectedId={vm.supplierId}
+          onSelect={vm.setSupplierId}
+        />
+        {suppliers.length === 0 && (
+          <TouchableOpacity
+            style={styles.createSupplierBtn}
+            onPress={() => navigation.navigate('SupplierForm')}
+          >
+            <Icon name="add-circle-outline" size={rfs(14)} color="#16a34a" />
+            <Text style={styles.createSupplierText}>Create Supplier</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* ── Payment type ── */}
+        <SectionLabel icon="card-outline" label="PAYMENT TYPE" />
+        <View style={styles.chipRow}>
+          {PAYMENT_TYPES.map((p) => (
+            <TouchableOpacity
+              key={p}
+              style={[styles.chip, vm.paymentType === p && styles.chipActive]}
+              onPress={() => vm.setPaymentType(p)}
+            >
+              <Text style={[styles.chipText, vm.paymentType === p && styles.chipTextActive]}>
+                {p}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* ── Paid amount ── */}
+        <SectionLabel icon="wallet-outline" label="PAID AMOUNT" />
+        <View style={styles.inputCard}>
+          <TextInput
+            style={styles.input}
+            value={vm.paidAmount}
+            onChangeText={vm.setPaidAmount}
+            keyboardType="decimal-pad"
+            placeholder="0"
+            placeholderTextColor="#ccc"
+          />
+        </View>
+
+        {/* ── Add item ── */}
+        <SectionLabel icon="add-circle-outline" label="ADD ITEM" />
+
+        <View style={styles.addItemCard}>
+
+          <View style={styles.barcodeRow}>
             <TextInput
-              style={styles.qtyInput}
-              value={String(it.qty)}
-              onChangeText={(v) => updateQty(idx, v)}
-              keyboardType="number-pad"
+              style={[styles.input, styles.barcodeInput]}
+              value={addBarcode}
+              onChangeText={setAddBarcode}
+              placeholder="Enter barcode"
+              placeholderTextColor="#ccc"
+              autoCapitalize="none"
             />
-            <TextInput
-              style={styles.rateInput}
-              value={String(it.purchasePrice)}
-              onChangeText={(v) => updateRate(idx, v)}
-              keyboardType="decimal-pad"
-            />
-            <Text style={styles.amount}>₹{it.amount}</Text>
+            <TouchableOpacity
+              style={styles.scanBtn}
+              onPress={() =>
+                navigation.navigate('BarcodeScanner', { mode: 'purchaseItem' })
+              }
+            >
+              <Icon name="scan-outline" size={rfs(18)} color="#fff" />
+            </TouchableOpacity>
           </View>
-        ))
-      )}
 
-      <View style={styles.totalBox}>
-        <Text style={styles.totalLine}>Subtotal: ₹{subtotal}</Text>
-        <Text style={styles.totalLine}>Paid: ₹{Math.max(0, paid)}</Text>
-        <Text style={styles.totalLine}>Due: ₹{due}</Text>
-      </View>
+          <View style={styles.qtyRateRow}>
+            <View style={styles.qtyRateField}>
+              <Text style={styles.fieldLabel}>Quantity</Text>
+              <TextInput
+                style={styles.input}
+                value={addQty}
+                onChangeText={setAddQty}
+                keyboardType="number-pad"
+                placeholder="1"
+                placeholderTextColor="#ccc"
+              />
+            </View>
+            <View style={styles.qtyRateField}>
+              <Text style={styles.fieldLabel}>Purchase Price (₹)</Text>
+              <TextInput
+                style={styles.input}
+                value={addRate}
+                onChangeText={setAddRate}
+                keyboardType="decimal-pad"
+                placeholder="0.00"
+                placeholderTextColor="#ccc"
+              />
+            </View>
+          </View>
 
-      <TouchableOpacity style={[styles.primaryBtn, vm.saving && styles.disabled]} onPress={handleSavePurchase} disabled={vm.saving}>
-        <Text style={styles.primaryText}>{vm.saving ? 'Saving…' : 'Save Purchase'}</Text>
-      </TouchableOpacity>
-    </ScrollView>
+          <TouchableOpacity
+            style={[styles.addBtn, adding && styles.addBtnDisabled]}
+            onPress={handleAddItem}
+            disabled={adding}
+          >
+            {adding ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Icon name="add" size={rfs(16)} color="#fff" />
+                <Text style={styles.addBtnText}>Add to List</Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+        </View>
+
+        {/* ── Items list ── */}
+        {vm.items.length > 0 && (
+          <>
+            <SectionLabel icon="list-outline" label={`ITEMS (${vm.items.length})`} />
+            {vm.items.map((item, idx) => (
+              <PurchaseItemRow
+                key={`${item.barcode}_${idx}`}
+                item={item}
+                index={idx}
+                onQtyChange={handleQtyChange}
+                onRateChange={handleRateChange}
+                onRemove={handleRemoveItem}
+              />
+            ))}
+          </>
+        )}
+
+        {/* ── Totals ── */}
+        {vm.items.length > 0 && (
+          <View style={styles.totalsCard}>
+            <TotalRow label="Subtotal" value={`₹${subtotal}`} />
+            <TotalRow label="Paid"     value={`₹${Math.max(0, paid)}`} color="#16a34a" />
+            <View style={styles.totalsDivider} />
+            <TotalRow label="Due"      value={`₹${due}`} color={due > 0 ? '#f59e0b' : '#16a34a'} large />
+          </View>
+        )}
+
+        {/* ── Save button ── */}
+        <TouchableOpacity
+          style={[styles.saveBtn, vm.saving && styles.saveBtnDisabled]}
+          onPress={handleSave}
+          disabled={vm.saving}
+        >
+          {vm.saving ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              <Icon name="checkmark-outline" size={rfs(18)} color="#fff" />
+              <Text style={styles.saveBtnText}>Save Purchase</Text>
+            </>
+          )}
+        </TouchableOpacity>
+
+      </ScrollView>
+    </AppHeaderLayout>
   );
-};
+}
+
+// ── Small helpers ──────────────────────────────────────────────────────────────
+function SectionLabel({ icon, label }) {
+  return (
+    <View style={styles.sectionLabel}>
+      <Icon name={icon} size={rfs(12)} color="#aaa" />
+      <Text style={styles.sectionLabelText}>{label}</Text>
+    </View>
+  );
+}
+
+function TotalRow({ label, value, color, large }) {
+  return (
+    <View style={styles.totalRow}>
+      <Text style={[styles.totalLabel, large && styles.totalLabelLarge]}>{label}</Text>
+      <Text style={[styles.totalValue, large && styles.totalValueLarge, color && { color }]}>
+        {value}
+      </Text>
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  content: { padding: 24, paddingTop: 56, paddingBottom: 40 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  backBtn: { alignSelf: 'flex-start', marginBottom: 16 },
-  backText: { color: '#1a73e8', fontSize: 16 },
-  title: { fontSize: 22, fontWeight: '700', marginBottom: 16 },
-  label: { fontSize: 14, marginBottom: 6, color: '#333' },
-  input: { borderWidth: 1, borderColor: '#ccc', padding: 12, borderRadius: 6, marginBottom: 12 },
-  inputDisabled: { backgroundColor: '#f3f3f3', color: '#666' },
-  row: { flexDirection: 'row', gap: 12 },
-  half: { flex: 1 },
-  section: { marginTop: 12, marginBottom: 8, fontSize: 16, fontWeight: '700' },
-  muted: { color: '#666', marginBottom: 12 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  chip: { borderWidth: 1, borderColor: '#ccc', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 16 },
-  chipActive: { backgroundColor: '#1a73e8', borderColor: '#1a73e8' },
-  chipText: { color: '#111' },
-  chipTextActive: { color: '#fff', fontWeight: '600' },
-  linkBtn: { marginBottom: 12 },
-  linkText: { color: '#1a73e8', fontWeight: '600' },
-  grayBtn: { backgroundColor: '#eee', padding: 12, borderRadius: 6, alignItems: 'center', marginBottom: 12 },
-  grayBtnText: { fontWeight: '600' },
-  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, borderBottomWidth: 1, borderColor: '#eee' },
-  itemName: { fontSize: 14, fontWeight: '600' },
-  itemMeta: { fontSize: 11, color: '#666' },
-  qtyInput: { width: 44, borderWidth: 1, borderColor: '#eee', padding: 6, borderRadius: 6, textAlign: 'center' },
-  rateInput: { width: 74, borderWidth: 1, borderColor: '#eee', padding: 6, borderRadius: 6, textAlign: 'center' },
-  amount: { width: 70, textAlign: 'right', fontWeight: '700' },
-  totalBox: { marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderColor: '#eee' },
-  totalLine: { fontSize: 14, fontWeight: '600', marginBottom: 4 },
-  primaryBtn: { marginTop: 16, backgroundColor: '#1a73e8', padding: 14, borderRadius: 6, alignItems: 'center' },
-  primaryText: { color: '#fff', fontWeight: '600' },
-  button: { backgroundColor: '#1a73e8', padding: 14, borderRadius: 6 },
-  buttonText: { color: '#fff', fontWeight: '600' },
-  disabled: { opacity: 0.6 },
+  scroll: { flex: 1 },
+  content: {
+    paddingHorizontal: rs(16),
+    paddingTop: rvs(16),
+    paddingBottom: rvs(48),
+    gap: rvs(10),
+  },
+
+  // ── Section label ──────────────────────────────────────
+  sectionLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(6),
+    marginTop: rvs(4),
+  },
+  sectionLabelText: {
+    fontSize: rfs(10),
+    fontWeight: '700',
+    color: '#aaa',
+    letterSpacing: 0.7,
+  },
+
+  // ── Payment chips ──────────────────────────────────────
+  chipRow: {
+    flexDirection: 'row',
+    gap: rs(8),
+  },
+  chip: {
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    paddingVertical: rvs(8),
+    paddingHorizontal: rs(16),
+    borderRadius: rs(20),
+    backgroundColor: '#fafafa',
+  },
+  chipActive: {
+    backgroundColor: '#7c3aed',
+    borderColor: '#7c3aed',
+  },
+  chipText: {
+    fontSize: rfs(13),
+    fontWeight: '600',
+    color: '#555',
+  },
+  chipTextActive: {
+    color: '#fff',
+  },
+
+  // ── Input card ─────────────────────────────────────────
+  inputCard: {
+    backgroundColor: '#fff',
+    borderRadius: rs(10),
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  input: {
+    fontSize: rfs(14),
+    fontWeight: '500',
+    color: '#111',
+    paddingHorizontal: rs(14),
+    paddingVertical: rvs(12),
+  },
+
+  // ── Add item card ──────────────────────────────────────
+  addItemCard: {
+    backgroundColor: '#fff',
+    borderRadius: rs(14),
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    padding: rs(14),
+    gap: rvs(10),
+  },
+  barcodeRow: {
+    flexDirection: 'row',
+    gap: rs(10),
+    alignItems: 'center',
+  },
+  barcodeInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: rs(8),
+    paddingHorizontal: rs(12),
+    paddingVertical: rvs(11),
+    backgroundColor: '#fafafa',
+  },
+  scanBtn: {
+    width: rs(44),
+    height: rs(44),
+    borderRadius: rs(10),
+    backgroundColor: '#7c3aed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qtyRateRow: {
+    flexDirection: 'row',
+    gap: rs(10),
+  },
+  qtyRateField: {
+    flex: 1,
+    gap: rvs(4),
+  },
+  fieldLabel: {
+    fontSize: rfs(11),
+    fontWeight: '600',
+    color: '#888',
+  },
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: rs(6),
+    backgroundColor: '#7c3aed',
+    paddingVertical: rvs(11),
+    borderRadius: rs(10),
+  },
+  addBtnDisabled: { opacity: 0.6 },
+  addBtnText: {
+    fontSize: rfs(14),
+    fontWeight: '700',
+    color: '#fff',
+  },
+
+  // ── Create supplier link ───────────────────────────────
+  createSupplierBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(6),
+    marginTop: rvs(-6),
+  },
+  createSupplierText: {
+    fontSize: rfs(13),
+    fontWeight: '600',
+    color: '#16a34a',
+  },
+
+  // ── Totals card ────────────────────────────────────────
+  totalsCard: {
+    backgroundColor: '#fff',
+    borderRadius: rs(14),
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    padding: rs(14),
+    gap: rvs(8),
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  totalsDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#e0e0e0',
+  },
+  totalLabel: {
+    fontSize: rfs(13),
+    fontWeight: '600',
+    color: '#666',
+  },
+  totalLabelLarge: {
+    fontSize: rfs(15),
+    fontWeight: '700',
+    color: '#111',
+  },
+  totalValue: {
+    fontSize: rfs(14),
+    fontWeight: '700',
+    color: '#111',
+  },
+  totalValueLarge: {
+    fontSize: rfs(17),
+    fontWeight: '800',
+  },
+
+  // ── Save button ────────────────────────────────────────
+  saveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: rs(8),
+    backgroundColor: '#7c3aed',
+    paddingVertical: rvs(15),
+    borderRadius: rs(14),
+    marginTop: rvs(8),
+    shadowColor: '#7c3aed',
+    shadowOffset: { width: 0, height: rvs(4) },
+    shadowOpacity: 0.30,
+    shadowRadius: rs(12),
+    elevation: 5,
+  },
+  saveBtnDisabled: { opacity: 0.6 },
+  saveBtnText: {
+    fontSize: rfs(15),
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: 0.3,
+  },
 });
-
-export default PurchaseCreateScreen;
-

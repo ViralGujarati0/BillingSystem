@@ -136,7 +136,7 @@ const UpdateInventoryScreen = ({ navigation, route }) => {
     })();
 
     return () => { cancelled = true; };
-  }, [barcode, vm, navigation]);
+  }, [barcode]);
 
   // ── Save flow: button → modal → confirm ──────────────────────────────────
   const handleSavePress = () => setSaveModal(true);

@@ -15,7 +15,6 @@ import StaffLoginScreen from '../views/StaffLoginScreen';
 import StaffHomeScreen from '../views/StaffHomeScreen';
 import AddStaffScreen from '../views/AddStaffScreen';
 import CreateShopScreen from '../views/CreateShopScreen';
-import StaffListScreen from '../views/StaffListScreen';
 import EditStaffScreen from '../views/EditStaffScreen';
 import OwnerTabNavigator from './OwnerTabNavigator';
 import BarcodeScannerScreen from '../views/BarcodeScannerScreen';
@@ -27,14 +26,14 @@ import BillingScannerScreen from '../views/BillingScannerScreen';
 import ManualItemScreen from '../views/ManualItemScreen';
 import BillingCartScreen from '../views/BillingCartScreen';
 import BillSuccessScreen from '../views/BillSuccessScreen';
-import PurchaseCreateScreen from '../views/PurchaseCreateScreen';
-import PurchaseSuccessScreen from '../views/PurchaseSuccessScreen';
 import ShopInfoScreen from '../views/ShopInfoScreen';
 import EditShopInfoScreen from '../views/EditShopInfoScreen';
 import StaffManagementScreen from '../views/StaffManagementScreen'; 
 import SupplierManagementScreen from '../views/SupplierManagementScreen';
 import SupplierFormScreen from '../views/SupplierFormScreen';
-
+import PurchaseManagementScreen from '../views/Purchasemanagementscreen'
+import PurchaseCreateScreen     from '../views/PurchaseCreateScreen';
+import PurchaseSuccessScreen    from '../views/PurchaseSuccessScreen';
 
 export const navigationRef = createNavigationContainerRef();
 
@@ -199,12 +198,15 @@ const AppNavigator = () => {
         />
 
         <Stack.Screen name="AddStaff" component={AddStaffScreen} />
-        <Stack.Screen name="StaffList" component={StaffListScreen} />
         <Stack.Screen name="EditStaff" component={EditStaffScreen} />
        <Stack.Screen name="StaffManagement" component={StaffManagementScreen} />
 
 <Stack.Screen name="SupplierManagement" component={SupplierManagementScreen} />
 <Stack.Screen name="SupplierForm" component={SupplierFormScreen} />
+
+<Stack.Screen name="PurchaseManagement"    component={PurchaseManagementScreen} />
+        <Stack.Screen name="PurchaseCreate"        component={PurchaseCreateScreen} />
+        <Stack.Screen name="PurchaseSuccess"       component={PurchaseSuccessScreen} />
 
 
         <Stack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} />
@@ -220,9 +222,6 @@ const AppNavigator = () => {
         <Stack.Screen name="BillingCart" component={BillingCartScreen} />
         <Stack.Screen name="BillSuccess" component={BillSuccessScreen} />
 
-
-        <Stack.Screen name="PurchaseCreate" component={PurchaseCreateScreen} />
-        <Stack.Screen name="PurchaseSuccess" component={PurchaseSuccessScreen} />
 
       </Stack.Navigator>
 
