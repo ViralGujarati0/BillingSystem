@@ -12,6 +12,7 @@ const rfs   = (n) => Math.round(n * scale);
 export default function PurchaseCard({ purchase }) {
   const hasDue = Number(purchase.dueAmount) > 0;
 
+  console.log('purchase:', JSON.stringify(purchase));
   return (
     <View style={styles.card}>
 

@@ -348,7 +348,12 @@ exports.createPurchase = onCall(async (request) => {
   if (!shopId) throw new HttpsError("failed-precondition");
 
   const { dateLabel } = getISTDateInfo();
-  const istYear = dateLabel.split("-")[2]; // "2026"
+  const istYear = dateLabel.split("-")[2];
+
+  // ── Fetch supplier name ──
+  const supplierSnap = await db.collection(SHOPS).doc(shopId)
+    .collection("suppliers").doc(supplierId).get();
+  const supplierName = supplierSnap.exists ? (supplierSnap.data().name || "—") : "—";
 
   const counterRef = db.collection(SHOPS).doc(shopId).collection("meta").doc("counters");
   const invRefs    = items.map((it) =>
@@ -362,15 +367,15 @@ exports.createPurchase = onCall(async (request) => {
     const lastPurchaseYear = data.lastPurchaseYear || "";
     const nextNo          = lastPurchaseYear === istYear
       ? (data.purchaseCount || 0) + 1
-      : 1; // new year → reset to 1
+      : 1;
 
     const purchaseNoFormatted = `PUR-${istYear}-${String(nextNo).padStart(5, "0")}`;
 
     let subtotal = 0;
 
     tx.set(counterRef, {
-      lastPurchaseYear: istYear,  // "2026"
-      purchaseCount:    nextNo,   // 1, 2, 3...
+      lastPurchaseYear: istYear,
+      purchaseCount:    nextNo,
     }, { merge: true });
 
     for (let i = 0; i < items.length; i++) {
@@ -391,6 +396,7 @@ exports.createPurchase = onCall(async (request) => {
 
     tx.set(db.collection(SHOPS).doc(shopId).collection("purchases").doc(), {
       supplierId,
+      supplierName,        // 👈 only addition
       purchaseNo:           nextNo,
       purchaseNoFormatted,
       items,
@@ -406,7 +412,6 @@ exports.createPurchase = onCall(async (request) => {
 
   return { success: true, purchaseNo: result };
 });
-
 /* ───────────────── RESET STAFF PASSWORD ───────────────── */
 
 exports.resetStaffPassword = onCall(async (request) => {

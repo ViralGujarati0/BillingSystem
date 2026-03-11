@@ -20,6 +20,13 @@ const rs    = (n) => Math.round(n * scale);
 const rvs   = (n) => Math.round(n * vs);
 const rfs   = (n) => Math.round(n * scale);
 
+// ─── Search Button (right slot) ───────────────────────────────────────────────
+const SearchButton = ({ onPress }) => (
+  <TouchableOpacity style={styles.searchBtn} onPress={onPress} activeOpacity={0.75}>
+    <Icon name="search-outline" size={rfs(18)} color="#fff" />
+  </TouchableOpacity>
+);
+
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 const StatCard = ({ icon, label, value, valueColor }) => (
   <View style={styles.statCard}>
@@ -42,6 +49,18 @@ const HomeScreen = ({ navigation, route }) => {
     <AppHeaderLayout
       title={userDoc?.name || 'Home'}
       subtitle={greeting}
+      rightComponent={
+        userDoc?.shopId ? (
+          <SearchButton
+            onPress={() =>
+              navigation.navigate('GlobalSearch', {
+                shopId: userDoc.shopId,
+                userDoc,
+              })
+            }
+          />
+        ) : null
+      }
     >
       <View style={styles.container}>
 
@@ -110,6 +129,18 @@ export default HomeScreen;
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+
+  // ── Search button ──────────────────────────────────────
+  searchBtn: {
+    width: rs(36),
+    height: rs(36),
+    borderRadius: rs(10),
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   container: {
     flex: 1,

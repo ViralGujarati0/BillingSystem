@@ -79,7 +79,14 @@ export default function PurchaseManagementScreen({ navigation }) {
           <FlatList
             data={purchases}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <PurchaseCard purchase={item} />}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate('PurchaseDetail', { purchase: item })}
+              >
+                <PurchaseCard purchase={item} />
+              </TouchableOpacity>
+            )}
             ListEmptyComponent={renderEmpty}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}

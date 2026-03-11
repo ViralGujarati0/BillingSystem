@@ -31,9 +31,13 @@ import EditShopInfoScreen from '../views/EditShopInfoScreen';
 import StaffManagementScreen from '../views/StaffManagementScreen'; 
 import SupplierManagementScreen from '../views/SupplierManagementScreen';
 import SupplierFormScreen from '../views/SupplierFormScreen';
-import PurchaseManagementScreen from '../views/Purchasemanagementscreen'
+import PurchaseManagementScreen from '../views/PurchaseManagementScreen'
 import PurchaseCreateScreen     from '../views/PurchaseCreateScreen';
 import PurchaseSuccessScreen    from '../views/PurchaseSuccessScreen';
+import BillDetailScreen         from '../views/BillDetailScreen';
+import PurchaseDetailScreen     from '../views/PurchaseDetailScreen';
+
+import GlobalSearchScreen from '../views/GlobalSearchScreen';
 
 export const navigationRef = createNavigationContainerRef();
 
@@ -197,6 +201,8 @@ const AppNavigator = () => {
           initialParams={initialRoute === 'StaffHome' ? initialParams : undefined}
         />
 
+<Stack.Screen name="GlobalSearch" component={GlobalSearchScreen} />
+
         <Stack.Screen name="AddStaff" component={AddStaffScreen} />
         <Stack.Screen name="EditStaff" component={EditStaffScreen} />
        <Stack.Screen name="StaffManagement" component={StaffManagementScreen} />
@@ -207,6 +213,7 @@ const AppNavigator = () => {
 <Stack.Screen name="PurchaseManagement"    component={PurchaseManagementScreen} />
         <Stack.Screen name="PurchaseCreate"        component={PurchaseCreateScreen} />
         <Stack.Screen name="PurchaseSuccess"       component={PurchaseSuccessScreen} />
+        <Stack.Screen name="PurchaseDetail"        component={PurchaseDetailScreen} />
 
 
         <Stack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} />
@@ -221,6 +228,7 @@ const AppNavigator = () => {
         <Stack.Screen name="ManualItem" component={ManualItemScreen} />
         <Stack.Screen name="BillingCart" component={BillingCartScreen} />
         <Stack.Screen name="BillSuccess" component={BillSuccessScreen} />
+        <Stack.Screen name="BillDetail"            component={BillDetailScreen} />
 
 
       </Stack.Navigator>

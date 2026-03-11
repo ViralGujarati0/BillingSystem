@@ -7,22 +7,18 @@ import { useAtomValue } from "jotai";
 import { currentOwnerAtom } from "../atoms/owner";
 import { colors } from "../theme/colors";
 
-import AppHeaderLayout       from "../components/AppHeaderLayout";
-import SalesSummaryStrip     from "../components/SalesSummaryStrip";
-import SalesCalendar         from "../components/SalesCalendar";
-import RecentBillsList       from "../components/RecentBillsList";
+import AppHeaderLayout   from "../components/AppHeaderLayout";
+import SalesSummaryStrip from "../components/SalesSummaryStrip";
+import SalesCalendar     from "../components/SalesCalendar";
+import RecentBillsList   from "../components/RecentBillsList";
 
 import { listenMonthStats } from "../services/statsService";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-
-// ─── Responsive helpers (base 390×844) ───────────────────────────────────────
 const scale = SCREEN_W / 390;
 const vs    = SCREEN_H / 844;
 const rs    = (n) => Math.round(n * scale);
 const rvs   = (n) => Math.round(n * vs);
-
-/* ───────── DATE HELPERS — logic unchanged ───────── */
 
 function startOfDay(d) {
   const x = new Date(d);
@@ -36,9 +32,7 @@ function endOfDay(d) {
   return x;
 }
 
-/* ───────── SCREEN ───────── */
-
-const SalesScreen = () => {
+const SalesScreen = ({ navigation }) => {
 
   const owner  = useAtomValue(currentOwnerAtom);
   const shopId = owner?.shopId;
@@ -48,20 +42,15 @@ const SalesScreen = () => {
   const [loading,      setLoading]      = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  /* ── Stats listener — logic unchanged ── */
   useEffect(() => {
     if (!shopId) return;
-    const now  = new Date();
-    const unsub = listenMonthStats(
-      shopId,
-      now.getFullYear(),
-      now.getMonth(),
-      (data) => { setStats(data); }
-    );
+    const now   = new Date();
+    const unsub = listenMonthStats(shopId, now.getFullYear(), now.getMonth(), (data) => {
+      setStats(data);
+    });
     return () => unsub();
   }, [shopId]);
 
-  /* ── Bills listener — logic unchanged ── */
   useEffect(() => {
     if (!shopId) return;
     const start = startOfDay(selectedDate);
@@ -74,7 +63,7 @@ const SalesScreen = () => {
       .where("createdAt", "<=", end)
       .orderBy("createdAt", "desc")
       .onSnapshot((snap) => {
-        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         setBills(data);
         setLoading(false);
       });
@@ -82,29 +71,27 @@ const SalesScreen = () => {
   }, [shopId, selectedDate]);
 
   return (
-    <AppHeaderLayout title="Sales Screen">
+    <AppHeaderLayout title="Sales">
       <View style={styles.screen}>
 
-        {/* Summary cards */}
         <SalesSummaryStrip stats={stats} />
 
-        {/* Calendar */}
         <SalesCalendar
           stats={stats}
           selectedDate={selectedDate}
           onSelectDate={setSelectedDate}
         />
 
-        {/* Bills list */}
         <View style={styles.divider} />
+
         <View style={styles.listWrap}>
           <RecentBillsList
             bills={bills || []}
             loading={loading}
             selectedDate={selectedDate}
-            onPressBill={(bill) => {
-              console.log("Open bill:", bill.billNo);
-            }}
+            onPressBill={(bill) =>
+              navigation.getParent()?.navigate('BillDetail', { bill })
+            }
           />
         </View>
 
@@ -115,27 +102,21 @@ const SalesScreen = () => {
 
 export default SalesScreen;
 
-/* ───────── STYLES ───────── */
-
 const styles = StyleSheet.create({
-
   screen: {
     flex: 1,
     backgroundColor: colors.background,
     paddingTop: rvs(6),
   },
-
   divider: {
     height: 1,
     backgroundColor: colors.borderCard,
     marginHorizontal: rs(16),
     marginBottom: rvs(10),
   },
-
   listWrap: {
     flex: 1,
     paddingHorizontal: rs(16),
     paddingTop: rvs(4),
   },
-
 });
