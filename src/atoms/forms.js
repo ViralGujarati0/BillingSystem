@@ -30,9 +30,25 @@ const defaultCreateShopForm = {
 };
 
 const defaultAddStaffForm = {
-  name: '',
-  email: '',
+  name:     '',
+  email:    '',
   password: '',
+  permissions: {
+    billing: false,
+    sales: {
+      summaryStrip: false,
+      calendar:     false,
+      recentBills:  false,
+    },
+    stock: {
+      searchBar:      false,
+      statsCards:     false,
+      stockHealth:    false,
+      categoryFilter: false,
+      quickActions:   false,
+      inventoryList:  false,
+    },
+  },
 };
 
 const defaultStaffLoginForm = {

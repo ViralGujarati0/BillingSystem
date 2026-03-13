@@ -7,7 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Dimensions,
-  Alert,
+  Modal,
 } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -29,33 +29,21 @@ const rvs   = (n) => Math.round(n * vs);
 const rfs   = (n) => Math.round(n * scale);
 
 export default function ProfileScreen({ navigation }) {
-  const user            = auth().currentUser;
-  const { signOut }     = useAuthViewModel();
-  const [loggingOut, setLoggingOut] = useState(false);
+  const user                            = auth().currentUser;
+  const { signOut }                     = useAuthViewModel();
+  const [loggingOut, setLoggingOut]     = useState(false);
+  const [showConfirm, setShowConfirm]   = useState(false);
 
-  const handleSignOut = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            setLoggingOut(true);
-            try {
-              await signOut();
-              navigation.getParent()?.replace('Login');
-            } catch (e) {
-              console.error('Sign out error:', e);
-            } finally {
-              setLoggingOut(false);
-            }
-          },
-        },
-      ]
-    );
+  const performSignOut = async () => {
+    setShowConfirm(false);
+    setLoggingOut(true);
+    try {
+      await signOut();
+    } catch (e) {
+      console.error('[ProfileScreen] signOut error:', e);
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   return (
@@ -80,7 +68,7 @@ export default function ProfileScreen({ navigation }) {
         <View style={styles.logoutWrap}>
           <TouchableOpacity
             style={[styles.logoutBtn, loggingOut && styles.logoutBtnDisabled]}
-            onPress={handleSignOut}
+            onPress={() => setShowConfirm(true)}
             disabled={loggingOut}
             activeOpacity={0.85}
           >
@@ -96,22 +84,62 @@ export default function ProfileScreen({ navigation }) {
         </View>
 
       </ScrollView>
+
+      {/* ── Sign out confirm modal — replaces Alert to fix Android Activity issue ── */}
+      <Modal
+        visible={showConfirm}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowConfirm(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+
+            <View style={styles.modalIconWrap}>
+              <Icon name="log-out-outline" size={rfs(28)} color="#E05252" />
+            </View>
+
+            <Text style={styles.modalTitle}>Sign Out</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to sign out?
+            </Text>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setShowConfirm(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.confirmBtn}
+                onPress={performSignOut}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.confirmText}>Sign Out</Text>
+              </TouchableOpacity>
+            </View>
+
+          </View>
+        </View>
+      </Modal>
+
     </AppHeaderLayout>
   );
 }
 
 const styles = StyleSheet.create({
 
-  scroll: {
-    flex: 1,
-  },
+  scroll: { flex: 1 },
 
   content: {
     paddingTop: rvs(16),
     paddingBottom: rvs(48),
   },
 
-  // ── Logout ────────────────────────────────────────────
+  // ── Logout button ──────────────────────────────────────
   logoutWrap: {
     paddingHorizontal: rs(16),
     marginTop: rvs(24),
@@ -129,14 +157,96 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(224,82,82,0.06)',
   },
 
-  logoutBtnDisabled: {
-    opacity: 0.6,
-  },
+  logoutBtnDisabled: { opacity: 0.6 },
 
   logoutText: {
     fontSize: rfs(15),
     fontWeight: '700',
     color: '#E05252',
+  },
+
+  // ── Confirm modal ──────────────────────────────────────
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: rs(32),
+  },
+
+  modalCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: rs(20),
+    paddingTop: rvs(28),
+    paddingBottom: rvs(20),
+    paddingHorizontal: rs(24),
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: rvs(8) },
+    shadowOpacity: 0.15,
+    shadowRadius: rs(20),
+    elevation: 10,
+  },
+
+  modalIconWrap: {
+    width: rs(60),
+    height: rs(60),
+    borderRadius: rs(30),
+    backgroundColor: 'rgba(224,82,82,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: rvs(14),
+  },
+
+  modalTitle: {
+    fontSize: rfs(18),
+    fontWeight: '800',
+    color: colors.textPrimary,
+    marginBottom: rvs(8),
+  },
+
+  modalMessage: {
+    fontSize: rfs(14),
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: rfs(21),
+    marginBottom: rvs(24),
+  },
+
+  modalActions: {
+    flexDirection: 'row',
+    gap: rs(10),
+    width: '100%',
+  },
+
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: rvs(13),
+    borderRadius: rs(12),
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    alignItems: 'center',
+  },
+
+  cancelText: {
+    fontSize: rfs(14),
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+
+  confirmBtn: {
+    flex: 1,
+    paddingVertical: rvs(13),
+    borderRadius: rs(12),
+    backgroundColor: '#E05252',
+    alignItems: 'center',
+  },
+
+  confirmText: {
+    fontSize: rfs(14),
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 
 });
