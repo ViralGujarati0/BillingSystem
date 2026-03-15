@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
 
 import HomeScreen   from '../views/HomeScreen';
@@ -48,16 +49,16 @@ const PLUS_BOTTOM  = NAV_H / 2 - PLUS_RING_D / 2;
 // Total outer height = bar height only; overflow:visible handles the rest
 const OUTER_H      = NAV_H;
 
-// ─── Tab definitions ──────────────────────────────────────────────────────────
-const TABS = [
-  { name: 'HomeTab',   label: 'Home',    icon: 'home-outline'   },
-  { name: 'SalesTab',  label: 'Sales',   icon: 'list-outline'   },
-  { name: 'StockTab',  label: 'Stock',   icon: 'grid-outline'   },
-  { name: 'ProfileTab', label: 'Profile', icon: 'person-outline' },
+// Tab label keys — resolved in CustomTabBar with useTranslation
+const TAB_KEYS = [
+  { name: 'HomeTab',   labelKey: 'tabs.home',    icon: 'home-outline'   },
+  { name: 'SalesTab',  labelKey: 'tabs.sales',    icon: 'list-outline'   },
+  { name: 'StockTab',  labelKey: 'tabs.stock',    icon: 'grid-outline'   },
+  { name: 'ProfileTab', labelKey: 'tabs.profile', icon: 'person-outline' },
 ];
 
 // ─── Amber Plus Button ────────────────────────────────────────────────────────
-function PlusButton({ onPress }) {
+function PlusButton({ onPress, label }) {
   const scaleAnim  = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
@@ -91,7 +92,7 @@ function PlusButton({ onPress }) {
           </Animated.View>
         </TouchableOpacity>
       </View>
-      <Text style={styles.plusLbl}>New Bill</Text>
+      <Text style={styles.plusLbl}>{label}</Text>
     </View>
   );
 }
@@ -135,7 +136,9 @@ function TabItem({ tab, focused, onPress }) {
 
 // ─── Custom Tab Bar ───────────────────────────────────────────────────────────
 function CustomTabBar({ state, navigation, userDoc }) {
+  const { t } = useTranslation();
   const activeIdx = state.index;
+  const TABS = TAB_KEYS.map((tab) => ({ ...tab, label: t(tab.labelKey) }));
 
   // Set Android bottom nav bar color to match tab bar
   useEffect(() => {
@@ -183,6 +186,7 @@ function CustomTabBar({ state, navigation, userDoc }) {
 
       {/* Floating amber plus */}
       <PlusButton
+        label={t('tabs.newBill')}
         onPress={() =>
           navigation.navigate('BillingScanner', { userDoc: userDoc ?? null })
         }

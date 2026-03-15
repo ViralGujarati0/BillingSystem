@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { View, StyleSheet, Dimensions } from "react-native";
-
+import { useTranslation } from "react-i18next";
 import firestore from "@react-native-firebase/firestore";
 import { useAtomValue } from "jotai";
 
 import { currentOwnerAtom } from "../atoms/owner";
 import { colors } from "../theme/colors";
-
 import AppHeaderLayout   from "../components/AppHeaderLayout";
 import SalesSummaryStrip from "../components/SalesSummaryStrip";
 import SalesCalendar     from "../components/SalesCalendar";
@@ -33,7 +32,7 @@ function endOfDay(d) {
 }
 
 const SalesScreen = ({ navigation }) => {
-
+  const { t } = useTranslation();
   const owner  = useAtomValue(currentOwnerAtom);
   const shopId = owner?.shopId;
 
@@ -71,7 +70,7 @@ const SalesScreen = ({ navigation }) => {
   }, [shopId, selectedDate]);
 
   return (
-    <AppHeaderLayout title="Sales">
+    <AppHeaderLayout title={t('sales.title')}>
       <View style={styles.screen}>
 
         <SalesSummaryStrip stats={stats} />

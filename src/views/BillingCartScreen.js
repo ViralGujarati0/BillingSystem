@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
 
 import {
   billingCartItemsAtom,
@@ -41,6 +42,7 @@ const rfs   = (n) => Math.round(n * Math.min(scale, vs));
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const BillingCartScreen = ({ navigation, route }) => {
+  const { t } = useTranslation();
   const { userDoc } = route.params || {};
   const shopId = userDoc?.shopId;
 
@@ -102,15 +104,15 @@ const BillingCartScreen = ({ navigation, route }) => {
       <View style={styles.errorCenter}>
         <View style={styles.errorCard}>
           <Icon name="storefront-outline" size={rfs(36)} color={colors.textSecondary} />
-          <Text style={styles.errorTitle}>No shop found</Text>
-          <Text style={styles.errorSub}>Unable to load shop information.</Text>
+          <Text style={styles.errorTitle}>{t('billing.noShopFound')}</Text>
+          <Text style={styles.errorSub}>{t('billing.noShopSub')}</Text>
           <TouchableOpacity
             style={styles.errorBackBtn}
             onPress={() => navigation.goBack()}
             activeOpacity={0.8}
           >
             <Icon name="chevron-back" size={rfs(14)} color="#FFFFFF" />
-            <Text style={styles.errorBackText}>Go Back</Text>
+            <Text style={styles.errorBackText}>{t('common.goBack')}</Text>
           </TouchableOpacity>
         </View>
       </View>

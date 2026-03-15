@@ -1,6 +1,7 @@
 import 'react-native-gesture-handler';
 import React from 'react';
 import { Provider as JotaiProvider } from 'jotai';
+import './src/locale/i18n';
 import AppNavigator from './src/navigation/AppNavigator';
 
 const App = () => (

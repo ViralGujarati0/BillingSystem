@@ -8,6 +8,7 @@ import {
   Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
 
 import AppHeaderLayout  from '../components/AppHeaderLayout';
 import useHomeViewModel from '../viewmodels/useHomeViewModel';
@@ -42,6 +43,7 @@ const StatCard = ({ icon, label, value, valueColor }) => (
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 const HomeScreen = ({ navigation, route }) => {
+  const { t } = useTranslation();
   const userDoc = route.params?.userDoc;
   const { stats, loadingStats, greeting, hasShop } = useHomeViewModel({ userDoc });
 
@@ -70,17 +72,15 @@ const HomeScreen = ({ navigation, route }) => {
             <View style={styles.createShopIconWrap}>
               <Icon name="storefront-outline" size={rfs(40)} color={colors.primary} />
             </View>
-            <Text style={styles.createShopTitle}>Set up your shop</Text>
-            <Text style={styles.createShopSub}>
-              Create your shop to start billing, managing inventory and staff.
-            </Text>
+            <Text style={styles.createShopTitle}>{t('home.setUpShop')}</Text>
+            <Text style={styles.createShopSub}>{t('home.setUpShopSub')}</Text>
             <TouchableOpacity
               style={styles.createShopBtn}
               onPress={() => navigation.getParent()?.navigate('CreateShop', { userDoc })}
               activeOpacity={0.85}
             >
               <Icon name="add-outline" size={rfs(18)} color="#fff" />
-              <Text style={styles.createShopBtnText}>Create Shop</Text>
+              <Text style={styles.createShopBtnText}>{t('home.createShop')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -89,7 +89,7 @@ const HomeScreen = ({ navigation, route }) => {
         {userDoc?.shopId && (
           <View style={styles.statsWrap}>
 
-            <Text style={styles.sectionLabel}>TODAY'S OVERVIEW</Text>
+            <Text style={styles.sectionLabel}>{t('home.todaysOverview')}</Text>
 
             {loadingStats ? (
               <View style={styles.loadingWrap}>
@@ -99,19 +99,19 @@ const HomeScreen = ({ navigation, route }) => {
               <View style={styles.statsGrid}>
                 <StatCard
                   icon="cash-outline"
-                  label="Total Sales"
+                  label={t('home.totalSales')}
                   value={`₹${Number(stats?.totalSales || 0).toFixed(2)}`}
                   valueColor={colors.primary}
                 />
                 <StatCard
                   icon="trending-up-outline"
-                  label="Today Profit"
+                  label={t('home.todayProfit')}
                   value={`₹${Number(stats?.totalProfit || 0).toFixed(2)}`}
                   valueColor="#16a34a"
                 />
                 <StatCard
                   icon="receipt-outline"
-                  label="Bills"
+                  label={t('home.bills')}
                   value={String(stats?.totalBills || 0)}
                 />
               </View>

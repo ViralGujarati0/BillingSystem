@@ -11,6 +11,7 @@ import {
   StatusBar,
 } from "react-native";
 import { useAtomValue } from "jotai";
+import { useTranslation } from "react-i18next";
 import Icon from "react-native-vector-icons/Ionicons";
 import LinearGradient from "react-native-linear-gradient";
 
@@ -40,7 +41,7 @@ const STATUS_H = Platform.OS === "android"
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const BillSuccessScreen = ({ navigation, route }) => {
-
+  const { t } = useTranslation();
   const data = useAtomValue(billSuccessDataAtom);
   const [pdfLoading, setPdfLoading] = useState(false);
 
@@ -71,15 +72,15 @@ const BillSuccessScreen = ({ navigation, route }) => {
         <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
         <View style={styles.errorCard}>
           <Icon name="receipt-outline" size={rfs(36)} color={colors.textSecondary} />
-          <Text style={styles.errorTitle}>No bill data</Text>
-          <Text style={styles.errorSub}>Something went wrong loading the bill.</Text>
+          <Text style={styles.errorTitle}>{t('billing.noBillData')}</Text>
+          <Text style={styles.errorSub}>{t('billing.noBillDataSub')}</Text>
           <TouchableOpacity
             style={styles.errorBackBtn}
             onPress={handleBackToHome}
             activeOpacity={0.8}
           >
             <Icon name="home-outline" size={rfs(14)} color="#FFFFFF" />
-            <Text style={styles.errorBackText}>Back to Home</Text>
+            <Text style={styles.errorBackText}>{t('billing.backToHome')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -113,8 +114,8 @@ const BillSuccessScreen = ({ navigation, route }) => {
             <Icon name="checkmark" size={rfs(32)} color="#5B9E6D" />
           </View>
 
-          <Text style={styles.bannerTitle}>Bill Generated!</Text>
-          <Text style={styles.bannerSub}>Your bill has been saved successfully</Text>
+          <Text style={styles.bannerTitle}>{t('billing.billGenerated')}</Text>
+          <Text style={styles.bannerSub}>{t('billing.billSavedSuccess')}</Text>
 
           {/* Bill no pill */}
           {!!data.billNo && (

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
 
 import StaffHomeScreen    from '../views/StaffHomeScreen';
@@ -38,15 +39,15 @@ const PLUS_SHADOW_Y = rvs(6);
 const PLUS_BOTTOM = NAV_H / 2 - PLUS_RING_D / 2;
 const OUTER_H     = NAV_H;
 
-const TABS = [
-  { name: 'StaffHomeTab',    label: 'Home',    icon: 'home-outline'    },
-  { name: 'StaffSalesTab',   label: 'Sales',   icon: 'list-outline'    },
-  { name: 'StaffStockTab',   label: 'Stock',   icon: 'grid-outline'    },
-  { name: 'StaffProfileTab', label: 'Profile', icon: 'person-outline'  },
+const TAB_KEYS = [
+  { name: 'StaffHomeTab',    labelKey: 'tabs.home',    icon: 'home-outline'    },
+  { name: 'StaffSalesTab',   labelKey: 'tabs.sales',   icon: 'list-outline'    },
+  { name: 'StaffStockTab',   labelKey: 'tabs.stock',   icon: 'grid-outline'    },
+  { name: 'StaffProfileTab', labelKey: 'tabs.profile', icon: 'person-outline'  },
 ];
 
 // ── Plus button — only shown if billing permission is enabled ─────────────────
-function PlusButton({ onPress }) {
+function PlusButton({ onPress, label }) {
   const scaleAnim  = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
@@ -75,7 +76,7 @@ function PlusButton({ onPress }) {
           </Animated.View>
         </TouchableOpacity>
       </View>
-      <Text style={styles.plusLbl}>New Bill</Text>
+      <Text style={styles.plusLbl}>{label}</Text>
     </View>
   );
 }
@@ -113,8 +114,10 @@ function TabItem({ tab, focused, onPress }) {
 
 // ── Custom tab bar ─────────────────────────────────────────────────────────────
 function CustomTabBar({ state, navigation, permissions }) {
-  const activeIdx    = state.index;
-  const canBill      = !!permissions?.billing;
+  const { t } = useTranslation();
+  const activeIdx = state.index;
+  const canBill   = !!permissions?.billing;
+  const TABS = TAB_KEYS.map((tab) => ({ ...tab, label: t(tab.labelKey) }));
 
   useEffect(() => {
     if (Platform.OS === 'android') {
@@ -147,6 +150,7 @@ function CustomTabBar({ state, navigation, permissions }) {
       {/* Show plus only if billing is allowed */}
       {canBill && (
         <PlusButton
+          label={t('tabs.newBill')}
           onPress={() => navigation.getParent()?.navigate('BillingScanner')}
         />
       )}

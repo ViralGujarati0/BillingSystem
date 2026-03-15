@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 
 import useAuthViewModel from '../viewmodels/AuthViewModel';
 import { colors as T } from '../theme/colors';
@@ -47,6 +48,7 @@ const StaffIcon = () => (
 // ─────────────────────────────────────────────────────────────────────────────
 
 const LoginScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   const { loading, error, signInWithGoogle } = useAuthViewModel();
 
   const masterFadeRef = useRef(null);
@@ -113,19 +115,17 @@ const LoginScreen = ({ navigation }) => {
         {/* ● OWNER PORTAL badge */}
         <View style={styles.badge}>
           <View style={styles.badgeDot} />
-          <Text style={styles.badgeLabel}>OWNER PORTAL</Text>
+          <Text style={styles.badgeLabel}>{t('login.badge')}</Text>
         </View>
 
         {/* Headline */}
         <Text style={styles.headline}>
-          {'Welcome\nBack, '}
-          <Text style={styles.headlineAccent}>Boss.</Text>
+          {t('login.headline')}
+          <Text style={styles.headlineAccent}>{t('login.headlineBoss')}</Text>
         </Text>
 
         {/* Subtitle */}
-        <Text style={styles.subText}>
-          {'Manage your shop, staff &\nbilling all in one place.'}
-        </Text>
+        <Text style={styles.subText}>{t('login.subtitle')}</Text>
 
       </Animated.View>
 
@@ -133,7 +133,7 @@ const LoginScreen = ({ navigation }) => {
       <Animated.View
         style={[styles.card, { transform: [{ translateY: cardSlide }, { scale: cardScale }] }]}
       >
-        <Text style={styles.sectionLabel}>SIGN IN AS OWNER</Text>
+        <Text style={styles.sectionLabel}>{t('login.signInAsOwner')}</Text>
 
         {error ? (
           <View style={styles.errorBox}>
@@ -154,7 +154,7 @@ const LoginScreen = ({ navigation }) => {
           ) : (
             <View style={styles.btnInner}>
               <GoogleLogo />
-              <Text style={styles.googleBtnText}>Continue with Google</Text>
+              <Text style={styles.googleBtnText}>{t('login.continueWithGoogle')}</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -162,7 +162,7 @@ const LoginScreen = ({ navigation }) => {
         {/* OR separator */}
         <View style={styles.sepRow}>
           <View style={styles.sepLine} />
-          <Text style={styles.sepText}>or</Text>
+          <Text style={styles.sepText}>{t('common.or')}</Text>
           <View style={styles.sepLine} />
         </View>
 
@@ -174,7 +174,7 @@ const LoginScreen = ({ navigation }) => {
         >
           <View style={styles.btnInner}>
             <StaffIcon />
-            <Text style={styles.staffBtnText}>Staff Login</Text>
+            <Text style={styles.staffBtnText}>{t('login.staffLogin')}</Text>
           </View>
         </TouchableOpacity>
 

@@ -1,8 +1,10 @@
 import React from 'react';
 import { TouchableOpacity, Text, View, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
 
 export default function PurchaseManagementCard({ navigation }) {
+  const { t } = useTranslation();
   return (
     <TouchableOpacity
       style={styles.card}
@@ -14,8 +16,8 @@ export default function PurchaseManagementCard({ navigation }) {
       </View>
 
       <View style={styles.textWrap}>
-        <Text style={styles.title}>Purchase Management</Text>
-        <Text style={styles.subtitle}>Create and manage supplier purchases</Text>
+        <Text style={styles.title}>{t('purchase.management')}</Text>
+        <Text style={styles.subtitle}>{t('purchase.managementSub')}</Text>
       </View>
 
       <Icon name="chevron-forward" size={18} color="#bbb" />

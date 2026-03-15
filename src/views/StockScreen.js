@@ -5,7 +5,7 @@ import {
   RefreshControl,
   Dimensions,
 } from "react-native";
-
+import { useTranslation } from "react-i18next";
 import AppHeaderLayout          from "../components/AppHeaderLayout";
 import InventorySearchBar       from "../components/InventorySearchBar";
 import InventoryStatsCards      from "../components/InventoryStatsCards";
@@ -29,7 +29,7 @@ const rfs   = (n) => Math.round(n * scale);
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const StockScreen = ({ navigation }) => {
-
+  const { t } = useTranslation();
   const {
     inventory,
     filteredInventory,
@@ -48,8 +48,8 @@ const StockScreen = ({ navigation }) => {
 
   return (
     <AppHeaderLayout
-      title="Inventory"
-      subtitle={`${inventory.length} products`}
+      title={t('inventory.title')}
+      subtitle={t('inventory.productsCount', { count: inventory.length })}
       rightComponent={
         <InventoryQuickActions navigation={navigation} />
       }

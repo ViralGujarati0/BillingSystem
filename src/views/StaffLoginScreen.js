@@ -1,5 +1,6 @@
 // src/screens/StaffLoginScreen.js
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -62,6 +63,7 @@ const ShieldIcon = () => (
 // ─────────────────────────────────────────────────────────────────────────────
 
 const StaffLoginScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   const { signInWithEmailPassword, loading, error } = useAuthViewModel();
 
   // ── YOUR EXACT LOGIC — untouched ─────────────────────
@@ -134,17 +136,15 @@ const StaffLoginScreen = ({ navigation }) => {
 
           {/* Left: Title */}
           <View style={styles.heroLeft}>
-            <Text style={styles.heroTitle}>Staff</Text>
-            <Text style={styles.heroTitleAccent}>Sign In</Text>
-            <Text style={styles.heroSub}>
-              Enter your credentials to{'\n'}access the billing panel.
-            </Text>
+            <Text style={styles.heroTitle}>{t('staffLogin.staff')}</Text>
+            <Text style={styles.heroTitleAccent}>{t('staffLogin.signIn')}</Text>
+            <Text style={styles.heroSub}>{t('staffLogin.subtitle')}</Text>
           </View>
 
           {/* Right: Staff Access badge */}
           <View style={styles.accessBadge}>
-            <Text style={styles.accessBadgeTitle}>Staff Access</Text>
-            <Text style={styles.accessBadgeSub}>Secured & Monitored</Text>
+            <Text style={styles.accessBadgeTitle}>{t('staffLogin.staffAccess')}</Text>
+            <Text style={styles.accessBadgeSub}>{t('staffLogin.securedMonitored')}</Text>
           </View>
 
         </Animated.View>
@@ -159,12 +159,12 @@ const StaffLoginScreen = ({ navigation }) => {
           >
 
             {/* Email field */}
-            <Text style={styles.fieldLabel}>Email Address</Text>
+            <Text style={styles.fieldLabel}>{t('staffLogin.emailAddress')}</Text>
             <View style={[styles.inputBox, emailFocused && styles.inputBoxFocused]}>
               <View style={styles.inputIconWrap}><EmailIcon /></View>
               <TextInput
                 style={styles.input}
-                placeholder="staff@yourshop.com"
+                placeholder={t('staffLogin.emailPlaceholder')}
                 placeholderTextColor={T.textSecondary + '88'}
                 value={form.email}
                 onChangeText={(v) => setForm((prev) => ({ ...prev, email: v }))}
@@ -177,12 +177,12 @@ const StaffLoginScreen = ({ navigation }) => {
             </View>
 
             {/* Password field */}
-            <Text style={[styles.fieldLabel, { marginTop: hp(2.4) }]}>Password</Text>
+            <Text style={[styles.fieldLabel, { marginTop: hp(2.4) }]}>{t('common.password')}</Text>
             <View style={[styles.inputBox, passwordFocused && styles.inputBoxFocused]}>
               <View style={styles.inputIconWrap}><LockIcon /></View>
               <TextInput
                 style={[styles.input, { flex: 1 }]}
-                placeholder="Enter your password"
+                placeholder={t('staffLogin.passwordPlaceholder')}
                 placeholderTextColor={T.textSecondary + '88'}
                 value={form.password}
                 onChangeText={(v) => setForm((prev) => ({ ...prev, password: v }))}
@@ -203,7 +203,7 @@ const StaffLoginScreen = ({ navigation }) => {
 
             {/* Forgot password */}
             <TouchableOpacity style={styles.forgotRow} activeOpacity={0.7}>
-              <Text style={styles.forgotText}>Forgot password?</Text>
+              <Text style={styles.forgotText}>{t('staffLogin.forgotPassword')}</Text>
             </TouchableOpacity>
 
             {/* Error */}
@@ -222,14 +222,14 @@ const StaffLoginScreen = ({ navigation }) => {
               disabled={loading}
             >
               <Text style={styles.signInText}>
-                {loading ? 'Signing in…' : 'Sign In to Dashboard  →'}
+                {loading ? t('staffLogin.signingIn') : t('staffLogin.signInToDashboard')}
               </Text>
             </TouchableOpacity>
 
             {/* Security note */}
             <View style={styles.secureRow}>
               <ShieldIcon />
-              <Text style={styles.secureText}>Secured with end-to-end encryption</Text>
+              <Text style={styles.secureText}>{t('staffLogin.securedNote')}</Text>
             </View>
 
             {/* Back link */}
@@ -238,7 +238,7 @@ const StaffLoginScreen = ({ navigation }) => {
               onPress={() => navigation.goBack()}
               activeOpacity={0.7}
             >
-              <Text style={styles.backText}>← Back to Owner Login</Text>
+              <Text style={styles.backText}>{t('staffLogin.backToOwnerLogin')}</Text>
             </TouchableOpacity>
 
           </ScrollView>

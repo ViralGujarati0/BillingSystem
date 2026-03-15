@@ -11,15 +11,19 @@ import {
 } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
+import { useAtomValue } from 'jotai';
 
 import AppHeaderLayout        from '../components/AppHeaderLayout';
 import ProfileHeader          from '../components/ProfileHeader';
 import ShopInfoCard           from '../components/ShopInfoCard';
-import StaffManagementCard    from '../components/StaffManagementCard';
+import StaffManagementCard   from '../components/StaffManagementCard';
 import SupplierManagementCard from '../components/SupplierManagementCard';
 import PurchaseManagementCard from '../components/PurchaseManagementCard';
+import LanguageCard           from '../components/LanguageCard';
 import useAuthViewModel       from '../viewmodels/AuthViewModel';
-import { colors }             from '../theme/colors';
+import { localeAtom }        from '../atoms/locale';
+import { colors }            from '../theme/colors';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const scale = SCREEN_W / 390;
@@ -29,10 +33,12 @@ const rvs   = (n) => Math.round(n * vs);
 const rfs   = (n) => Math.round(n * scale);
 
 export default function ProfileScreen({ navigation }) {
-  const user                            = auth().currentUser;
-  const { signOut }                     = useAuthViewModel();
-  const [loggingOut, setLoggingOut]     = useState(false);
-  const [showConfirm, setShowConfirm]   = useState(false);
+  const { t } = useTranslation();
+  const user = auth().currentUser;
+  const savedLocale = useAtomValue(localeAtom);
+  const { signOut } = useAuthViewModel();
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const performSignOut = async () => {
     setShowConfirm(false);
@@ -47,7 +53,7 @@ export default function ProfileScreen({ navigation }) {
   };
 
   return (
-    <AppHeaderLayout title="Profile">
+    <AppHeaderLayout title={t('profile.title')}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
@@ -59,6 +65,7 @@ export default function ProfileScreen({ navigation }) {
           email={user?.email}
         />
 
+        <LanguageCard currentLocale={savedLocale || 'en'} />
         <ShopInfoCard           navigation={navigation} />
         <StaffManagementCard    navigation={navigation} />
         <SupplierManagementCard navigation={navigation} />
@@ -77,7 +84,7 @@ export default function ProfileScreen({ navigation }) {
             ) : (
               <>
                 <Icon name="log-out-outline" size={rfs(18)} color="#E05252" />
-                <Text style={styles.logoutText}>Sign Out</Text>
+                <Text style={styles.logoutText}>{t('profile.signOut')}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -99,10 +106,8 @@ export default function ProfileScreen({ navigation }) {
               <Icon name="log-out-outline" size={rfs(28)} color="#E05252" />
             </View>
 
-            <Text style={styles.modalTitle}>Sign Out</Text>
-            <Text style={styles.modalMessage}>
-              Are you sure you want to sign out?
-            </Text>
+            <Text style={styles.modalTitle}>{t('profile.signOutConfirmTitle')}</Text>
+            <Text style={styles.modalMessage}>{t('profile.signOutConfirmMessage')}</Text>
 
             <View style={styles.modalActions}>
               <TouchableOpacity
@@ -110,7 +115,7 @@ export default function ProfileScreen({ navigation }) {
                 onPress={() => setShowConfirm(false)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.cancelText}>Cancel</Text>
+                <Text style={styles.cancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -118,7 +123,7 @@ export default function ProfileScreen({ navigation }) {
                 onPress={performSignOut}
                 activeOpacity={0.85}
               >
-                <Text style={styles.confirmText}>Sign Out</Text>
+                <Text style={styles.confirmText}>{t('profile.signOut')}</Text>
               </TouchableOpacity>
             </View>
 

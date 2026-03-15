@@ -2,13 +2,14 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useAtom } from 'jotai';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 import AppHeaderLayout from '../components/AppHeaderLayout';
 import { currentOwnerAtom } from '../atoms/owner';
 import { getShop, getShopSettings } from '../services/shopService';
 
 export default function ShopInfoScreen({ navigation }) {
-
+  const { t } = useTranslation();
   const [owner] = useAtom(currentOwnerAtom);
 
   const [shop, setShop] = useState(null);
@@ -35,32 +36,23 @@ export default function ShopInfoScreen({ navigation }) {
   if (!shop) return null;
 
   return (
-
-    <AppHeaderLayout title="Shop Information">
-
+    <AppHeaderLayout title={t('shop.title')}>
       <View style={styles.container}>
-
         <View style={styles.card}>
-
-          <InfoRow label="Business Name" value={shop.businessName} />
-          <InfoRow label="Phone" value={shop.phone} />
-          <InfoRow label="Address" value={shop.address} />
-          <InfoRow label="GST Number" value={shop.gstNumber} />
-
-          <InfoRow label="Bill Message" value={settings?.billMessage} />
-          <InfoRow label="Bill Terms" value={settings?.billTerms} />
-
+          <InfoRow label={t('shop.businessName')} value={shop.businessName} />
+          <InfoRow label={t('shop.phone')} value={shop.phone} />
+          <InfoRow label={t('shop.address')} value={shop.address} />
+          <InfoRow label={t('shop.gstNumber')} value={shop.gstNumber} />
+          <InfoRow label={t('shop.billMessage')} value={settings?.billMessage} />
+          <InfoRow label={t('shop.billTerms')} value={settings?.billTerms} />
         </View>
-
         <TouchableOpacity
           style={styles.editBtn}
-          onPress={() => navigation.navigate("EditShopInfo")}
+          onPress={() => navigation.navigate('EditShopInfo')}
         >
-          <Text style={styles.editText}>Edit</Text>
+          <Text style={styles.editText}>{t('common.edit')}</Text>
         </TouchableOpacity>
-
       </View>
-
     </AppHeaderLayout>
   );
 }

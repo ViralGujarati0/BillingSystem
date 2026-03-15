@@ -111,6 +111,7 @@ import {
 } from 'react-native';
 import { useAtom } from 'jotai';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
 import { addStaffFormAtom }          from '../atoms/forms';
 import { DEFAULT_STAFF_PERMISSIONS } from '../atoms/staff';
 import { createStaff }               from '../services/staffService';
@@ -227,6 +228,7 @@ const CREDENTIAL_FIELDS = [
 ];
 
 const AddStaffScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   const [form, setForm] = useAtom(addStaffFormAtom);
 
   const handleToggle = (sectionKey, itemKey, value) => {
@@ -242,17 +244,17 @@ const AddStaffScreen = ({ navigation }) => {
   };
 
   const handleCreate = async () => {
-    if (!form.name.trim())        return Alert.alert('Error', 'Name is required');
-    if (!form.email.trim())       return Alert.alert('Error', 'Email is required');
-    if (!form.password.trim())    return Alert.alert('Error', 'Password is required');
-    if (form.password.length < 6) return Alert.alert('Error', 'Password must be at least 6 characters');
+    if (!form.name.trim())        return Alert.alert(t('common.error'), t('staff.nameRequired'));
+    if (!form.email.trim())       return Alert.alert(t('common.error'), t('staff.emailRequired'));
+    if (!form.password.trim())    return Alert.alert(t('common.error'), t('staff.passwordRequired'));
+    if (form.password.length < 6) return Alert.alert(t('common.error'), t('staff.passwordMinLength'));
     try {
       await createStaff({ name: form.name.trim(), email: form.email.trim(), password: form.password, permissions: form.permissions });
-      Alert.alert('Success', `${form.name} has been added as staff`);
+      Alert.alert(t('common.success'), t('staff.staffAdded', { name: form.name }));
       setForm({ name: '', email: '', password: '', permissions: DEFAULT_STAFF_PERMISSIONS });
       navigation.goBack();
     } catch (err) {
-      Alert.alert('Error', err.message);
+      Alert.alert(t('common.error'), err.message);
     }
   };
 
@@ -262,10 +264,10 @@ const AddStaffScreen = ({ navigation }) => {
       <View style={styles.header}>
         <TouchableOpacity style={styles.backPill} onPress={() => navigation.goBack()} activeOpacity={0.75}>
           <Icon name="chevron-back" size={rfs(16)} color="#FFFFFF" />
-          <Text style={styles.backPillText}>Back</Text>
+          <Text style={styles.backPillText}>{t('common.back')}</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Staff</Text>
-        <Text style={styles.headerSub}>Set credentials and access permissions</Text>
+        <Text style={styles.headerTitle}>{t('staff.addStaff')}</Text>
+        <Text style={styles.headerSub}>{t('staff.addStaffSub')}</Text>
       </View>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={styles.sectionCard}>
@@ -273,7 +275,7 @@ const AddStaffScreen = ({ navigation }) => {
             <View style={[styles.sectionIconBox, { backgroundColor: colors.primary + '18' }]}>
               <Icon name="person-outline" size={rfs(16)} color={colors.primary} />
             </View>
-            <Text style={styles.sectionTitle}>Staff Credentials</Text>
+            <Text style={styles.sectionTitle}>{t('staff.staffCredentials')}</Text>
           </View>
           {CREDENTIAL_FIELDS.map((field, idx, arr) => (
             <View key={field.key} style={[styles.fieldGroup, idx === arr.length - 1 && styles.fieldGroupLast]}>
@@ -297,7 +299,7 @@ const AddStaffScreen = ({ navigation }) => {
 
         <View style={styles.sectionHeading}>
           <Icon name="shield-checkmark-outline" size={rfs(15)} color={colors.primary} />
-          <Text style={styles.sectionHeadingText}>Access Permissions</Text>
+          <Text style={styles.sectionHeadingText}>{t('staff.accessPermissions')}</Text>
         </View>
 
         {PERMISSION_SECTIONS.map((section) => (
@@ -306,7 +308,7 @@ const AddStaffScreen = ({ navigation }) => {
 
         <TouchableOpacity style={styles.createBtn} onPress={handleCreate} activeOpacity={0.85}>
           <Icon name="person-add-outline" size={rfs(18)} color="#FFFFFF" />
-          <Text style={styles.createBtnText}>Create Staff Account</Text>
+          <Text style={styles.createBtnText}>{t('staff.createStaffAccount')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

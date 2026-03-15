@@ -7,11 +7,14 @@ import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 
 import { appInitializingAtom, appInitialRouteAtom, appInitialParamsAtom } from '../atoms/auth';
+import { localeAtom } from '../atoms/locale';
 import { currentStaffAtom } from '../atoms/staff';
 import { getUser } from '../services/userService';
 import { productCacheAtom, productCacheLoadedAtom } from '../atoms/productCache';
 import { loadProductCache } from '../services/productCacheService';
+import { loadSavedLocale } from '../locale/i18n';
 
+import LanguageSelectScreen     from '../views/LanguageSelectScreen';
 import LoginScreen              from '../views/LoginScreen';
 import StaffLoginScreen         from '../views/StaffLoginScreen';
 import AddStaffScreen           from '../views/AddStaffScreen';
@@ -63,9 +66,10 @@ const AppNavigator = () => {
   const setProductCache  = useSetAtom(productCacheAtom);
   const setCacheLoaded   = useSetAtom(productCacheLoadedAtom);
   const setCurrentStaff  = useSetAtom(currentStaffAtom);
+  const setLocale        = useSetAtom(localeAtom);
 
-  // Holds the Firestore staff doc listener — cleaned up on sign out
   const staffListenerRef = useRef(null);
+  const savedLocaleRef   = useRef(null);
 
   const stopStaffListener = () => {
     if (staffListenerRef.current) {
@@ -103,102 +107,77 @@ const AppNavigator = () => {
   };
 
   useEffect(() => {
+    let unsubscribeAuth = () => {};
 
-    const unsubscribeAuth = auth().onAuthStateChanged(async (firebaseUser) => {
+    (async () => {
+      const saved = await loadSavedLocale();
+      savedLocaleRef.current = saved;
+      setLocale(saved);
 
-      try {
+      unsubscribeAuth = auth().onAuthStateChanged(async (firebaseUser) => {
+        try {
+          if (firebaseUser) {
+            const userDoc  = await getUser(firebaseUser.uid);
+            const products = await loadProductCache();
+            setProductCache(products);
+            setCacheLoaded(true);
 
-        if (firebaseUser) {
-
-          const userDoc  = await getUser(firebaseUser.uid);
-          const products = await loadProductCache();
-          setProductCache(products);
-          setCacheLoaded(true);
-
-          if (userDoc?.role === 'OWNER') {
-
-            // Stop any lingering staff listener from previous session
+            if (userDoc?.role === 'OWNER') {
+              stopStaffListener();
+              const route = userDoc.shopId ? 'OwnerTabs' : 'CreateShop';
+              if (navigationRef.isReady()) {
+                resetTo(route, { userDoc });
+              } else {
+                setInitialRoute(route);
+                setInitialParams({ userDoc });
+              }
+            } else if (userDoc?.role === 'STAFF') {
+              if (!userDoc.isActive) {
+                await auth().signOut();
+                return;
+              }
+              setCurrentStaff(userDoc);
+              startStaffListener(firebaseUser.uid);
+              if (navigationRef.isReady()) {
+                resetTo('StaffTabs', { userDoc });
+              } else {
+                setInitialRoute('StaffTabs');
+                setInitialParams({ userDoc });
+              }
+            } else {
+              if (navigationRef.isReady()) resetTo('Login');
+              else setInitialRoute('Login');
+            }
+          } else {
             stopStaffListener();
-
-            const route = userDoc.shopId ? 'OwnerTabs' : 'CreateShop';
+            setCurrentStaff(null);
+            const route = savedLocaleRef.current == null ? 'LanguageSelect' : 'Login';
             if (navigationRef.isReady()) {
-              resetTo(route, { userDoc });
+              resetTo(route);
             } else {
               setInitialRoute(route);
-              setInitialParams({ userDoc });
             }
-
-          } else if (userDoc?.role === 'STAFF') {
-
-            if (!userDoc.isActive) {
-              await auth().signOut();
-              return;
-            }
-
-            // Set atom immediately for first render
-            setCurrentStaff(userDoc);
-
-            // Start realtime listener — updates atom whenever owner changes permissions
-            startStaffListener(firebaseUser.uid);
-
-            if (navigationRef.isReady()) {
-              resetTo('StaffTabs', { userDoc });
-            } else {
-              setInitialRoute('StaffTabs');
-              setInitialParams({ userDoc });
-            }
-
-          } else {
-
-            if (navigationRef.isReady()) {
-              resetTo('Login');
-            } else {
-              setInitialRoute('Login');
-            }
-
           }
-
-        } else {
-
-          // Stop staff listener + clear atom on sign out
-          stopStaffListener();
-          setCurrentStaff(null);
-
-          if (navigationRef.isReady()) {
-            resetTo('Login');
-          } else {
-            setInitialRoute('Login');
-          }
-
+        } catch (e) {
+          console.error('AppNavigator auth error:', e);
+          if (navigationRef.isReady()) resetTo('Login');
+          else setInitialRoute('Login');
+        } finally {
+          setInitializing(false);
         }
-
-      } catch (e) {
-
-        console.error('AppNavigator auth error:', e);
-
-        if (navigationRef.isReady()) {
-          resetTo('Login');
-        } else {
-          setInitialRoute('Login');
-        }
-
-      } finally {
-        setInitializing(false);
-      }
-
-    });
+      });
+    })();
 
     return () => {
       unsubscribeAuth();
       stopStaffListener();
     };
-
   }, []);
 
   if (initializing) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#1a73e8" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8F8F8' }}>
+        <ActivityIndicator size="large" color="#2D4A52" />
       </View>
     );
   }
@@ -210,9 +189,10 @@ const AppNavigator = () => {
         initialRouteName={initialRoute}
       >
 
-        {/* ── Auth ── */}
-        <Stack.Screen name="Login"      component={LoginScreen} />
-        <Stack.Screen name="StaffLogin" component={StaffLoginScreen} />
+        {/* ── Language (first install) & Auth ── */}
+        <Stack.Screen name="LanguageSelect" component={LanguageSelectScreen} />
+        <Stack.Screen name="Login"           component={LoginScreen} />
+        <Stack.Screen name="StaffLogin"     component={StaffLoginScreen} />
 
         {/* ── Owner ── */}
         <Stack.Screen

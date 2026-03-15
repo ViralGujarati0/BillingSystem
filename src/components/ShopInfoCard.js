@@ -1,21 +1,18 @@
 import React from 'react';
-import { TouchableOpacity,Text,StyleSheet } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
-export default function ShopInfoCard({ navigation }){
-
-return(
-
-<TouchableOpacity
-style={styles.card}
-onPress={()=>navigation.navigate("ShopInfo")}
->
-
-<Text style={styles.title}>Shop Information</Text>
-<Text>Tap to view and edit</Text>
-
-</TouchableOpacity>
-
-);
+export default function ShopInfoCard({ navigation }) {
+  const { t } = useTranslation();
+  return (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => navigation.navigate('ShopInfo')}
+    >
+      <Text style={styles.title}>{t('shop.info')}</Text>
+      <Text>{t('shop.tapToViewEdit')}</Text>
+    </TouchableOpacity>
+  );
 }
 
 const styles=StyleSheet.create({

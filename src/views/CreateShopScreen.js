@@ -1,41 +1,34 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useAtom } from 'jotai';
+import { useTranslation } from 'react-i18next';
 
 import ShopForm from '../components/ShopForm';
 import { createShopFormAtom } from '../atoms/forms';
 import { currentOwnerAtom } from '../atoms/owner';
-
 import { createShopAndAssignToOwner } from '../services/shopService';
 
 export default function CreateShopScreen({ navigation }) {
-
-  const [form,setForm] = useAtom(createShopFormAtom);
+  const { t } = useTranslation();
+  const [form, setForm] = useAtom(createShopFormAtom);
   const [owner] = useAtom(currentOwnerAtom);
 
   const handleCreate = async () => {
-
-    if(!form.businessName.trim()){
-      Alert.alert("Error","Business name required");
+    if (!form.businessName.trim()) {
+      Alert.alert(t('common.error'), t('shop.businessNameRequired'));
       return;
     }
-
-    await createShopAndAssignToOwner(owner.id,form);
-
-    navigation.replace("OwnerTabs");
+    await createShopAndAssignToOwner(owner.id, form);
+    navigation.replace('OwnerTabs');
   };
 
-  return(
+  return (
     <View style={styles.container}>
-
-      <Text style={styles.title}>Create Shop</Text>
-
-      <ShopForm form={form} setForm={setForm}/>
-
+      <Text style={styles.title}>{t('shop.createShop')}</Text>
+      <ShopForm form={form} setForm={setForm} />
       <TouchableOpacity style={styles.button} onPress={handleCreate}>
-        <Text style={styles.buttonText}>Create Shop</Text>
+        <Text style={styles.buttonText}>{t('shop.createShop')}</Text>
       </TouchableOpacity>
-
     </View>
   );
 }
