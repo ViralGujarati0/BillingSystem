@@ -32,7 +32,6 @@ const STATUS_H = Platform.OS === 'android'
   : rvs(44);
 
 function formatDate(timestamp) {
-  console.log('=== formatDate called with:', timestamp);
   if (!timestamp) return '—';
   try {
     const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -40,25 +39,17 @@ function formatDate(timestamp) {
       day: '2-digit', month: 'short', year: 'numeric',
     });
   } catch (e) {
-    console.error('formatDate error:', e);
     return '—';
   }
 }
 
 const PurchaseDetailScreen = ({ navigation, route }) => {
-  console.log('=== PurchaseDetailScreen MOUNTED ===');
-  console.log('route:', JSON.stringify(route, null, 2));
-  console.log('route.params:', JSON.stringify(route?.params, null, 2));
-
   const { purchase } = route.params || {};
-
-  console.log('purchase extracted:', JSON.stringify(purchase, null, 2));
-
   const owner        = useAtomValue(currentOwnerAtom);
   const [pdfLoading, setPdfLoading] = useState(false);
 
+  // ── No data state ──
   if (!purchase) {
-    console.log('=== purchase is null/undefined, showing error state ===');
     return (
       <View style={styles.errorCenter}>
         <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
@@ -79,8 +70,6 @@ const PurchaseDetailScreen = ({ navigation, route }) => {
     );
   }
 
-  console.log('=== purchase found, building invoiceData ===');
-
   const invoiceData = {
     shopName:     owner?.businessName || owner?.name || 'Shop',
     supplierName: purchase.supplierName || '—',
@@ -97,16 +86,11 @@ const PurchaseDetailScreen = ({ navigation, route }) => {
     dueAmount:  purchase.dueAmount  ?? 0,
   };
 
-  console.log('invoiceData built:', JSON.stringify(invoiceData, null, 2));
-
   const handleSharePdf = async () => {
-    console.log('=== handleSharePdf called ===');
     try {
       setPdfLoading(true);
       await generatePurchasePdf(invoiceData);
-      console.log('PDF generated successfully');
     } catch (e) {
-      console.error('PDF error:', e);
       const msg = String(e?.message || '');
       if (!msg.toLowerCase().includes('cancel')) {
         Alert.alert('Error', msg || 'Could not share PDF');
@@ -126,6 +110,7 @@ const PurchaseDetailScreen = ({ navigation, route }) => {
         showsVerticalScrollIndicator={false}
       >
 
+        {/* ── Banner ── */}
         <LinearGradient
           colors={['#2D4A52', '#1E3A42']}
           start={{ x: 0, y: 0 }}
@@ -144,8 +129,9 @@ const PurchaseDetailScreen = ({ navigation, route }) => {
             <Text style={styles.backPillText}>Back</Text>
           </TouchableOpacity>
 
+          {/* Icon ring — amber tint instead of purple */}
           <View style={styles.iconRing}>
-            <Icon name="cart-outline" size={rfs(30)} color="#7c3aed" />
+            <Icon name="cart-outline" size={rfs(30)} color={colors.accent} />
           </View>
 
           <Text style={styles.bannerTitle}>Purchase Detail</Text>
@@ -165,6 +151,7 @@ const PurchaseDetailScreen = ({ navigation, route }) => {
 
         <View style={styles.actionsWrap}>
 
+          {/* Share PDF button */}
           <TouchableOpacity
             style={[styles.pdfBtn, pdfLoading && styles.btnDisabled]}
             onPress={handleSharePdf}
@@ -175,18 +162,23 @@ const PurchaseDetailScreen = ({ navigation, route }) => {
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <>
-                <Icon name="share-outline" size={rfs(18)} color="#FFFFFF" />
+                <View style={styles.pdfIconBox}>
+                  <Icon name="share-outline" size={rfs(15)} color={colors.primary} />
+                </View>
                 <Text style={styles.pdfBtnText}>Share Purchase PDF</Text>
               </>
             )}
           </TouchableOpacity>
 
+          {/* Go back button */}
           <TouchableOpacity
             style={styles.closeBtn}
             onPress={() => navigation.goBack()}
             activeOpacity={0.8}
           >
-            <Icon name="arrow-back-outline" size={rfs(16)} color={colors.primary} />
+            <View style={styles.closeIconBox}>
+              <Icon name="arrow-back-outline" size={rfs(14)} color={colors.primary} />
+            </View>
             <Text style={styles.closeBtnText}>Go Back</Text>
           </TouchableOpacity>
 
@@ -205,6 +197,7 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { paddingBottom: rvs(40) },
 
+  // ── Banner ───────────────────────────────────────────
   banner: {
     paddingTop: STATUS_H + rvs(16),
     paddingBottom: rvs(28),
@@ -212,90 +205,217 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
   },
+
   orbTopRight: {
-    position: 'absolute', top: -rs(40), right: -rs(40),
-    width: rs(160), height: rs(160), borderRadius: rs(80),
-    backgroundColor: 'rgba(124,58,237,0.08)',
+    position: 'absolute',
+    top: -rs(40), right: -rs(40),
+    width: rs(160), height: rs(160),
+    borderRadius: rs(80),
+    backgroundColor: 'rgba(245,166,35,0.08)',  // amber tint — not purple
   },
+
   orbBottomLeft: {
-    position: 'absolute', bottom: -rvs(20), left: -rs(20),
-    width: rs(100), height: rs(100), borderRadius: rs(50),
+    position: 'absolute',
+    bottom: -rvs(20), left: -rs(20),
+    width: rs(100), height: rs(100),
+    borderRadius: rs(50),
     backgroundColor: 'rgba(255,255,255,0.04)',
   },
+
   backPill: {
-    flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start',
-    gap: rs(4), backgroundColor: 'rgba(255,255,255,0.10)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
-    borderRadius: rs(20), paddingHorizontal: rs(12),
-    paddingVertical: rvs(7), marginBottom: rvs(20),
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: rs(4),
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    borderRadius: rs(20),
+    paddingHorizontal: rs(12),
+    paddingVertical: rvs(7),
+    marginBottom: rvs(20),
   },
-  backPillText: { fontSize: rfs(13), fontWeight: '600', color: '#FFFFFF' },
+
+  backPillText: {
+    fontSize: rfs(13),
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+
   iconRing: {
-    width: rs(68), height: rs(68), borderRadius: rs(34),
-    backgroundColor: 'rgba(124,58,237,0.12)',
-    borderWidth: 1, borderColor: 'rgba(124,58,237,0.30)',
-    alignItems: 'center', justifyContent: 'center',
+    width: rs(68), height: rs(68),
+    borderRadius: rs(34),
+    backgroundColor: 'rgba(245,166,35,0.15)', // amber tint
+    borderWidth: 1,
+    borderColor: 'rgba(245,166,35,0.30)',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: rvs(14),
   },
+
   bannerTitle: {
-    fontSize: rfs(20), fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.2,
+    fontSize: rfs(20),
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.2,
   },
+
   bannerSub: {
-    fontSize: rfs(12), color: 'rgba(255,255,255,0.55)',
-    fontWeight: '500', marginTop: rvs(4),
+    fontSize: rfs(12),
+    color: 'rgba(255,255,255,0.55)',
+    fontWeight: '500',
+    marginTop: rvs(4),
   },
+
   invoicePill: {
-    flexDirection: 'row', alignItems: 'center', gap: rs(5),
-    marginTop: rvs(14), backgroundColor: 'rgba(245,166,35,0.15)',
-    borderWidth: 1, borderColor: 'rgba(245,166,35,0.30)',
-    borderRadius: rs(20), paddingVertical: rvs(5), paddingHorizontal: rs(14),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(5),
+    marginTop: rvs(14),
+    backgroundColor: 'rgba(245,166,35,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,166,35,0.30)',
+    borderRadius: rs(20),
+    paddingVertical: rvs(5),
+    paddingHorizontal: rs(14),
   },
+
   pillDot: {
-    width: rs(6), height: rs(6), borderRadius: rs(3),
+    width: rs(6), height: rs(6),
+    borderRadius: rs(3),
     backgroundColor: colors.accent,
   },
+
   pillText: {
-    fontSize: rfs(11), fontWeight: '700',
-    color: colors.accent, letterSpacing: 0.5,
+    fontSize: rfs(11),
+    fontWeight: '700',
+    color: colors.accent,
+    letterSpacing: 0.5,
   },
 
-  cardWrap: { marginHorizontal: rs(16), marginTop: rvs(14) },
+  // ── Card + actions ────────────────────────────────────
+  cardWrap:    { marginHorizontal: rs(16), marginTop: rvs(14) },
   actionsWrap: { marginHorizontal: rs(16), marginTop: rvs(16), gap: rvs(10) },
 
+  // ── PDF button ────────────────────────────────────────
   pdfBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: rs(8), backgroundColor: '#7c3aed',
-    paddingVertical: rvs(14), borderRadius: rs(12),
-    shadowColor: '#7c3aed',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: rs(10),
+    backgroundColor: colors.primary,
+    paddingVertical: rvs(15),
+    borderRadius: rs(14),
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: rvs(4) },
-    shadowOpacity: 0.30, shadowRadius: rs(10), elevation: 4,
+    shadowOpacity: 0.28,
+    shadowRadius: rs(12),
+    elevation: 5,
   },
-  pdfBtnText: { fontSize: rfs(15), fontWeight: '700', color: '#FFFFFF' },
 
-  closeBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: rs(6), paddingVertical: rvs(13), borderRadius: rs(12),
-    borderWidth: 1, borderColor: colors.borderCard, backgroundColor: '#FFFFFF',
+  pdfIconBox: {
+    width: rs(26), height: rs(26),
+    borderRadius: rs(8),
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  closeBtnText: { fontSize: rfs(14), fontWeight: '600', color: colors.primary },
+
+  pdfBtnText: {
+    fontSize: rfs(15),
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
+  },
+
+  // ── Close button ──────────────────────────────────────
+  closeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: rs(8),
+    paddingVertical: rvs(14),
+    borderRadius: rs(14),
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    backgroundColor: '#FFFFFF',
+    shadowColor: colors.shadowCard,
+    shadowOffset: { width: 0, height: rvs(2) },
+    shadowOpacity: 1,
+    shadowRadius: rs(8),
+    elevation: 2,
+  },
+
+  closeIconBox: {
+    width: rs(24), height: rs(24),
+    borderRadius: rs(7),
+    backgroundColor: 'rgba(45,74,82,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  closeBtnText: {
+    fontSize: rfs(14),
+    fontWeight: '700',
+    color: colors.primary,
+  },
+
   btnDisabled: { opacity: 0.6 },
 
+  // ── Error state ───────────────────────────────────────
   errorCenter: {
-    flex: 1, backgroundColor: colors.background ?? '#F2F4F5',
-    justifyContent: 'center', alignItems: 'center', paddingHorizontal: rs(32),
+    flex: 1,
+    backgroundColor: colors.background ?? '#F2F4F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: rs(32),
   },
+
   errorCard: {
-    width: '100%', backgroundColor: '#FFFFFF',
-    borderRadius: rs(20), borderWidth: 1, borderColor: colors.borderCard,
-    alignItems: 'center', paddingVertical: rvs(36), paddingHorizontal: rs(24),
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: rs(20),
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    alignItems: 'center',
+    paddingVertical: rvs(36),
+    paddingHorizontal: rs(24),
     gap: rvs(8),
+    shadowColor: colors.shadowCard,
+    shadowOffset: { width: 0, height: rvs(4) },
+    shadowOpacity: 1,
+    shadowRadius: rs(16),
+    elevation: 4,
   },
-  errorTitle: { fontSize: rfs(17), fontWeight: '700', color: colors.textPrimary },
-  errorSub: { fontSize: rfs(13), color: colors.textSecondary, textAlign: 'center' },
+
+  errorTitle: {
+    fontSize: rfs(17),
+    fontWeight: '800',
+    color: colors.textPrimary,
+    marginTop: rvs(8),
+  },
+
+  errorSub: {
+    fontSize: rfs(13),
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+
   errorBackBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: rs(5),
-    backgroundColor: colors.primary, borderRadius: rs(12),
-    paddingVertical: rvs(10), paddingHorizontal: rs(20), marginTop: rvs(12),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(5),
+    backgroundColor: colors.primary,
+    borderRadius: rs(12),
+    paddingVertical: rvs(10),
+    paddingHorizontal: rs(20),
+    marginTop: rvs(12),
   },
-  errorBackText: { fontSize: rfs(13), fontWeight: '700', color: '#FFFFFF' },
+
+  errorBackText: {
+    fontSize: rfs(13),
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
 });

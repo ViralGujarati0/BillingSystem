@@ -1,19 +1,33 @@
 import React from 'react';
-import { TouchableOpacity, Text, View, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
 
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const scale = SCREEN_W / 390;
+const vs    = SCREEN_H / 844;
+const rs    = (n) => Math.round(n * scale);
+const rvs   = (n) => Math.round(n * vs);
+const rfs   = (n) => Math.round(n * Math.min(scale, vs));
+
 export default function SupplierManagementCard({ navigation }) {
   const { t } = useTranslation();
+
   return (
     <TouchableOpacity
-      style={styles.card}
+      style={styles.row}
       onPress={() => navigation.navigate('SupplierManagement')}
-      activeOpacity={0.85}
+      activeOpacity={0.8}
     >
-      <View style={styles.iconWrap}>
-        <Icon name="business-outline" size={22} color="#16a34a" />
+      <View style={styles.iconBox}>
+        <Icon name="business-outline" size={rfs(16)} color="#5B9E6D" />
       </View>
 
       <View style={styles.textWrap}>
@@ -21,46 +35,48 @@ export default function SupplierManagementCard({ navigation }) {
         <Text style={styles.subtitle}>{t('supplier.managementSub')}</Text>
       </View>
 
-      <Icon name="chevron-forward" size={18} color="#bbb" />
+      <Icon name="chevron-forward" size={rfs(14)} color={colors.textSecondary} />
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
+
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 16,
-    marginTop: 12,
-    padding: 16,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    gap: rs(12),
+    paddingHorizontal: rs(14),
+    paddingVertical: rvs(13),
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#F2F4F5',
   },
-  iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f0fdf4',
+
+  iconBox: {
+    width: rs(38),
+    height: rs(38),
+    borderRadius: rs(10),
+    backgroundColor: 'rgba(91,158,109,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(91,158,109,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    flexShrink: 0,
   },
-  textWrap: {
-    flex: 1,
-  },
+
+  textWrap: { flex: 1 },
+
   title: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#111',
+    fontSize: rfs(13),
+    fontWeight: '700',
+    color: colors.textPrimary,
   },
+
   subtitle: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 2,
+    fontSize: rfs(11),
+    color: colors.textSecondary,
+    marginTop: rvs(1),
   },
+
 });

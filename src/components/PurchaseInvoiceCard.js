@@ -37,7 +37,7 @@ const TableHeader = () => (
 );
 
 // ─── Table row ────────────────────────────────────────────────────────────────
-const TableRow = ({ item, index, isLast }) => (
+const TableRow = ({ item, isLast }) => (
   <View style={[styles.tableRow, isLast && styles.tableRowLast]}>
     <Text style={[styles.td, { flex: 1 }]} numberOfLines={2}>{item.name || '—'}</Text>
     <Text style={[styles.td, styles.tdCenter, { width: rs(36) }]}>{item.qty}</Text>
@@ -51,12 +51,10 @@ const TableRow = ({ item, index, isLast }) => (
 );
 
 // ─── Total row ────────────────────────────────────────────────────────────────
-const TotalRow = ({ label, value, color, large }) => (
+const TotalRow = ({ label, value, color }) => (
   <View style={styles.totalRow}>
-    <Text style={[styles.totalLabel, large && styles.totalLabelLarge]}>{label}</Text>
-    <Text style={[styles.totalValue, large && styles.totalValueLarge, color && { color }]}>
-      {value}
-    </Text>
+    <Text style={styles.totalLabel}>{label}</Text>
+    <Text style={[styles.totalValue, color && { color }]}>{value}</Text>
   </View>
 );
 
@@ -75,9 +73,9 @@ const PurchaseInvoiceCard = ({ data }) => {
 
       {/* ── Meta info ── */}
       <View style={styles.metaSection}>
-        <MetaRow icon="business-outline"       label="Supplier"   value={data?.supplierName} />
-        <MetaRow icon="document-text-outline"  label="Invoice No" value={data?.invoiceNo} />
-        <MetaRow icon="calendar-outline"       label="Date"       value={data?.date} />
+        <MetaRow icon="business-outline"      label="Supplier"   value={data?.supplierName} />
+        <MetaRow icon="document-text-outline" label="Invoice No" value={data?.invoiceNo} />
+        <MetaRow icon="calendar-outline"      label="Date"       value={data?.date} />
       </View>
 
       {/* ── Items table ── */}
@@ -87,7 +85,6 @@ const PurchaseInvoiceCard = ({ data }) => {
           <TableRow
             key={idx}
             item={item}
-            index={idx}
             isLast={idx === (data?.items?.length || 0) - 1}
           />
         ))}
@@ -102,14 +99,19 @@ const PurchaseInvoiceCard = ({ data }) => {
         <TotalRow
           label="Paid"
           value={`₹${Number(data?.paidAmount || 0).toFixed(2)}`}
-          color="#16a34a"
+          color="#5B9E6D"
         />
         <View style={styles.totalsDivider} />
-        <View style={[styles.dueRow, hasDue ? styles.dueRowWarning : styles.dueRowPaid]}>
-          <Text style={[styles.dueLabel, { color: hasDue ? '#f59e0b' : '#16a34a' }]}>
+
+        {/* Due amount row */}
+        <View style={[
+          styles.dueRow,
+          hasDue ? styles.dueRowWarning : styles.dueRowPaid,
+        ]}>
+          <Text style={[styles.dueLabel, { color: hasDue ? colors.accent : '#5B9E6D' }]}>
             Due Amount
           </Text>
-          <Text style={[styles.dueValue, { color: hasDue ? '#f59e0b' : '#16a34a' }]}>
+          <Text style={[styles.dueValue, { color: hasDue ? colors.accent : '#5B9E6D' }]}>
             ₹{Number(data?.dueAmount || 0).toFixed(2)}
           </Text>
         </View>
@@ -118,7 +120,7 @@ const PurchaseInvoiceCard = ({ data }) => {
       {/* ── Footer ── */}
       <View style={styles.cardFooter}>
         <Text style={styles.footerText}>
-          This is a computer generated purchase invoice
+          Computer generated purchase invoice
         </Text>
       </View>
 
@@ -146,7 +148,7 @@ const styles = StyleSheet.create({
 
   // ── Card header ───────────────────────────────────────
   cardHeader: {
-    backgroundColor: '#2D4A52',
+    backgroundColor: colors.primary,
     paddingVertical: rvs(18),
     paddingHorizontal: rs(20),
     alignItems: 'center',
@@ -214,7 +216,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 2,
-    borderBottomColor: colors.borderCard,
+    borderBottomColor: colors.primary,
     paddingBottom: rvs(6),
     marginBottom: rvs(4),
   },
@@ -234,8 +236,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: rvs(7),
-    borderBottomWidth: 1,
-    borderBottomColor: '#f7f7f7',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderCard,
   },
 
   tableRowLast: {
@@ -277,6 +279,7 @@ const styles = StyleSheet.create({
     fontSize: rfs(13),
     fontWeight: '700',
     color: colors.textPrimary,
+    fontVariant: ['tabular-nums'],
   },
 
   totalsDivider: {
@@ -301,9 +304,9 @@ const styles = StyleSheet.create({
   },
 
   dueRowPaid: {
-    backgroundColor: 'rgba(22,163,74,0.06)',
+    backgroundColor: 'rgba(91,158,109,0.08)',  // theme green — not #16a34a
     borderWidth: 1,
-    borderColor: 'rgba(22,163,74,0.20)',
+    borderColor: 'rgba(91,158,109,0.20)',
   },
 
   dueLabel: {
@@ -314,14 +317,15 @@ const styles = StyleSheet.create({
   dueValue: {
     fontSize: rfs(16),
     fontWeight: '800',
+    fontVariant: ['tabular-nums'],
   },
 
   // ── Footer ────────────────────────────────────────────
+  // borderTopStyle: 'dashed' is NOT supported in React Native — removed
   cardFooter: {
     paddingVertical: rvs(12),
     paddingHorizontal: rs(18),
-    borderTopWidth: 1,
-    borderTopStyle: 'dashed',
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.borderCard,
     alignItems: 'center',
   },

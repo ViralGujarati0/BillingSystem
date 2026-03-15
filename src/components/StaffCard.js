@@ -11,11 +11,21 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { resetStaffPassword, updateStaffPermissions } from '../services/staffService';
+import { colors } from '../theme/colors';
+import { getAvatarColor } from '../utils/avatarColor';
 
-// ─── Permission sections config (same as AddStaffScreen) ─────────────────────
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const scale = SCREEN_W / 390;
+const vs    = SCREEN_H / 844;
+const rs    = (n) => Math.round(n * scale);
+const rvs   = (n) => Math.round(n * vs);
+const rfs   = (n) => Math.round(n * Math.min(scale, vs));
+
+// ─── Permission sections config ───────────────────────────────────────────────
 const PERMISSION_SECTIONS = [
   {
     key: 'billing', label: 'Billing', icon: 'receipt-outline', color: '#f59e0b',
@@ -66,7 +76,7 @@ const PermSection = ({ section, permissions, onToggle }) => {
       <View style={styles.permSection}>
         <View style={styles.permSectionHeader}>
           <View style={[styles.permIconBox, { backgroundColor: section.color + '18' }]}>
-            <Icon name={section.icon} size={14} color={section.color} />
+            <Icon name={section.icon} size={rfs(14)} color={section.color} />
           </View>
           <Text style={styles.permSectionTitle}>{section.label}</Text>
         </View>
@@ -87,7 +97,7 @@ const PermSection = ({ section, permissions, onToggle }) => {
     <View style={styles.permSection}>
       <View style={styles.permSectionHeader}>
         <View style={[styles.permIconBox, { backgroundColor: section.color + '18' }]}>
-          <Icon name={section.icon} size={14} color={section.color} />
+          <Icon name={section.icon} size={rfs(14)} color={section.color} />
         </View>
         <Text style={styles.permSectionTitle}>{section.label}</Text>
         <TouchableOpacity
@@ -119,15 +129,14 @@ const PermSection = ({ section, permissions, onToggle }) => {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function StaffCard({ staff, onEdit, onDelete }) {
 
-  const [pwdVisible,    setPwdVisible]    = useState(false);
-  const [pwdModal,      setPwdModal]      = useState(false);
-  const [permModal,     setPermModal]     = useState(false);
-  const [newPassword,   setNewPassword]   = useState('');
-  const [showNewPwd,    setShowNewPwd]    = useState(false);
-  const [resetting,     setResetting]     = useState(false);
-  const [savingPerms,   setSavingPerms]   = useState(false);
+  const [pwdVisible,  setPwdVisible]  = useState(false);
+  const [pwdModal,    setPwdModal]    = useState(false);
+  const [permModal,   setPermModal]   = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPwd,  setShowNewPwd]  = useState(false);
+  const [resetting,   setResetting]   = useState(false);
+  const [savingPerms, setSavingPerms] = useState(false);
 
-  // Local permissions state — initialised from staff doc
   const [permissions, setPermissions] = useState(
     staff.permissions ?? {
       billing: false,
@@ -136,7 +145,6 @@ export default function StaffCard({ staff, onEdit, onDelete }) {
     }
   );
 
-  // ── Toggle permission ──
   const handleToggle = (sectionKey, itemKey, value) => {
     setPermissions((prev) => {
       const perms = { ...prev };
@@ -149,7 +157,6 @@ export default function StaffCard({ staff, onEdit, onDelete }) {
     });
   };
 
-  // ── Save permissions ──
   const handleSavePermissions = async () => {
     setSavingPerms(true);
     try {
@@ -162,7 +169,6 @@ export default function StaffCard({ staff, onEdit, onDelete }) {
     }
   };
 
-  // ── Reset password ──
   const handleResetPassword = async () => {
     if (newPassword.trim().length < 6) return;
     setResetting(true);
@@ -183,24 +189,24 @@ export default function StaffCard({ staff, onEdit, onDelete }) {
     setShowNewPwd(false);
   };
 
+  const avatarColor = getAvatarColor(staff.name);
+
   return (
     <>
       {/* ── Card ── */}
       <View style={styles.card}>
 
-        {/* Avatar */}
-        <View style={styles.avatarWrap}>
-          <Text style={styles.avatarText}>
+        <View style={[styles.avatarWrap, { backgroundColor: avatarColor.bg }]}>
+          <Text style={[styles.avatarText, { color: avatarColor.text }]}>
             {staff.name?.charAt(0)?.toUpperCase() ?? '?'}
           </Text>
         </View>
 
-        {/* Info */}
         <View style={styles.info}>
           <Text style={styles.name}>{staff.name}</Text>
           <Text style={styles.email}>{staff.email}</Text>
           <View style={styles.pwdRow}>
-            <Icon name="lock-closed-outline" size={12} color="#aaa" />
+            <Icon name="lock-closed-outline" size={rfs(12)} color="#aaa" />
             <Text style={styles.pwdText}>
               {pwdVisible ? (staff.password ?? '-') : 'xxxxxxxxxx'}
             </Text>
@@ -208,39 +214,30 @@ export default function StaffCard({ staff, onEdit, onDelete }) {
               onPress={() => setPwdVisible((v) => !v)}
               hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
             >
-              <Icon name={pwdVisible ? 'eye-off-outline' : 'eye-outline'} size={14} color="#aaa" />
+              <Icon name={pwdVisible ? 'eye-off-outline' : 'eye-outline'} size={rfs(14)} color="#aaa" />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Action buttons */}
         <View style={styles.actions}>
-
-          {/* Edit */}
           <TouchableOpacity style={styles.iconBtn} onPress={() => onEdit(staff)}
             hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-            <Icon name="pencil-outline" size={15} color="#1a73e8" />
+            <Icon name="pencil-outline" size={rfs(15)} color={colors.primary} />
           </TouchableOpacity>
-
-          {/* Delete */}
           <TouchableOpacity style={[styles.iconBtn, styles.iconBtnRed]} onPress={() => onDelete(staff)}
             hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-            <Icon name="trash-outline" size={15} color="#dc3545" />
+            <Icon name="trash-outline" size={rfs(15)} color="#E05252" />
           </TouchableOpacity>
-
-          {/* Reset password */}
           <TouchableOpacity style={[styles.iconBtn, styles.iconBtnAmber]} onPress={() => setPwdModal(true)}
             hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-            <Icon name="key-outline" size={15} color="#e37400" />
+            <Icon name="key-outline" size={rfs(15)} color={colors.accent} />
           </TouchableOpacity>
-
-          {/* Permissions */}
           <TouchableOpacity style={[styles.iconBtn, styles.iconBtnGreen]} onPress={() => setPermModal(true)}
             hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-            <Icon name="shield-checkmark-outline" size={15} color="#16a34a" />
+            <Icon name="shield-checkmark-outline" size={rfs(15)} color="#5B9E6D" />
           </TouchableOpacity>
-
         </View>
+
       </View>
 
       {/* ── Reset Password Modal ── */}
@@ -252,14 +249,14 @@ export default function StaffCard({ staff, onEdit, onDelete }) {
           <View style={styles.modal}>
             <View style={styles.modalHeader}>
               <View style={[styles.modalIconWrap, { backgroundColor: '#FFF4E5' }]}>
-                <Icon name="key-outline" size={20} color="#e37400" />
+                <Icon name="key-outline" size={rfs(20)} color="#e37400" />
               </View>
               <View style={styles.modalTitleWrap}>
                 <Text style={styles.modalTitle}>Reset Password</Text>
                 <Text style={styles.modalSubtitle}>{staff.name}</Text>
               </View>
               <TouchableOpacity onPress={handleClosePwdModal}>
-                <Icon name="close" size={20} color="#aaa" />
+                <Icon name="close" size={rfs(20)} color="#aaa" />
               </TouchableOpacity>
             </View>
 
@@ -276,7 +273,7 @@ export default function StaffCard({ staff, onEdit, onDelete }) {
               />
               <TouchableOpacity onPress={() => setShowNewPwd((v) => !v)}
                 hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                <Icon name={showNewPwd ? 'eye-off-outline' : 'eye-outline'} size={18} color="#aaa" />
+                <Icon name={showNewPwd ? 'eye-off-outline' : 'eye-outline'} size={rfs(18)} color="#aaa" />
               </TouchableOpacity>
             </View>
 
@@ -304,21 +301,19 @@ export default function StaffCard({ staff, onEdit, onDelete }) {
         <View style={styles.overlay}>
           <View style={styles.permModalCard}>
 
-            {/* Header */}
             <View style={styles.modalHeader}>
               <View style={[styles.modalIconWrap, { backgroundColor: '#f0fdf4' }]}>
-                <Icon name="shield-checkmark-outline" size={20} color="#16a34a" />
+                <Icon name="shield-checkmark-outline" size={rfs(20)} color="#16a34a" />
               </View>
               <View style={styles.modalTitleWrap}>
                 <Text style={styles.modalTitle}>Edit Permissions</Text>
                 <Text style={styles.modalSubtitle}>{staff.name}</Text>
               </View>
               <TouchableOpacity onPress={() => setPermModal(false)}>
-                <Icon name="close" size={20} color="#aaa" />
+                <Icon name="close" size={rfs(20)} color="#aaa" />
               </TouchableOpacity>
             </View>
 
-            {/* Scrollable permission sections */}
             <ScrollView
               style={styles.permScroll}
               showsVerticalScrollIndicator={false}
@@ -332,10 +327,9 @@ export default function StaffCard({ staff, onEdit, onDelete }) {
                   onToggle={handleToggle}
                 />
               ))}
-              <View style={{ height: 12 }} />
+              <View style={{ height: rvs(12) }} />
             </ScrollView>
 
-            {/* Save button */}
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setPermModal(false)} disabled={savingPerms}>
                 <Text style={styles.cancelText}>Cancel</Text>
@@ -355,7 +349,6 @@ export default function StaffCard({ staff, onEdit, onDelete }) {
           </View>
         </View>
       </Modal>
-
     </>
   );
 }
@@ -366,131 +359,320 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 10,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
+    backgroundColor: '#FFFFFF',
+    borderRadius: rs(14),
+    padding: rs(14),
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    shadowColor: colors.shadowCard,
+    shadowOffset: { width: 0, height: rvs(2) },
+    shadowOpacity: 1,
+    shadowRadius: rs(8),
+    elevation: 2,
   },
+
   avatarWrap: {
-    width: 42, height: 42, borderRadius: 21,
-    backgroundColor: '#EEF4FF',
-    alignItems: 'center', justifyContent: 'center',
-    marginRight: 12,
+    width: rs(44),
+    height: rs(44),
+    borderRadius: rs(13),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: rs(12),
+    shadowOffset: { width: 0, height: rvs(2) },
+    shadowOpacity: 0.28,
+    shadowRadius: rs(6),
+    elevation: 3,
+    flexShrink: 0,
   },
-  avatarText: { fontSize: 17, fontWeight: '700', color: '#1a73e8' },
-  info: { flex: 1, gap: 3 },
-  name: { fontSize: 15, fontWeight: '600', color: '#111' },
-  email: { fontSize: 12, color: '#888' },
-  pwdRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
-  pwdText: { fontSize: 12, color: '#aaa', letterSpacing: 1, flex: 1 },
-  actions: { flexDirection: 'row', gap: 7, marginLeft: 8, flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: 80 },
+
+  avatarText: {
+    fontSize: rfs(18),
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+
+  info: {
+    flex: 1,
+    gap: rvs(2),
+  },
+
+  name: {
+    fontSize: rfs(14),
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+
+  email: {
+    fontSize: rfs(11),
+    color: colors.textSecondary,
+  },
+
+  pwdRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(5),
+    marginTop: rvs(3),
+  },
+
+  pwdText: {
+    fontSize: rfs(11),
+    color: colors.textSecondary,
+    letterSpacing: 1,
+    flex: 1,
+  },
+
+  actions: {
+    flexDirection: 'row',
+    gap: rs(7),
+    marginLeft: rs(8),
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    maxWidth: rs(84),
+  },
+
   iconBtn: {
-    width: 32, height: 32, borderRadius: 8,
-    backgroundColor: '#EEF4FF',
-    alignItems: 'center', justifyContent: 'center',
+    width: rs(32),
+    height: rs(32),
+    borderRadius: rs(9),
+    backgroundColor: 'rgba(45,74,82,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(45,74,82,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  iconBtnRed:   { backgroundColor: '#FEE8EB' },
-  iconBtnAmber: { backgroundColor: '#FFF4E5' },
-  iconBtnGreen: { backgroundColor: '#f0fdf4' },
+
+  iconBtnRed:   {
+    backgroundColor: 'rgba(224,82,82,0.08)',
+    borderColor: 'rgba(224,82,82,0.20)',
+  },
+  iconBtnAmber: {
+    backgroundColor: 'rgba(245,166,35,0.10)',
+    borderColor: 'rgba(245,166,35,0.20)',
+  },
+  iconBtnGreen: {
+    backgroundColor: 'rgba(91,158,109,0.10)',
+    borderColor: 'rgba(91,158,109,0.20)',
+  },
 
   // ── Overlay ───────────────────────────────────────────
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(26,46,51,0.55)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: rs(24),
   },
 
   // ── Reset pwd modal ───────────────────────────────────
   modal: {
     width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: rs(20),
+    padding: rs(20),
+    shadowColor: 'rgba(26,46,51,0.25)',
+    shadowOffset: { width: 0, height: rvs(8) },
+    shadowOpacity: 1,
+    shadowRadius: rs(24),
+    elevation: 12,
   },
 
   // ── Permissions modal ─────────────────────────────────
   permModalCard: {
     width: '100%',
     maxHeight: '88%',
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: rs(20),
+    padding: rs(20),
+    shadowColor: 'rgba(26,46,51,0.25)',
+    shadowOffset: { width: 0, height: rvs(8) },
+    shadowOpacity: 1,
+    shadowRadius: rs(24),
+    elevation: 12,
   },
+
   permScroll: { flexGrow: 0 },
 
   // ── Permission sections ───────────────────────────────
   permSection: {
-    backgroundColor: '#fafafa',
-    borderRadius: 12,
+    backgroundColor: colors.background,
+    borderRadius: rs(12),
     borderWidth: 1,
-    borderColor: '#f0f0f0',
-    marginBottom: 10,
+    borderColor: colors.borderCard,
+    marginBottom: rvs(10),
     overflow: 'hidden',
   },
+
   permSectionHeader: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    paddingHorizontal: 14, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: '#f0f0f0',
-    backgroundColor: '#fff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(8),
+    paddingHorizontal: rs(14),
+    paddingVertical: rvs(12),
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderCard,
+    backgroundColor: '#FFFFFF',
   },
+
   permIconBox: {
-    width: 28, height: 28, borderRadius: 7,
-    alignItems: 'center', justifyContent: 'center',
+    width: rs(28),
+    height: rs(28),
+    borderRadius: rs(8),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  permSectionTitle: { flex: 1, fontSize: 13, fontWeight: '700', color: '#111' },
+
+  permSectionTitle: {
+    flex: 1,
+    fontSize: rfs(13),
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+
   selectAllPill: {
-    borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 20,
-    paddingHorizontal: 8, paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    borderRadius: rs(20),
+    paddingHorizontal: rs(8),
+    paddingVertical: rvs(3),
   },
-  selectAllText: { fontSize: 10, fontWeight: '600', color: '#9ca3af' },
+
+  selectAllText: {
+    fontSize: rfs(10),
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
 
   // ── Toggle row ────────────────────────────────────────
   toggleRow: {
-    flexDirection: 'row', alignItems: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 14, paddingVertical: 10,
+    paddingHorizontal: rs(14),
+    paddingVertical: rvs(10),
   },
-  toggleInfo: { flex: 1, paddingRight: 10 },
-  toggleLabel: { fontSize: 13, fontWeight: '600', color: '#111' },
-  toggleDesc: { fontSize: 11, color: '#9ca3af', marginTop: 2 },
-  rowDivider: { height: StyleSheet.hairlineWidth, backgroundColor: '#f0f0f0', marginLeft: 14 },
+
+  toggleInfo: {
+    flex: 1,
+    paddingRight: rs(10),
+  },
+
+  toggleLabel: {
+    fontSize: rfs(13),
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+
+  toggleDesc: {
+    fontSize: rfs(11),
+    color: colors.textSecondary,
+    marginTop: rvs(2),
+  },
+
+  rowDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.borderCard,
+    marginLeft: rs(14),
+  },
 
   // ── Shared modal pieces ───────────────────────────────
   modalHeader: {
-    flexDirection: 'row', alignItems: 'center',
-    marginBottom: 18, gap: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: rvs(18),
+    gap: rs(12),
   },
+
   modalIconWrap: {
-    width: 38, height: 38, borderRadius: 10,
-    alignItems: 'center', justifyContent: 'center',
+    width: rs(42),
+    height: rs(42),
+    borderRadius: rs(12),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+
   modalTitleWrap: { flex: 1 },
-  modalTitle: { fontSize: 15, fontWeight: '700', color: '#111' },
-  modalSubtitle: { fontSize: 12, color: '#888', marginTop: 1 },
-  inputLabel: { fontSize: 13, fontWeight: '600', color: '#444', marginBottom: 8 },
+
+  modalTitle: {
+    fontSize: rfs(15),
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+
+  modalSubtitle: {
+    fontSize: rfs(12),
+    color: colors.textSecondary,
+    marginTop: rvs(2),
+  },
+
+  inputLabel: {
+    fontSize: rfs(10),
+    fontWeight: '700',
+    color: colors.textSecondary,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginBottom: rvs(6),
+  },
+
   inputWrap: {
-    flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1, borderColor: '#e0e0e0',
-    borderRadius: 8, paddingHorizontal: 12,
-    marginBottom: 20, backgroundColor: '#fafafa',
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    borderRadius: rs(12),
+    paddingHorizontal: rs(12),
+    marginBottom: rvs(18),
+    backgroundColor: colors.background,
+    height: rvs(48),
   },
-  input: { flex: 1, paddingVertical: 11, fontSize: 14, color: '#111' },
-  modalActions: { flexDirection: 'row', gap: 10, marginTop: 16 },
+
+  input: {
+    flex: 1,
+    fontSize: rfs(14),
+    fontWeight: '500',
+    color: colors.textPrimary,
+  },
+
+  modalActions: {
+    flexDirection: 'row',
+    gap: rs(10),
+    marginTop: rvs(4),
+  },
+
   cancelBtn: {
-    flex: 1, paddingVertical: 12, borderRadius: 8,
-    borderWidth: 1, borderColor: '#e0e0e0', alignItems: 'center',
+    flex: 1,
+    paddingVertical: rvs(13),
+    borderRadius: rs(12),
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(45,74,82,0.04)',
   },
-  cancelText: { fontSize: 14, fontWeight: '600', color: '#666' },
+
+  cancelText: {
+    fontSize: rfs(14),
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+
   actionBtn: {
-    flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center',
+    flex: 1,
+    paddingVertical: rvs(13),
+    borderRadius: rs(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: rvs(3) },
+    shadowOpacity: 0.28,
+    shadowRadius: rs(8),
+    elevation: 4,
   },
-  actionBtnText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+
+  actionBtnText: {
+    fontSize: rfs(14),
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
   btnDisabled: { opacity: 0.6 },
+
 });

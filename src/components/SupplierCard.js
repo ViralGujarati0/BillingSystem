@@ -1,41 +1,68 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { colors } from '../theme/colors';
+import { getAvatarColor } from '../utils/avatarColor';
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const scale = SCREEN_W / 390;
+const vs    = SCREEN_H / 844;
+const rs    = (n) => Math.round(n * scale);
+const rvs   = (n) => Math.round(n * vs);
+const rfs   = (n) => Math.round(n * Math.min(scale, vs));
 
 export default function SupplierCard({ supplier, onEdit, onDelete }) {
+
+  const initial      = supplier.name?.charAt(0)?.toUpperCase() ?? '?';
+  const avatarColor  = getAvatarColor(supplier.name);
+
   return (
     <View style={styles.card}>
 
-      {/* Avatar + Info */}
-      <View style={styles.avatarWrap}>
-        <Text style={styles.avatarText}>
-          {supplier.name?.charAt(0)?.toUpperCase() ?? '?'}
-        </Text>
+      {/* Teal left stripe */}
+      <View style={styles.stripe} />
+
+      {/* Avatar */}
+      <View style={[styles.avatarWrap, {
+        backgroundColor: avatarColor.bg,
+        shadowColor:     avatarColor.bg,
+      }]}>
+        <Text style={[styles.avatarText, { color: avatarColor.text }]}>{initial}</Text>
       </View>
 
+      {/* Info */}
       <View style={styles.info}>
-        <Text style={styles.name}>{supplier.name}</Text>
+
+        <Text style={styles.name} numberOfLines={1}>{supplier.name}</Text>
 
         {!!supplier.phone && (
           <View style={styles.metaRow}>
-            <Icon name="call-outline" size={11} color="#aaa" />
+            <Icon name="call-outline" size={rfs(11)} color={colors.textSecondary} />
             <Text style={styles.metaText}>{supplier.phone}</Text>
           </View>
         )}
 
         {!!supplier.address && (
           <View style={styles.metaRow}>
-            <Icon name="location-outline" size={11} color="#aaa" />
-            <Text style={styles.metaText}>{supplier.address}</Text>
+            <Icon name="location-outline" size={rfs(11)} color={colors.textSecondary} />
+            <Text style={styles.metaText} numberOfLines={1}>{supplier.address}</Text>
           </View>
         )}
 
-        <View style={styles.metaRow}>
-          <Icon name="wallet-outline" size={11} color="#aaa" />
-          <Text style={styles.metaText}>
-            Opening balance: ₹{Number(supplier.openingBalance) || 0}
+        <View style={styles.balancePill}>
+          <Icon name="wallet-outline" size={rfs(10)} color={colors.primary} />
+          <Text style={styles.balanceText}>
+            ₹{Number(supplier.openingBalance) || 0}
           </Text>
+          <Text style={styles.balanceLabel}>Opening Balance</Text>
         </View>
+
       </View>
 
       {/* Actions */}
@@ -45,7 +72,7 @@ export default function SupplierCard({ supplier, onEdit, onDelete }) {
           onPress={() => onEdit(supplier)}
           hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
         >
-          <Icon name="pencil-outline" size={15} color="#1a73e8" />
+          <Icon name="pencil-outline" size={rfs(15)} color={colors.primary} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -53,7 +80,7 @@ export default function SupplierCard({ supplier, onEdit, onDelete }) {
           onPress={() => onDelete(supplier)}
           hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
         >
-          <Icon name="trash-outline" size={15} color="#dc3545" />
+          <Icon name="trash-outline" size={rfs(15)} color="#E05252" />
         </TouchableOpacity>
       </View>
 
@@ -62,70 +89,134 @@ export default function SupplierCard({ supplier, onEdit, onDelete }) {
 }
 
 const styles = StyleSheet.create({
+
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 10,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
+    backgroundColor: '#FFFFFF',
+    borderRadius: rs(14),
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    shadowColor: colors.shadowCard,
+    shadowOffset: { width: 0, height: rvs(2) },
+    shadowOpacity: 1,
+    shadowRadius: rs(8),
+    elevation: 2,
+    overflow: 'hidden',
   },
+
+  // ── Teal left stripe ─────────────────────────────────
+  stripe: {
+    width: rs(3),
+    alignSelf: 'stretch',
+    backgroundColor: colors.primary,
+    flexShrink: 0,
+  },
+
+  // ── Avatar ────────────────────────────────────────────
   avatarWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#f0fdf4',
+    width: rs(42),
+    height: rs(42),
+    borderRadius: rs(12),
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
-    alignSelf: 'flex-start',
-    marginTop: 2,
+    marginLeft: rs(12),
+    marginVertical: rvs(12),
+    flexShrink: 0,
+    shadowOffset: { width: 0, height: rvs(2) },
+    shadowOpacity: 0.28,
+    shadowRadius: rs(6),
+    elevation: 2,
   },
+
   avatarText: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#16a34a',
+    fontSize: rfs(17),
+    fontWeight: '800',
+    letterSpacing: -0.5,
   },
+
+  // ── Info block ────────────────────────────────────────
   info: {
     flex: 1,
-    gap: 4,
+    paddingLeft: rs(12),
+    paddingVertical: rvs(12),
+    paddingRight: rs(6),
+    gap: rvs(4),
   },
+
   name: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#111',
-    marginBottom: 2,
+    fontSize: rfs(14),
+    fontWeight: '700',
+    color: colors.textPrimary,
+    letterSpacing: 0.1,
   },
+
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: rs(4),
   },
+
   metaText: {
-    fontSize: 12,
-    color: '#888',
+    fontSize: rfs(11),
+    color: colors.textSecondary,
+    fontWeight: '400',
+    flex: 1,
   },
-  actions: {
+
+  // ── Balance pill ──────────────────────────────────────
+  balancePill: {
     flexDirection: 'row',
-    gap: 7,
-    marginLeft: 8,
+    alignItems: 'center',
+    gap: rs(4),
     alignSelf: 'flex-start',
-    marginTop: 2,
+    backgroundColor: 'rgba(45,74,82,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(45,74,82,0.12)',
+    borderRadius: rs(20),
+    paddingHorizontal: rs(8),
+    paddingVertical: rvs(3),
+    marginTop: rvs(2),
   },
+
+  balanceText: {
+    fontSize: rfs(11),
+    fontWeight: '800',
+    color: colors.primary,
+    fontVariant: ['tabular-nums'],
+  },
+
+  balanceLabel: {
+    fontSize: rfs(9),
+    fontWeight: '500',
+    color: colors.textSecondary,
+    letterSpacing: 0.2,
+  },
+
+  // ── Actions ───────────────────────────────────────────
+  actions: {
+    flexDirection: 'column',
+    gap: rvs(7),
+    paddingRight: rs(12),
+    paddingVertical: rvs(12),
+    alignSelf: 'flex-start',
+    marginTop: rvs(0),
+  },
+
   iconBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#EEF4FF',
+    width: rs(32),
+    height: rs(32),
+    borderRadius: rs(9),
+    backgroundColor: 'rgba(45,74,82,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(45,74,82,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   iconBtnRed: {
-    backgroundColor: '#FEE8EB',
+    backgroundColor: 'rgba(224,82,82,0.08)',
+    borderColor: 'rgba(224,82,82,0.20)',
   },
+
 });

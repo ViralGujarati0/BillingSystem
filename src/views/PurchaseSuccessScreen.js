@@ -15,7 +15,7 @@ import { useAtomValue } from 'jotai';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 
-import PurchaseInvoiceCard    from '../components/PurchaseInvoiceCard';
+import PurchaseInvoiceCard        from '../components/PurchaseInvoiceCard';
 import { purchaseSuccessDataAtom } from '../atoms/purchase';
 import { generatePurchasePdf }    from '../services/purchasePdfService';
 import { colors }                 from '../theme/colors';
@@ -118,6 +118,7 @@ const PurchaseSuccessScreen = ({ navigation }) => {
         {/* ── Actions ── */}
         <View style={styles.actionsWrap}>
 
+          {/* Share PDF */}
           <TouchableOpacity
             style={[styles.pdfBtn, pdfLoading && styles.btnDisabled]}
             onPress={handleSharePdf}
@@ -128,18 +129,23 @@ const PurchaseSuccessScreen = ({ navigation }) => {
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <>
-                <Icon name="share-outline" size={rfs(18)} color="#FFFFFF" />
+                <View style={styles.pdfIconBox}>
+                  <Icon name="share-outline" size={rfs(15)} color={colors.primary} />
+                </View>
                 <Text style={styles.pdfBtnText}>Share Purchase PDF</Text>
               </>
             )}
           </TouchableOpacity>
 
+          {/* Back to Home */}
           <TouchableOpacity
             style={styles.backBtn}
             onPress={() => navigation.replace('OwnerTabs')}
             activeOpacity={0.8}
           >
-            <Icon name="home-outline" size={rfs(16)} color={colors.primary} />
+            <View style={styles.backIconBox}>
+              <Icon name="home-outline" size={rfs(14)} color={colors.primary} />
+            </View>
             <Text style={styles.backBtnText}>Back to Home</Text>
           </TouchableOpacity>
 
@@ -166,16 +172,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
   },
+
   orbTopRight: {
     position: 'absolute', top: -rs(40), right: -rs(40),
     width: rs(160), height: rs(160), borderRadius: rs(80),
     backgroundColor: 'rgba(245,166,35,0.08)',
   },
+
   orbBottomLeft: {
     position: 'absolute', bottom: -rvs(20), left: -rs(20),
     width: rs(100), height: rs(100), borderRadius: rs(50),
     backgroundColor: 'rgba(255,255,255,0.04)',
   },
+
   successRing: {
     width: rs(72), height: rs(72), borderRadius: rs(36),
     backgroundColor: 'rgba(91,158,109,0.15)',
@@ -183,13 +192,16 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     marginBottom: rvs(14),
   },
+
   bannerTitle: {
     fontSize: rfs(20), fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.2,
   },
+
   bannerSub: {
     fontSize: rfs(12), color: 'rgba(255,255,255,0.55)',
     fontWeight: '500', marginTop: rvs(4),
   },
+
   invoicePill: {
     flexDirection: 'row', alignItems: 'center', gap: rs(5),
     marginTop: rvs(14),
@@ -197,47 +209,62 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(245,166,35,0.30)',
     borderRadius: rs(20), paddingVertical: rvs(5), paddingHorizontal: rs(14),
   },
+
   pillDot: {
     width: rs(6), height: rs(6), borderRadius: rs(3),
     backgroundColor: colors.accent,
   },
+
   pillText: {
     fontSize: rfs(11), fontWeight: '700',
     color: colors.accent, letterSpacing: 0.5,
   },
 
-  // ── Invoice card ──────────────────────────────────────
-  cardWrap: {
-    marginHorizontal: rs(16),
-    marginTop: rvs(14),
-  },
+  // ── Card + actions ────────────────────────────────────
+  cardWrap:    { marginHorizontal: rs(16), marginTop: rvs(14) },
+  actionsWrap: { marginHorizontal: rs(16), marginTop: rvs(16), gap: rvs(10) },
 
-  // ── Actions ───────────────────────────────────────────
-  actionsWrap: {
-    marginHorizontal: rs(16),
-    marginTop: rvs(16),
-    gap: rvs(10),
-  },
+  // ── PDF button ────────────────────────────────────────
   pdfBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: rs(8), backgroundColor: '#7c3aed',
-    paddingVertical: rvs(14), borderRadius: rs(12),
-    shadowColor: '#7c3aed',
+    gap: rs(10), backgroundColor: colors.primary,   // was #7c3aed purple
+    paddingVertical: rvs(15), borderRadius: rs(14),
+    shadowColor: colors.primary,                     // was #7c3aed purple
     shadowOffset: { width: 0, height: rvs(4) },
-    shadowOpacity: 0.30, shadowRadius: rs(10), elevation: 4,
+    shadowOpacity: 0.28, shadowRadius: rs(12), elevation: 5,
   },
+
+  pdfIconBox: {
+    width: rs(26), height: rs(26), borderRadius: rs(8),
+    backgroundColor: colors.accent,
+    alignItems: 'center', justifyContent: 'center',
+  },
+
   pdfBtnText: {
-    fontSize: rfs(15), fontWeight: '700', color: '#FFFFFF',
+    fontSize: rfs(15), fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.3,
   },
+
+  // ── Back to Home button ───────────────────────────────
   backBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: rs(6), paddingVertical: rvs(13), borderRadius: rs(12),
+    gap: rs(8), paddingVertical: rvs(14), borderRadius: rs(14),
     borderWidth: 1, borderColor: colors.borderCard,
     backgroundColor: '#FFFFFF',
+    shadowColor: colors.shadowCard,
+    shadowOffset: { width: 0, height: rvs(2) },
+    shadowOpacity: 1, shadowRadius: rs(8), elevation: 2,
   },
+
+  backIconBox: {
+    width: rs(24), height: rs(24), borderRadius: rs(7),
+    backgroundColor: 'rgba(45,74,82,0.08)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+
   backBtnText: {
-    fontSize: rfs(14), fontWeight: '600', color: colors.primary,
+    fontSize: rfs(14), fontWeight: '700', color: colors.primary,
   },
+
   btnDisabled: { opacity: 0.6 },
 
   // ── Error state ───────────────────────────────────────
@@ -245,21 +272,33 @@ const styles = StyleSheet.create({
     flex: 1, backgroundColor: colors.background ?? '#F2F4F5',
     justifyContent: 'center', alignItems: 'center', paddingHorizontal: rs(32),
   },
+
   errorCard: {
     width: '100%', backgroundColor: '#FFFFFF',
     borderRadius: rs(20), borderWidth: 1, borderColor: colors.borderCard,
     alignItems: 'center', paddingVertical: rvs(36), paddingHorizontal: rs(24),
     gap: rvs(8),
+    shadowColor: colors.shadowCard,
+    shadowOffset: { width: 0, height: rvs(4) },
+    shadowOpacity: 1, shadowRadius: rs(16), elevation: 4,
   },
-  errorTitle: { fontSize: rfs(17), fontWeight: '700', color: colors.textPrimary },
+
+  errorTitle: {
+    fontSize: rfs(17), fontWeight: '800',
+    color: colors.textPrimary, marginTop: rvs(8),
+  },
+
   errorSub: {
     fontSize: rfs(13), color: colors.textSecondary,
     textAlign: 'center', lineHeight: rfs(20),
   },
+
   errorBackBtn: {
     flexDirection: 'row', alignItems: 'center', gap: rs(5),
-    backgroundColor: colors.primary, borderRadius: rs(12),
+    backgroundColor: colors.primary, borderRadius: rs(14),
     paddingVertical: rvs(10), paddingHorizontal: rs(20), marginTop: rvs(12),
   },
+
   errorBackText: { fontSize: rfs(13), fontWeight: '700', color: '#FFFFFF' },
+
 });

@@ -1,204 +1,3 @@
-// import React, { useEffect, useCallback } from 'react';
-// import {
-//   View,
-//   Text,
-//   FlatList,
-//   TouchableOpacity,
-//   StyleSheet,
-//   ActivityIndicator,
-//   Alert,
-// } from 'react-native';
-// import { useAtomValue, useSetAtom } from 'jotai';
-// import Icon from 'react-native-vector-icons/Ionicons';
-
-// import AppHeaderLayout from '../components/AppHeaderLayout';
-// import StaffCard from '../components/StaffCard';
-// import { currentOwnerAtom, staffListAtom, loadingStaffAtom } from '../atoms/owner';
-// import { subscribeStaffByShopId, deleteStaff } from '../services/staffService';
-// import { colors } from '../theme/colors';
-
-// export default function StaffManagementScreen({ navigation }) {
-//   const owner        = useAtomValue(currentOwnerAtom);
-//   const staffList    = useAtomValue(staffListAtom);
-//   const loading      = useAtomValue(loadingStaffAtom);
-//   const setStaffList = useSetAtom(staffListAtom);
-//   const setLoading   = useSetAtom(loadingStaffAtom);
-
-//   // Realtime staff listener
-//   useEffect(() => {
-//     if (!owner?.shopId) return;
-
-//     setLoading(true);
-
-//     const unsubscribe = subscribeStaffByShopId(owner.shopId, (list) => {
-//       setStaffList(list);
-//       setLoading(false);
-//     });
-
-//     return unsubscribe;
-//   }, [owner?.shopId, setStaffList, setLoading]);
-
-//   const handleDelete = useCallback((staff) => {
-//     Alert.alert(
-//       'Delete Staff',
-//       `Delete "${staff.name}" permanently?`,
-//       [
-//         { text: 'Cancel', style: 'cancel' },
-//         {
-//           text: 'Delete',
-//           style: 'destructive',
-//           onPress: async () => {
-//             try {
-//               await deleteStaff(staff.id);
-//             } catch (err) {
-//               Alert.alert('Error', err.message);
-//             }
-//           },
-//         },
-//       ]
-//     );
-//   }, []);
-
-//   const handleEdit = useCallback(
-//     (staff) => navigation.navigate('EditStaff', { staff }),
-//     [navigation]
-//   );
-
-//   const handleAddStaff = () => navigation.navigate('AddStaff');
-
-//   // ─── Empty state ────────────────────────────────────────────────────────────
-//   const renderEmpty = () => {
-//     if (loading) return null;
-//     return (
-//       <View style={styles.emptyWrap}>
-//         <Icon name="people-outline" size={52} color="#d0d8e8" />
-//         <Text style={styles.emptyTitle}>No staff yet</Text>
-//         <Text style={styles.emptySubtitle}>
-//           Tap the button below to add your first staff member.
-//         </Text>
-//       </View>
-//     );
-//   };
-
-//   return (
-//     <AppHeaderLayout title="Staff Management">
-
-//       <View style={styles.container}>
-
-//         {/* Staff count badge */}
-//         {staffList.length > 0 && (
-//           <View style={styles.countBadge}>
-//             <Text style={styles.countText}>
-//               {staffList.length} {staffList.length === 1 ? 'member' : 'members'}
-//             </Text>
-//           </View>
-//         )}
-
-//         {/* Loading spinner (first load only) */}
-//         {loading && staffList.length === 0 ? (
-//           <View style={styles.loadingWrap}>
-//             <ActivityIndicator size="large" color={colors.primary} />
-//           </View>
-//         ) : (
-//           <FlatList
-//             data={staffList}
-//             keyExtractor={(item) => String(item.id)}
-//             renderItem={({ item }) => (
-//               <StaffCard
-//                 staff={item}
-//                 onEdit={handleEdit}
-//                 onDelete={handleDelete}
-//               />
-//             )}
-//             ListEmptyComponent={renderEmpty}
-//             contentContainerStyle={styles.listContent}
-//             showsVerticalScrollIndicator={false}
-//           />
-//         )}
-
-//       </View>
-
-//       {/* Floating Add Staff button */}
-//       <TouchableOpacity style={styles.fab} onPress={handleAddStaff} activeOpacity={0.85}>
-//         <Icon name="add" size={24} color="#fff" />
-//         <Text style={styles.fabText}>Add Staff</Text>
-//       </TouchableOpacity>
-
-//     </AppHeaderLayout>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     paddingHorizontal: 16,
-//     paddingTop: 12,
-//   },
-//   countBadge: {
-//     alignSelf: 'flex-start',
-//     backgroundColor: '#EEF4FF',
-//     borderRadius: 20,
-//     paddingHorizontal: 12,
-//     paddingVertical: 4,
-//     marginBottom: 14,
-//   },
-//   countText: {
-//     fontSize: 12,
-//     fontWeight: '600',
-//     color: '#1a73e8',
-//   },
-//   loadingWrap: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   listContent: {
-//     paddingBottom: 100, // clearance for FAB
-//   },
-//   emptyWrap: {
-//     flex: 1,
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//     paddingTop: 80,
-//     gap: 10,
-//   },
-//   emptyTitle: {
-//     fontSize: 17,
-//     fontWeight: '700',
-//     color: '#333',
-//   },
-//   emptySubtitle: {
-//     fontSize: 13,
-//     color: '#999',
-//     textAlign: 'center',
-//     paddingHorizontal: 32,
-//   },
-//   fab: {
-//     position: 'absolute',
-//     bottom: 24,
-//     right: 20,
-//     left: 20,
-//     backgroundColor: '#1a73e8',
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//     paddingVertical: 14,
-//     borderRadius: 12,
-//     gap: 8,
-//     elevation: 4,
-//     shadowColor: '#1a73e8',
-//     shadowOffset: { width: 0, height: 4 },
-//     shadowOpacity: 0.35,
-//     shadowRadius: 10,
-//   },
-//   fabText: {
-//     color: '#fff',
-//     fontWeight: '700',
-//     fontSize: 15,
-//   },
-// });
-
-
 import React, { useEffect, useCallback, useState } from 'react';
 import {
   View,
@@ -207,32 +6,75 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Modal,
+  Dimensions,
 } from 'react-native';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTranslation } from 'react-i18next';
 
-import AppHeaderLayout from '../components/AppHeaderLayout';
-import StaffCard from '../components/StaffCard';
-import Loader   from '../components/Loader';
+import AppHeaderLayout    from '../components/AppHeaderLayout';
+import StaffCard          from '../components/StaffCard';
+import ConfirmActionModal from '../components/ConfirmActionModal';
 import { currentOwnerAtom, staffListAtom, loadingStaffAtom } from '../atoms/owner';
 import { subscribeStaffByShopId, deleteStaff } from '../services/staffService';
 import { colors } from '../theme/colors';
 
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const scale = SCREEN_W / 390;
+const vs    = SCREEN_H / 844;
+const rs    = (n) => Math.round(n * scale);
+const rvs   = (n) => Math.round(n * vs);
+const rfs   = (n) => Math.round(n * Math.min(scale, vs));
+
+// ─── Back pill ────────────────────────────────────────────────────────────────
+const BackPill = ({ onPress }) => (
+  <TouchableOpacity style={styles.backPill} onPress={onPress} activeOpacity={0.75}>
+    <Icon name="chevron-back" size={rfs(16)} color="#FFFFFF" />
+    <Text style={styles.backPillText}>Back</Text>
+  </TouchableOpacity>
+);
+
+// ─── Loading state ────────────────────────────────────────────────────────────
+const LoadingState = () => (
+  <View style={styles.stateWrap}>
+    <View style={styles.stateIconWrap}>
+      <ActivityIndicator size="large" color={colors.primary} />
+    </View>
+    <Text style={styles.stateTitle}>Loading staff…</Text>
+    <Text style={styles.stateSub}>Fetching your team members</Text>
+  </View>
+);
+
+// ─── Empty state ──────────────────────────────────────────────────────────────
+const EmptyState = ({ onAdd }) => (
+  <View style={styles.stateWrap}>
+    <View style={styles.stateIconWrap}>
+      <Icon name="people-outline" size={rfs(34)} color={colors.textSecondary} />
+    </View>
+    <Text style={styles.stateTitle}>No staff yet</Text>
+    <Text style={styles.stateSub}>
+      Add your first staff member to get started.
+    </Text>
+    <TouchableOpacity style={styles.stateBtn} onPress={onAdd} activeOpacity={0.85}>
+      <Icon name="person-add-outline" size={rfs(15)} color="#FFFFFF" />
+      <Text style={styles.stateBtnText}>Add Staff</Text>
+    </TouchableOpacity>
+  </View>
+);
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function StaffManagementScreen({ navigation }) {
-  const { t }     = useTranslation();
+  const { t }        = useTranslation();
   const owner        = useAtomValue(currentOwnerAtom);
   const staffList    = useAtomValue(staffListAtom);
   const loading      = useAtomValue(loadingStaffAtom);
   const setStaffList = useSetAtom(staffListAtom);
   const setLoading   = useSetAtom(loadingStaffAtom);
 
-  // Custom confirm modal state — replaces Alert to fix Android Activity issue
-  const [deleteTarget,  setDeleteTarget]  = useState(null);
-  const [deleting,      setDeleting]      = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting,     setDeleting]     = useState(false);
 
-  // Realtime staff listener
+  // ── Realtime listener ──
   useEffect(() => {
     if (!owner?.shopId) return;
     setLoading(true);
@@ -243,9 +85,7 @@ export default function StaffManagementScreen({ navigation }) {
     return unsubscribe;
   }, [owner?.shopId, setStaffList, setLoading]);
 
-  const handleDelete = useCallback((staff) => {
-    setDeleteTarget(staff);
-  }, []);
+  const handleDelete = useCallback((staff) => setDeleteTarget(staff), []);
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
@@ -265,34 +105,37 @@ export default function StaffManagementScreen({ navigation }) {
     [navigation]
   );
 
-  const renderEmpty = () => {
-    if (loading) return null;
-    return (
-      <View style={styles.emptyWrap}>
-        <Icon name="people-outline" size={52} color="#d0d8e8" />
-        <Text style={styles.emptyTitle}>{t('staff.emptyTitle')}</Text>
-        <Text style={styles.emptySubtitle}>
-          {t('staff.emptySubtitle')}
-        </Text>
-      </View>
-    );
-  };
+  const handleAdd = () => navigation.navigate('AddStaff');
+
+  const headerLeft = <BackPill onPress={() => navigation.goBack()} />;
 
   return (
-    <AppHeaderLayout title={t('staff.management')}>
+    <AppHeaderLayout
+      title="Staff Management"
+      subtitle={staffList.length > 0 ? `${staffList.length} member${staffList.length === 1 ? '' : 's'}` : undefined}
+      leftComponent={headerLeft}
+    >
+
+      {/* ── Delete confirm modal ── */}
+      <ConfirmActionModal
+        visible={!!deleteTarget}
+        variant="danger"
+        icon="trash-outline"
+        title="Delete Staff?"
+        message="This will permanently remove this staff member from your shop."
+        confirmLabel="Yes, Delete"
+        confirmIcon="trash-outline"
+        itemPill={{ icon: 'person-outline', label: deleteTarget?.name || '' }}
+        loading={deleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+      />
 
       <View style={styles.container}>
 
-        {staffList.length > 0 && (
-          <View style={styles.countBadge}>
-            <Text style={styles.countText}>
-              {t('staff.countLabel', { count: staffList.length })}
-            </Text>
-          </View>
-        )}
-
+        {/* ── Loading ── */}
         {loading && staffList.length === 0 ? (
-          <Loader />
+          <LoadingState />
         ) : (
           <FlatList
             data={staffList}
@@ -304,140 +147,164 @@ export default function StaffManagementScreen({ navigation }) {
                 onDelete={handleDelete}
               />
             )}
-            ListEmptyComponent={renderEmpty}
-            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={<EmptyState onAdd={handleAdd} />}
+            contentContainerStyle={[
+              styles.listContent,
+              staffList.length === 0 && styles.listContentEmpty,
+            ]}
             showsVerticalScrollIndicator={false}
           />
         )}
 
       </View>
 
-      {/* FAB */}
+      {/* ── FAB — Add Staff ── */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => navigation.navigate('AddStaff')}
+        onPress={handleAdd}
         activeOpacity={0.85}
       >
-        <Icon name="add" size={24} color="#fff" />
-        <Text style={styles.fabText}>{t('staff.addStaff')}</Text>
-      </TouchableOpacity>
-
-      {/* ── Delete confirm modal — no Alert ── */}
-      <Modal
-        visible={!!deleteTarget}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setDeleteTarget(null)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-
-            <View style={styles.modalIconWrap}>
-              <Icon name="trash-outline" size={28} color="#dc3545" />
-            </View>
-
-            <Text style={styles.modalTitle}>{t('staff.deleteTitle')}</Text>
-            <Text style={styles.modalMessage}>
-              {t('staff.deleteMessage', { name: deleteTarget?.name })}
-            </Text>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => setDeleteTarget(null)}
-                disabled={deleting}
-              >
-                <Text style={styles.cancelText}>{t('common.cancel')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.deleteBtn, deleting && { opacity: 0.6 }]}
-                onPress={confirmDelete}
-                disabled={deleting}
-              >
-                {deleting
-                  ? <ActivityIndicator size="small" color="#fff" />
-                  : <Text style={styles.deleteBtnText}>{t('common.delete')}</Text>
-                }
-              </TouchableOpacity>
-            </View>
-
-          </View>
+        <View style={styles.fabIconBox}>
+          <Icon name="person-add-outline" size={rfs(16)} color={colors.primary} />
         </View>
-      </Modal>
+        <Text style={styles.fabText}>Add Staff</Text>
+      </TouchableOpacity>
 
     </AppHeaderLayout>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+
+  // ── Back pill ────────────────────────────────────────
+  backPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(4),
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    borderRadius: rs(20),
+    paddingHorizontal: rs(12),
+    paddingVertical: rvs(7),
+  },
+
+  backPillText: {
+    fontSize: rfs(13),
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+
+  // ── Container ────────────────────────────────────────
   container: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingHorizontal: rs(16),
+    paddingTop: rvs(12),
   },
-  countBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#EEF4FF',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    marginBottom: 14,
-  },
-  countText: { fontSize: 12, fontWeight: '600', color: '#1a73e8' },
-  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  listContent: { paddingBottom: 100 },
-  emptyWrap: {
-    flex: 1, alignItems: 'center', justifyContent: 'center',
-    paddingTop: 80, gap: 10,
-  },
-  emptyTitle: { fontSize: 17, fontWeight: '700', color: '#333' },
-  emptySubtitle: { fontSize: 13, color: '#999', textAlign: 'center', paddingHorizontal: 32 },
-  fab: {
-    position: 'absolute', bottom: 24, right: 20, left: 20,
-    backgroundColor: '#1a73e8',
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 14, borderRadius: 12, gap: 8,
-    elevation: 4,
-    shadowColor: '#1a73e8',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35, shadowRadius: 10,
-  },
-  fabText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 
-  // ── Delete modal ──────────────────────────────────────
-  modalOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center', alignItems: 'center',
-    paddingHorizontal: 32,
+  // ── List ─────────────────────────────────────────────
+  listContent: {
+    paddingBottom: rvs(110),
+    gap: rvs(10),
   },
-  modalCard: {
-    width: '100%', backgroundColor: '#fff',
-    borderRadius: 20, paddingTop: 28, paddingBottom: 20,
-    paddingHorizontal: 24, alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15, shadowRadius: 20, elevation: 10,
+
+  listContentEmpty: {
+    flex: 1,
   },
-  modalIconWrap: {
-    width: 60, height: 60, borderRadius: 30,
-    backgroundColor: '#FEE8EB',
-    alignItems: 'center', justifyContent: 'center',
-    marginBottom: 14,
+
+  // ── FAB ──────────────────────────────────────────────
+  fab: {
+    position: 'absolute',
+    bottom: rvs(24),
+    right: rs(16),
+    left: rs(16),
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: rs(10),
+    paddingVertical: rvs(15),
+    borderRadius: rs(14),
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: rvs(4) },
+    shadowOpacity: 0.30,
+    shadowRadius: rs(12),
+    elevation: 5,
   },
-  modalTitle: { fontSize: 18, fontWeight: '800', color: '#111', marginBottom: 8 },
-  modalMessage: {
-    fontSize: 14, color: '#666',
-    textAlign: 'center', lineHeight: 21, marginBottom: 24,
+
+  fabIconBox: {
+    width: rs(26),
+    height: rs(26),
+    borderRadius: rs(8),
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  modalActions: { flexDirection: 'row', gap: 10, width: '100%' },
-  cancelBtn: {
-    flex: 1, paddingVertical: 13, borderRadius: 12,
-    borderWidth: 1, borderColor: '#e0e0e0', alignItems: 'center',
+
+  fabText: {
+    fontSize: rfs(15),
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
-  cancelText: { fontSize: 14, fontWeight: '600', color: '#666' },
-  deleteBtn: {
-    flex: 1, paddingVertical: 13, borderRadius: 12,
-    backgroundColor: '#dc3545', alignItems: 'center',
+
+  // ── Loading / empty states ───────────────────────────
+  stateWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: rs(32),
+    gap: rvs(10),
   },
-  deleteBtnText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+
+  stateIconWrap: {
+    width: rs(72),
+    height: rs(72),
+    borderRadius: rs(20),
+    backgroundColor: 'rgba(45,74,82,0.06)',
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: rvs(4),
+  },
+
+  stateTitle: {
+    fontSize: rfs(17),
+    fontWeight: '800',
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+
+  stateSub: {
+    fontSize: rfs(13),
+    fontWeight: '500',
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: rfs(19),
+  },
+
+  stateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(6),
+    backgroundColor: colors.primary,
+    borderRadius: rs(12),
+    paddingHorizontal: rs(20),
+    paddingVertical: rvs(12),
+    marginTop: rvs(8),
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: rvs(3) },
+    shadowOpacity: 0.25,
+    shadowRadius: rs(8),
+    elevation: 4,
+  },
+
+  stateBtnText: {
+    fontSize: rfs(14),
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
 });
