@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { colors } from '../theme/colors';
+import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -26,24 +27,25 @@ const rfs   = (n) => Math.round(n * scale);
  * Add → default mode → ProductScanResultScreen
  */
 const InventoryQuickActions = ({ navigation }) => {
+  const { t } = useTranslation();
   return (
     <View style={styles.row}>
 
       <ActionPill
         icon="search-outline"
-        label="Check"
+        label={t('inventory.quickCheck')}
         onPress={() => navigation.navigate('BarcodeScanner', { mode: 'check' })}
       />
 
       <ActionPill
         icon="refresh-outline"
-        label="Update"
+        label={t('inventory.quickUpdate')}
         onPress={() => navigation.navigate('BarcodeScanner', { mode: 'updateInventory' })}
       />
 
       <ActionPill
         icon="add-outline"
-        label="Add"
+        label={t('inventory.quickAdd')}
         accent
         onPress={() => navigation.navigate('BarcodeScanner')}
       />

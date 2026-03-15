@@ -1,5 +1,6 @@
 import React from "react";
 import { View, StyleSheet, Dimensions } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import SummaryCard from "./SummaryCard";
 
@@ -22,6 +23,7 @@ const rvs   = (n) => Math.round(n * vs);
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const SalesSummaryStrip = ({ stats }) => {
+  const { t } = useTranslation();
 
   // Logic unchanged
   const todayKey   = getTodayKey();
@@ -33,21 +35,21 @@ const SalesSummaryStrip = ({ stats }) => {
     <View style={styles.row}>
 
       <SummaryCard
-        label="Today"
+        label={t("sales.today")}
         value={formatCurrency(todayStats?.totalSales || 0)}
         count={todayStats?.totalBills || 0}
         topColor={colors.primary}
       />
 
       <SummaryCard
-        label="This Week"
+        label={t("sales.thisWeek")}
         value={formatCurrency(sumStats(weekStats, "totalSales"))}
         count={sumStats(weekStats, "totalBills")}
         topColor={colors.accent}
       />
 
       <SummaryCard
-        label="This Month"
+        label={t("sales.thisMonth")}
         value={formatCurrency(sumStats(monthStats, "totalSales"))}
         count={sumStats(monthStats, "totalBills")}
         topColor={colors.success}

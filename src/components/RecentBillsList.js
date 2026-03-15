@@ -3,16 +3,17 @@ import {
   View,
   Text,
   FlatList,
-  ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
   Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
 
 import BillListItem from './BillListItem';
 import { colors } from '../theme/colors';
+import Loader       from './Loader';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -26,12 +27,15 @@ const rfs   = (n) => Math.round(n * Math.min(scale, vs));
 /* ─── Section Header ─────────────────────────────────────────────────────── */
 
 function SectionHeader({ count }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.header}>
-      <Text style={styles.headerTitle}>Recent Bills</Text>
+      <Text style={styles.headerTitle}>{t('billing.recentBillsTitle')}</Text>
       {count > 0 && (
         <View style={styles.headerBadge}>
-          <Text style={styles.headerBadgeText}>{count} bills</Text>
+          <Text style={styles.headerBadgeText}>
+            {t('billing.recentBillsCount', { count })}
+          </Text>
         </View>
       )}
     </View>
@@ -41,6 +45,7 @@ function SectionHeader({ count }) {
 /* ─── Empty State ────────────────────────────────────────────────────────── */
 
 function EmptyState() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
 
   return (
@@ -48,16 +53,16 @@ function EmptyState() {
       <View style={styles.emptyIconWrap}>
         <Icon name="receipt-outline" size={rfs(38)} color={colors.primary} />
       </View>
-      <Text style={styles.emptyTitle}>No bills yet</Text>
+      <Text style={styles.emptyTitle}>{t('billing.noBillsYet')}</Text>
       <Text style={styles.emptySubtitle}>
-        Tap{' '}
+        {t('billing.noBillsPrefix')}{' '}
         <Text
           style={styles.emptyAccent}
           onPress={() => navigation.navigate('BillingScanner')}
         >
-          New Bill
+          {t('tabs.newBill')}
         </Text>
-        {' '}to create your first sale
+        {' '}{t('billing.noBillsSuffix')}
       </Text>
     </View>
   );
@@ -71,10 +76,7 @@ const RecentBillsList = ({ bills = [], loading, onPressBill }) => {
     return (
       <View>
         <SectionHeader count={0} />
-        <ActivityIndicator
-          color={colors.primary}
-          style={{ marginTop: rvs(32) }}
-        />
+        <Loader />
       </View>
     );
   }

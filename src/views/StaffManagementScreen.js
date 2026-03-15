@@ -211,14 +211,17 @@ import {
 } from 'react-native';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
 
 import AppHeaderLayout from '../components/AppHeaderLayout';
 import StaffCard from '../components/StaffCard';
+import Loader   from '../components/Loader';
 import { currentOwnerAtom, staffListAtom, loadingStaffAtom } from '../atoms/owner';
 import { subscribeStaffByShopId, deleteStaff } from '../services/staffService';
 import { colors } from '../theme/colors';
 
 export default function StaffManagementScreen({ navigation }) {
+  const { t }     = useTranslation();
   const owner        = useAtomValue(currentOwnerAtom);
   const staffList    = useAtomValue(staffListAtom);
   const loading      = useAtomValue(loadingStaffAtom);
@@ -267,31 +270,29 @@ export default function StaffManagementScreen({ navigation }) {
     return (
       <View style={styles.emptyWrap}>
         <Icon name="people-outline" size={52} color="#d0d8e8" />
-        <Text style={styles.emptyTitle}>No staff yet</Text>
+        <Text style={styles.emptyTitle}>{t('staff.emptyTitle')}</Text>
         <Text style={styles.emptySubtitle}>
-          Tap the button below to add your first staff member.
+          {t('staff.emptySubtitle')}
         </Text>
       </View>
     );
   };
 
   return (
-    <AppHeaderLayout title="Staff Management">
+    <AppHeaderLayout title={t('staff.management')}>
 
       <View style={styles.container}>
 
         {staffList.length > 0 && (
           <View style={styles.countBadge}>
             <Text style={styles.countText}>
-              {staffList.length} {staffList.length === 1 ? 'member' : 'members'}
+              {t('staff.countLabel', { count: staffList.length })}
             </Text>
           </View>
         )}
 
         {loading && staffList.length === 0 ? (
-          <View style={styles.loadingWrap}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
+          <Loader />
         ) : (
           <FlatList
             data={staffList}
@@ -318,7 +319,7 @@ export default function StaffManagementScreen({ navigation }) {
         activeOpacity={0.85}
       >
         <Icon name="add" size={24} color="#fff" />
-        <Text style={styles.fabText}>Add Staff</Text>
+        <Text style={styles.fabText}>{t('staff.addStaff')}</Text>
       </TouchableOpacity>
 
       {/* ── Delete confirm modal — no Alert ── */}
@@ -335,10 +336,9 @@ export default function StaffManagementScreen({ navigation }) {
               <Icon name="trash-outline" size={28} color="#dc3545" />
             </View>
 
-            <Text style={styles.modalTitle}>Delete Staff</Text>
+            <Text style={styles.modalTitle}>{t('staff.deleteTitle')}</Text>
             <Text style={styles.modalMessage}>
-              Delete <Text style={{ fontWeight: '700' }}>{deleteTarget?.name}</Text> permanently?
-              {'\n'}This action cannot be undone.
+              {t('staff.deleteMessage', { name: deleteTarget?.name })}
             </Text>
 
             <View style={styles.modalActions}>
@@ -347,7 +347,7 @@ export default function StaffManagementScreen({ navigation }) {
                 onPress={() => setDeleteTarget(null)}
                 disabled={deleting}
               >
-                <Text style={styles.cancelText}>Cancel</Text>
+                <Text style={styles.cancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.deleteBtn, deleting && { opacity: 0.6 }]}
@@ -356,7 +356,7 @@ export default function StaffManagementScreen({ navigation }) {
               >
                 {deleting
                   ? <ActivityIndicator size="small" color="#fff" />
-                  : <Text style={styles.deleteBtnText}>Delete</Text>
+                  : <Text style={styles.deleteBtnText}>{t('common.delete')}</Text>
                 }
               </TouchableOpacity>
             </View>

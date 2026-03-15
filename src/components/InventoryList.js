@@ -10,6 +10,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 
 import InventoryItemCard from "./InventoryItemCard";
 import { colors }        from "../theme/colors";
+import { useTranslation } from "react-i18next";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
@@ -21,25 +22,33 @@ const rvs   = (n) => Math.round(n * vs);
 const rfs   = (n) => Math.round(n * scale);
 
 // ─── Empty State ──────────────────────────────────────────────────────────────
-const EmptyState = () => (
-  <View style={styles.emptyWrap}>
-    <View style={styles.emptyIconWrap}>
-      <Ionicons name="cube-outline" size={rfs(36)} color={colors.textSecondary} />
+const EmptyState = () => {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.emptyWrap}>
+      <View style={styles.emptyIconWrap}>
+        <Ionicons name="cube-outline" size={rfs(36)} color={colors.textSecondary} />
+      </View>
+      <Text style={styles.emptyTitle}>{t("inventory.emptyTitle")}</Text>
+      <Text style={styles.emptySub}>{t("inventory.emptySubtitle")}</Text>
     </View>
-    <Text style={styles.emptyTitle}>No products found</Text>
-    <Text style={styles.emptySub}>Try a different search or category</Text>
-  </View>
-);
+  );
+};
 
 // ─── Section Header ───────────────────────────────────────────────────────────
-const SectionHeader = ({ count }) => (
-  <View style={styles.secHdr}>
-    <Text style={styles.secTitle}>All Products</Text>
-    <View style={styles.secBadge}>
-      <Text style={styles.secBadgeText}>{count} items</Text>
+const SectionHeader = ({ count }) => {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.secHdr}>
+      <Text style={styles.secTitle}>{t("inventory.allProducts")}</Text>
+      <View style={styles.secBadge}>
+        <Text style={styles.secBadgeText}>
+          {t("inventory.itemsCount", { count })}
+        </Text>
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const InventoryList = ({

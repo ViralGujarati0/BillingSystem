@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../theme/colors';
+import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -65,6 +66,7 @@ function formatTime(timestamp) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const BillListItem = ({ bill, onPress }) => {
+  const { t } = useTranslation();
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const payKey = (bill?.paymentType || '').toUpperCase();
@@ -97,11 +99,11 @@ const BillListItem = ({ bill, onPress }) => {
         {/* Bill info */}
         <View style={styles.info}>
           <Text style={styles.billNo} numberOfLines={1}>
-            Bill #{bill?.billNo}
+            {t('billing.billLabel', { number: bill?.billNo })}
           </Text>
           <View style={styles.metaRow}>
             <Text style={styles.customer} numberOfLines={1}>
-              {bill?.customerName || 'Walk-in'}
+              {bill?.customerName || t('billing.walkInCustomer')}
             </Text>
             {!!time && (
               <>

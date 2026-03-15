@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { colors } from "../theme/colors";
+import { useTranslation } from "react-i18next";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
@@ -20,6 +21,7 @@ const rfs   = (n) => Math.round(n * scale);
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const InventorySearchBar = ({ onSearch, navigation }) => {
+  const { t } = useTranslation();
   return (
     <View style={styles.container}>
 
@@ -32,7 +34,7 @@ const InventorySearchBar = ({ onSearch, navigation }) => {
 
       {/* Input */}
       <TextInput
-        placeholder="Search product or barcode…"
+        placeholder={t("inventory.searchPlaceholder")}
         placeholderTextColor={colors.textSecondary}
         style={styles.input}
         onChangeText={onSearch}

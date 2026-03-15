@@ -8,6 +8,7 @@ import {
   Dimensions,
 } from "react-native";
 import { colors } from "../theme/colors";
+import { useTranslation } from "react-i18next";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
@@ -20,23 +21,24 @@ const rfs   = (n) => Math.round(n * scale);
 
 // ─── Fixed category list ──────────────────────────────────────────────────────
 const ALL_CATEGORIES = [
-  "All",
-  "Grocery & Staples",
-  "Spices & Masala",
-  "Packaged Food",
-  "Snacks & Namkeen",
-  "Beverages",
-  "Dairy & Bakery",
-  "Confectionery",
-  "Personal Care",
-  "Household Cleaning",
-  "Baby Care",
-  "Health & OTC",
-  "Stationery",
+  "all",
+  "groceryStaples",
+  "spicesMasala",
+  "packagedFood",
+  "snacksNamkeen",
+  "beverages",
+  "dairyBakery",
+  "confectionery",
+  "personalCare",
+  "householdCleaning",
+  "babyCare",
+  "healthOtc",
+  "stationery",
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const InventoryCategoryFilter = ({ selected, onSelect }) => {
+  const { t } = useTranslation();
   return (
     <ScrollView
       horizontal
@@ -44,17 +46,17 @@ const InventoryCategoryFilter = ({ selected, onSelect }) => {
       style={styles.scroll}
       contentContainerStyle={styles.content}
     >
-      {ALL_CATEGORIES.map((cat) => {
-        const isActive = selected === cat;
+      {ALL_CATEGORIES.map((catKey) => {
+        const isActive = selected === catKey;
         return (
           <TouchableOpacity
-            key={cat}
+            key={catKey}
             style={[styles.chip, isActive && styles.chipActive]}
-            onPress={() => onSelect(cat)}
+            onPress={() => onSelect(catKey)}
             activeOpacity={0.75}
           >
             <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
-              {cat}
+              {t(`inventory.category.${catKey}`)}
             </Text>
           </TouchableOpacity>
         );

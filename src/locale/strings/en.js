@@ -157,17 +157,58 @@ export const en = {
   purchase: {
     management: 'Purchase Management',
     managementSub: 'Create and manage supplier purchases',
+    emptyTitle: 'No purchases yet',
+    emptySubtitle: 'Tap the button below to create your first purchase.',
+    countLabel: '{{count}} {{count, plural, one {purchase} other {purchases}}}',
+    newPurchase: 'New Purchase',
   },
 
   // ── Sales ──
   sales: {
     title: 'Sales',
+    today: 'Today',
+    thisWeek: 'This Week',
+    thisMonth: 'This Month',
+    selectMonthYear: 'Select Month & Year',
+    yearLabel: 'YEAR',
+    monthLabel: 'MONTH',
   },
 
   // ── Inventory / Stock ──
   inventory: {
     title: 'Inventory',
     productsCount: '{{count}} products',
+    searchPlaceholder: 'Search product or barcode…',
+    statsProducts: 'Products',
+    statsLowStock: 'Low Stock',
+    statsValue: 'Value',
+    stockHealthTitle: 'STOCK HEALTH',
+    stockHealthBadge: '{{pct}}% Healthy',
+    stockHealthy: 'Healthy',
+    stockLow: 'Low',
+    stockOut: 'Out',
+    emptyTitle: 'No products found',
+    emptySubtitle: 'Try a different search or category',
+    allProducts: 'All Products',
+    itemsCount: '{{count}} items',
+    quickCheck: 'Check',
+    quickUpdate: 'Update',
+    quickAdd: 'Add',
+    category: {
+      all: 'All',
+      groceryStaples: 'Grocery & Staples',
+      spicesMasala: 'Spices & Masala',
+      packagedFood: 'Packaged Food',
+      snacksNamkeen: 'Snacks & Namkeen',
+      beverages: 'Beverages',
+      dairyBakery: 'Dairy & Bakery',
+      confectionery: 'Confectionery',
+      personalCare: 'Personal Care',
+      householdCleaning: 'Household Cleaning',
+      babyCare: 'Baby Care',
+      healthOtc: 'Health & OTC',
+      stationery: 'Stationery',
+    },
   },
 
   // ── Billing ──
@@ -185,6 +226,13 @@ export const en = {
     createNewBill: 'Create New Bill',
     billGenerated: 'Bill Generated',
     billSavedSuccess: 'Your bill has been saved successfully',
+    billLabel: 'Bill #{{number}}',
+    walkInCustomer: 'Walk-in',
+    recentBillsTitle: 'Recent Bills',
+    recentBillsCount: '{{count}} {{count, plural, one {bill} other {bills}}}',
+    noBillsYet: 'No bills yet',
+    noBillsPrefix: 'Tap',
+    noBillsSuffix: 'to create your first sale',
   },
 
   // ── Modals / Confirm ──

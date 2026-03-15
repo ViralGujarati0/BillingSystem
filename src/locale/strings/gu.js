@@ -136,16 +136,31 @@ export const gu = {
     passwordRequired: 'પાસવર્ડ જરૂરી છે',
     passwordMinLength: 'પાસવર્ડ ઓછામાં ઓછા 6 અક્ષરનો હોવો જોઈએ',
     staffAdded: '{{name}} ને સ્ટાફ તરીકે ઉમેરાયું',
+    emptyTitle: 'હજુ સુધી કોઈ સ્ટાફ નથી',
+    emptySubtitle: 'તમારો પહેલો સ્ટાફ સભ્ય ઉમેરવા નીચેના બટન પર ટેપ કરો.',
+    countLabel: '{{count}} {{count, plural, one {સભ્ય} other {સભ્યો}}}',
+    deleteTitle: 'સ્ટાફ કાઢો',
+    deleteMessage: '{{name}} ને કાયમી રીતે કાઢી નાખશો? આ ક્રિયા પાછી નથી કરી શકાતી.',
   },
 
   supplier: {
     management: 'સપ્લાયર મેનેજમેન્ટ',
     managementSub: 'સપ્લાયર ઉમેરો, એડિટ કરો અથવા કાઢો',
+    emptyTitle: 'હજુ સુધી કોઈ સપ્લાયર નથી',
+    emptySubtitle: 'તમારો પહેલો સપ્લાયર ઉમેરવા માટે નીચેના બટન પર ટેપ કરો.',
+    countLabel: '{{count}} {{count, plural, one {સપ્લાયર} other {સપ્લાયરો}}}',
+    addSupplier: 'સપ્લાયર ઉમેરો',
+    deleteTitle: 'સપ્લાયર કાઢો',
+    deleteMessage: '{{name}} ને કાયમી રીતે કાઢી નાખશો?',
   },
 
   purchase: {
     management: 'ખરીદી મેનેજમેન્ટ',
     managementSub: 'સપ્લાયર ખરીદી બનાવો અને મેનેજ કરો',
+    emptyTitle: 'હજુ સુધી કોઈ ખરીદી નથી',
+    emptySubtitle: 'તમારી પ્રથમ ખરીદી બનાવવા માટે નીચે બટન પર ટેપ કરો.',
+    countLabel: '{{count}} {{count, plural, one {ખરીદી} other {ખરીદીઓ}}}',
+    newPurchase: 'નવી ખરીદી',
   },
 
   sales: {
@@ -171,6 +186,13 @@ export const gu = {
     createNewBill: 'નવો બિલ બનાવો',
     billGenerated: 'બિલ જનરેટ થયું',
     billSavedSuccess: 'તમારું બિલ સફળતાપૂર્વક સાચવાયું છે',
+    billLabel: 'બિલ #{{number}}',
+    walkInCustomer: 'વૉક-ઇન',
+    recentBillsTitle: 'તાજેતરના બિલ',
+    recentBillsCount: '{{count}} {{count, plural, one {બિલ} other {બિલ્સ}}}',
+    noBillsYet: 'હજુ સુધી કોઈ બિલ નથી',
+    noBillsPrefix: 'ટૅપ કરો',
+    noBillsSuffix: 'તમારી પ્રથમ વેચાણ બનાવવા માટે',
   },
 
   modal: {

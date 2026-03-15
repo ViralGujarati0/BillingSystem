@@ -7,6 +7,7 @@ import {
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { colors } from "../theme/colors";
+import { useTranslation } from "react-i18next";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
@@ -21,7 +22,7 @@ const rfs   = (n) => Math.round(n * scale);
 const CARD_CONFIG = [
   {
     key:       "products",
-    label:     "Products",
+    labelKey:  "inventory.statsProducts",
     icon:      "cube-outline",
     iconBg:    "rgba(45,74,82,0.08)",
     iconColor: colors.primary,
@@ -32,7 +33,7 @@ const CARD_CONFIG = [
   },
   {
     key:       "lowstock",
-    label:     "Low Stock",
+    labelKey:  "inventory.statsLowStock",
     icon:      "warning-outline",
     iconBg:    "rgba(245,166,35,0.10)",
     iconColor: colors.accent,
@@ -43,7 +44,7 @@ const CARD_CONFIG = [
   },
   {
     key:       "value",
-    label:     "Value",
+    labelKey:  "inventory.statsValue",
     icon:      "cash-outline",
     iconBg:    "rgba(91,158,109,0.10)",
     iconColor: "#5B9E6D",
@@ -56,6 +57,7 @@ const CARD_CONFIG = [
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const InventoryStatsCards = ({ inventory }) => {
+  const { t } = useTranslation();
   return (
     <View style={styles.container}>
       {CARD_CONFIG.map((cfg) => {
@@ -72,7 +74,7 @@ const InventoryStatsCards = ({ inventory }) => {
             </View>
 
             {/* Label */}
-            <Text style={styles.label}>{cfg.label}</Text>
+            <Text style={styles.label}>{t(cfg.labelKey)}</Text>
 
             {/* Value */}
             <Text

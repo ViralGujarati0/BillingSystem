@@ -8,6 +8,7 @@ import {
   Modal,
   Dimensions,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import { colors } from "../theme/colors";
 
@@ -61,6 +62,7 @@ const PAD        = ITEM_H * 2;           // top+bottom padding so center = selec
 const LABEL_H    = rvs(24);             // drumColLabel paddingVertical * 2
 
 function MonthYearPicker({ visible, currentMonth, currentYear, onSelect, onClose }) {
+  const { t } = useTranslation();
   const now   = new Date();
   const years = Array.from(
     { length: now.getFullYear() - START_YEAR + 1 },
@@ -128,7 +130,7 @@ function MonthYearPicker({ visible, currentMonth, currentYear, onSelect, onClose
           <View style={styles.pickerHandleBar} />
         </View>
 
-        <Text style={styles.pickerTitle}>Select Month & Year</Text>
+        <Text style={styles.pickerTitle}>{t("sales.selectMonthYear")}</Text>
 
         {/* Drum columns */}
         <View style={styles.drumWrap}>
@@ -140,7 +142,7 @@ function MonthYearPicker({ visible, currentMonth, currentYear, onSelect, onClose
 
           {/* YEAR */}
           <View style={styles.drumCol}>
-            <Text style={styles.drumColLabel}>YEAR</Text>
+            <Text style={styles.drumColLabel}>{t("sales.yearLabel")}</Text>
             <ScrollView
               ref={yearScrollRef}
               style={{ height: DRUM_H }}
@@ -179,7 +181,7 @@ function MonthYearPicker({ visible, currentMonth, currentYear, onSelect, onClose
 
           {/* MONTH */}
           <View style={styles.drumCol}>
-            <Text style={styles.drumColLabel}>MONTH</Text>
+            <Text style={styles.drumColLabel}>{t("sales.monthLabel")}</Text>
             <ScrollView
               ref={monthScrollRef}
               style={{ height: DRUM_H }}

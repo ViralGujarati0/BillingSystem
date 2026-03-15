@@ -6,6 +6,7 @@ import {
   Dimensions,
 } from "react-native";
 import { colors } from "../theme/colors";
+import { useTranslation } from "react-i18next";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
@@ -18,6 +19,7 @@ const rfs   = (n) => Math.round(n * scale);
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const InventoryStockHealth = ({ inventory }) => {
+  const { t } = useTranslation();
   const total   = inventory.length;
   const outOf   = inventory.filter((i) => (i.stock || 0) === 0).length;
   const low     = inventory.filter((i) => (i.stock || 0) > 0 && (i.stock || 0) <= 10).length;
@@ -31,11 +33,11 @@ const InventoryStockHealth = ({ inventory }) => {
 
       {/* Top row */}
       <View style={styles.topRow}>
-        <Text style={styles.title}>STOCK HEALTH</Text>
+        <Text style={styles.title}>{t("inventory.stockHealthTitle")}</Text>
         <View style={[styles.badge, !isAllHealthy && styles.badgeWarn]}>
           <View style={[styles.badgeDot, !isAllHealthy && styles.badgeDotWarn]} />
           <Text style={[styles.badgeText, !isAllHealthy && styles.badgeTextWarn]}>
-            {healthPct}% Healthy
+            {t("inventory.stockHealthBadge", { pct: healthPct })}
           </Text>
         </View>
       </View>
@@ -59,13 +61,13 @@ const InventoryStockHealth = ({ inventory }) => {
       {/* Labels */}
       <View style={styles.labelsRow}>
         <Text style={styles.segLabel}>
-          <Text style={styles.segNum}>{healthy}</Text> Healthy
+          <Text style={styles.segNum}>{healthy}</Text> {t("inventory.stockHealthy")}
         </Text>
         <Text style={styles.segLabel}>
-          <Text style={[styles.segNum, { color: colors.accent }]}>{low}</Text> Low
+          <Text style={[styles.segNum, { color: colors.accent }]}>{low}</Text> {t("inventory.stockLow")}
         </Text>
         <Text style={styles.segLabel}>
-          <Text style={[styles.segNum, { color: "#E05252" }]}>{outOf}</Text> Out
+          <Text style={[styles.segNum, { color: "#E05252" }]}>{outOf}</Text> {t("inventory.stockOut")}
         </Text>
       </View>
 

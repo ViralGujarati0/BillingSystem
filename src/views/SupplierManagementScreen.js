@@ -11,9 +11,11 @@ import {
 import { useAtom } from 'jotai';
 import { atom } from 'jotai';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
 
 import AppHeaderLayout from '../components/AppHeaderLayout';
 import SupplierCard from '../components/SupplierCard';
+import Loader       from '../components/Loader';
 import useSupplierViewModel from '../viewmodels/SupplierViewModel';
 
 // local atoms scoped to this screen
@@ -21,6 +23,7 @@ const suppliersAtom = atom([]);
 const loadingAtom   = atom(true);
 
 export default function SupplierManagementScreen({ navigation }) {
+  const { t } = useTranslation();
   const vm = useSupplierViewModel();
 
   const [suppliers, setSuppliers] = useAtom(suppliersAtom);
@@ -41,24 +44,24 @@ export default function SupplierManagementScreen({ navigation }) {
 
   const handleDelete = useCallback((supplier) => {
     Alert.alert(
-      'Delete Supplier',
-      `Delete "${supplier.name}" permanently?`,
+      t('supplier.deleteTitle'),
+      t('supplier.deleteMessage', { name: supplier.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               await vm.deleteSupplier(supplier.id);
             } catch (err) {
-              Alert.alert('Error', err.message);
+              Alert.alert(t('common.error'), err.message);
             }
           },
         },
       ]
     );
-  }, [vm]);
+  }, [vm, t]);
 
   const handleEdit = useCallback(
     (supplier) => navigation.navigate('SupplierForm', { supplier }),
@@ -70,31 +73,29 @@ export default function SupplierManagementScreen({ navigation }) {
     return (
       <View style={styles.emptyWrap}>
         <Icon name="business-outline" size={52} color="#d0d8e8" />
-        <Text style={styles.emptyTitle}>No suppliers yet</Text>
+        <Text style={styles.emptyTitle}>{t('supplier.emptyTitle')}</Text>
         <Text style={styles.emptySubtitle}>
-          Tap the button below to add your first supplier.
+          {t('supplier.emptySubtitle')}
         </Text>
       </View>
     );
   };
 
   return (
-    <AppHeaderLayout title="Supplier Management">
+    <AppHeaderLayout title={t('supplier.management')}>
 
       <View style={styles.container}>
 
         {suppliers.length > 0 && (
           <View style={styles.countBadge}>
             <Text style={styles.countText}>
-              {suppliers.length} {suppliers.length === 1 ? 'supplier' : 'suppliers'}
+              {t('supplier.countLabel', { count: suppliers.length })}
             </Text>
           </View>
         )}
 
         {loading && suppliers.length === 0 ? (
-          <View style={styles.loadingWrap}>
-            <ActivityIndicator size="large" color="#16a34a" />
-          </View>
+          <Loader />
         ) : (
           <FlatList
             data={suppliers}
@@ -121,7 +122,7 @@ export default function SupplierManagementScreen({ navigation }) {
         activeOpacity={0.85}
       >
         <Icon name="add" size={24} color="#fff" />
-        <Text style={styles.fabText}>Add Supplier</Text>
+        <Text style={styles.fabText}>{t('supplier.addSupplier')}</Text>
       </TouchableOpacity>
 
     </AppHeaderLayout>

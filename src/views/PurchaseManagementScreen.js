@@ -5,14 +5,15 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   Dimensions,
 } from 'react-native';
 import { useAtomValue } from 'jotai';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
 
 import AppHeaderLayout   from '../components/AppHeaderLayout';
 import PurchaseCard      from '../components/PurchaseCard';
+import Loader            from '../components/Loader';
 import { currentOwnerAtom } from '../atoms/owner';
 import { subscribePurchases } from '../services/purchaseService';
 
@@ -24,6 +25,7 @@ const rvs   = (n) => Math.round(n * vs);
 const rfs   = (n) => Math.round(n * scale);
 
 export default function PurchaseManagementScreen({ navigation }) {
+  const { t } = useTranslation();
   const owner = useAtomValue(currentOwnerAtom);
 
   const [purchases, setPurchases] = useState([]);
@@ -49,16 +51,16 @@ export default function PurchaseManagementScreen({ navigation }) {
         <View style={styles.emptyIconWrap}>
           <Icon name="cart-outline" size={rfs(36)} color="#ccc" />
         </View>
-        <Text style={styles.emptyTitle}>No purchases yet</Text>
+        <Text style={styles.emptyTitle}>{t('purchase.emptyTitle')}</Text>
         <Text style={styles.emptySub}>
-          Tap the button below to create your first purchase.
+          {t('purchase.emptySubtitle')}
         </Text>
       </View>
     );
   };
 
   return (
-    <AppHeaderLayout title="Purchase Management">
+    <AppHeaderLayout title={t('purchase.management')}>
 
       <View style={styles.container}>
 
@@ -66,15 +68,13 @@ export default function PurchaseManagementScreen({ navigation }) {
         {purchases.length > 0 && (
           <View style={styles.countBadge}>
             <Text style={styles.countText}>
-              {purchases.length} {purchases.length === 1 ? 'purchase' : 'purchases'}
+              {t('purchase.countLabel', { count: purchases.length })}
             </Text>
           </View>
         )}
 
         {loading && purchases.length === 0 ? (
-          <View style={styles.loadingWrap}>
-            <ActivityIndicator size="large" color="#7c3aed" />
-          </View>
+          <Loader />
         ) : (
           <FlatList
             data={purchases}
@@ -102,7 +102,7 @@ export default function PurchaseManagementScreen({ navigation }) {
         activeOpacity={0.85}
       >
         <Icon name="add" size={rfs(22)} color="#fff" />
-        <Text style={styles.fabText}>New Purchase</Text>
+        <Text style={styles.fabText}>{t('purchase.newPurchase')}</Text>
       </TouchableOpacity>
 
     </AppHeaderLayout>
