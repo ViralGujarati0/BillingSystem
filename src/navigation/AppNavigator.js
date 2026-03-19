@@ -42,6 +42,7 @@ import PurchaseCreateScreen     from '../views/PurchaseCreateScreen';
 import PurchaseSuccessScreen    from '../views/PurchaseSuccessScreen';
 import PurchaseDetailScreen     from '../views/PurchaseDetailScreen';
 import GlobalSearchScreen       from '../views/GlobalSearchScreen';
+import DailyReportPreviewScreen from '../views/DailyReportPreviewScreen';
 
 export const navigationRef = createNavigationContainerRef();
 
@@ -248,6 +249,9 @@ const AppNavigator = () => {
 
         {/* ── Search ── */}
         <Stack.Screen name="GlobalSearch" component={GlobalSearchScreen} />
+
+{/* ── Daily Report ── */}
+<Stack.Screen name="DailyReportPreview" component={DailyReportPreviewScreen} />
 
       </Stack.Navigator>
     </NavigationContainer>
