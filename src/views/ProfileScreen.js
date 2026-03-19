@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Modal,
 } from 'react-native';
 import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTranslation } from 'react-i18next';
 import { useAtomValue } from 'jotai';
@@ -23,6 +24,9 @@ import PurchaseManagementCard from '../components/PurchaseManagementCard';
 import LanguageCard           from '../components/LanguageCard';
 import useAuthViewModel       from '../viewmodels/AuthViewModel';
 import { localeAtom }         from '../atoms/locale';
+import { currentOwnerAtom, staffListAtom } from '../atoms/owner';
+import { subscribeSuppliers } from '../services/supplierService';
+import { COLLECTIONS }        from '../constants/collections';
 import { colors }             from '../theme/colors';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -53,8 +57,32 @@ export default function ProfileScreen({ navigation }) {
   const savedLocale = useAtomValue(localeAtom);
   const { signOut } = useAuthViewModel();
 
-  const [loggingOut,  setLoggingOut]  = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
+  const owner     = useAtomValue(currentOwnerAtom);
+  const staffList = useAtomValue(staffListAtom);
+  const shopId    = owner?.shopId;
+
+  const [loggingOut,      setLoggingOut]      = useState(false);
+  const [showConfirm,     setShowConfirm]     = useState(false);
+  const [billsCount,      setBillsCount]      = useState(null);
+  const [suppliersCount,  setSuppliersCount]  = useState(null);
+
+  // ── Bills count (realtime) ──
+  useEffect(() => {
+    if (!shopId) return;
+    const unsub = firestore()
+      .collection(COLLECTIONS.SHOPS)
+      .doc(shopId)
+      .collection(COLLECTIONS.BILLS)
+      .onSnapshot(snap => setBillsCount(snap.size));
+    return unsub;
+  }, [shopId]);
+
+  // ── Suppliers count (realtime) ──
+  useEffect(() => {
+    if (!shopId) return;
+    const unsub = subscribeSuppliers(shopId, list => setSuppliersCount(list.length));
+    return unsub;
+  }, [shopId]);
 
   const performSignOut = async () => {
     setShowConfirm(false);
@@ -82,6 +110,9 @@ export default function ProfileScreen({ navigation }) {
           photoURL={user?.photoURL}
           email={user?.email}
           displayName={user?.displayName}
+          billsCount={billsCount}
+          staffCount={staffList.length || null}
+          suppliersCount={suppliersCount}
         />
 
         {/* ════════════════════════

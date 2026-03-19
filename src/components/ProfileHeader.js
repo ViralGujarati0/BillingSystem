@@ -18,9 +18,10 @@ const rfs   = (n) => Math.round(n * Math.min(scale, vs));
 
 /**
  * ProfileHeader
- * Props: photoURL, email, role (optional), displayName (optional)
+ * Props: photoURL, email, role (optional), displayName (optional),
+ *        billsCount, staffCount, suppliersCount
  */
-const ProfileHeader = ({ photoURL, email, role, displayName }) => {
+const ProfileHeader = ({ photoURL, email, role, displayName, billsCount, staffCount, suppliersCount }) => {
 
   // ── Derive initials from email or displayName ──
   const initial = displayName
@@ -78,21 +79,21 @@ const ProfileHeader = ({ photoURL, email, role, displayName }) => {
         <View style={styles.statsRow}>
 
           <View style={styles.statCell}>
-            <Text style={styles.statValue}>—</Text>
+            <Text style={styles.statValue}>{billsCount ?? '—'}</Text>
             <Text style={styles.statLabel}>BILLS</Text>
           </View>
 
           <View style={styles.statDivider} />
 
           <View style={styles.statCell}>
-            <Text style={styles.statValue}>—</Text>
+            <Text style={styles.statValue}>{staffCount ?? '—'}</Text>
             <Text style={styles.statLabel}>STAFF</Text>
           </View>
 
           <View style={styles.statDivider} />
 
           <View style={styles.statCell}>
-            <Text style={styles.statValue}>—</Text>
+            <Text style={styles.statValue}>{suppliersCount ?? '—'}</Text>
             <Text style={styles.statLabel}>SUPPLIERS</Text>
           </View>
 
@@ -126,8 +127,6 @@ const styles = StyleSheet.create({
   stripe: {
     width: rs(4),
     backgroundColor: colors.primary,
-    // React Native doesn't support gradient on View natively without a library,
-    // so we use solid primary. For gradient use LinearGradient if available.
     flexShrink: 0,
   },
 
