@@ -1,6 +1,10 @@
 import React from 'react';
 import {
-  View, Text, StyleSheet, Dimensions, TouchableOpacity,
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  TouchableOpacity,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../theme/colors';
@@ -12,6 +16,11 @@ const rs    = (n) => Math.round(n * scale);
 const rvs   = (n) => Math.round(n * vs);
 const rfs   = (n) => Math.round(n * Math.min(scale, vs));
 
+const fmt = (v) =>
+  v >= 100000 ? `₹${(v / 100000).toFixed(1)}L`
+  : v >= 1000  ? `₹${(v / 1000).toFixed(1)}K`
+  : `₹${Number(v).toFixed(0)}`;
+
 /**
  * PendingPurchasesCard
  * Props: purchases, loading, onViewAll
@@ -22,35 +31,35 @@ const PendingPurchasesCard = ({ purchases = [], loading, onViewAll }) => {
   const totalDue = purchases.reduce((s, p) => s + (p.dueAmount || 0), 0);
   const hasDues  = purchases.length > 0;
 
-  const fmt = (v) =>
-    v >= 100000 ? `₹${(v / 100000).toFixed(1)}L`
-    : v >= 1000  ? `₹${(v / 1000).toFixed(1)}K`
-    : `₹${Number(v).toFixed(0)}`;
-
   return (
     <View style={[styles.card, hasDues && styles.cardWarning]}>
 
-      {/* Header */}
+      {/* ── Header ── */}
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <View style={[styles.iconWrap, hasDues ? styles.iconWrapWarning : styles.iconWrapOk]}>
             <Icon
               name={hasDues ? 'time-outline' : 'checkmark-circle-outline'}
-              size={rfs(16)}
+              size={rfs(15)}
               color={hasDues ? colors.warning : colors.success}
             />
           </View>
           <Text style={styles.title}>Pending Payments</Text>
         </View>
+
         {onViewAll && hasDues && (
-          <TouchableOpacity onPress={onViewAll} activeOpacity={0.75} style={styles.viewAllBtn}>
+          <TouchableOpacity
+            onPress={onViewAll}
+            activeOpacity={0.75}
+            style={styles.viewAllBtn}
+          >
             <Text style={styles.viewAll}>View All</Text>
             <Icon name="chevron-forward" size={rfs(12)} color={colors.primary} />
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Total due strip */}
+      {/* ── Total due strip ── */}
       {hasDues && !loading && (
         <View style={styles.totalStrip}>
           <Text style={styles.totalLabel}>Total Due</Text>
@@ -58,13 +67,17 @@ const PendingPurchasesCard = ({ purchases = [], loading, onViewAll }) => {
         </View>
       )}
 
+      {/* ── Content ── */}
       {loading ? (
         <View style={styles.skeletonWrap}>
           {[1, 2].map((i) => <View key={i} style={styles.skeleton} />)}
         </View>
       ) : purchases.length === 0 ? (
         <View style={styles.okWrap}>
-          <Text style={styles.okText}>No pending payments 🎉</Text>
+          <View style={styles.okIconWrap}>
+            <Icon name="checkmark-circle-outline" size={rfs(22)} color={colors.success} />
+          </View>
+          <Text style={styles.okText}>No pending payments</Text>
         </View>
       ) : (
         <View style={styles.list}>
@@ -72,21 +85,32 @@ const PendingPurchasesCard = ({ purchases = [], loading, onViewAll }) => {
             <View key={p.id}>
               {i > 0 && <View style={styles.divider} />}
               <View style={styles.row}>
+
+                {/* Supplier icon box */}
                 <View style={styles.supplierIconWrap}>
-                  <Icon name="business-outline" size={rfs(14)} color={colors.accent} />
+                  <Icon
+                    name="business-outline"
+                    size={rfs(15)}
+                    color={colors.accent}
+                  />
                 </View>
+
+                {/* Info */}
                 <View style={styles.info}>
                   <Text style={styles.supplier} numberOfLines={1}>
                     {p.supplierName || 'Supplier'}
                   </Text>
                   <Text style={styles.meta}>
-                    {p.purchaseNoFormatted} · ₹{fmt(p.subtotal)} total
+                    {p.purchaseNoFormatted} · {fmt(p.subtotal)} total
                   </Text>
                 </View>
+
+                {/* Due */}
                 <View style={styles.dueWrap}>
                   <Text style={styles.dueLabel}>Due</Text>
                   <Text style={styles.dueValue}>{fmt(p.dueAmount)}</Text>
                 </View>
+
               </View>
             </View>
           ))}
@@ -100,33 +124,40 @@ const PendingPurchasesCard = ({ purchases = [], loading, onViewAll }) => {
 export default PendingPurchasesCard;
 
 const styles = StyleSheet.create({
+
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: rs(16),
     borderWidth: 1,
     borderColor: colors.borderCard,
-    padding: rs(16),
+    overflow: 'hidden',
     shadowColor: colors.shadowCard,
     shadowOffset: { width: 0, height: rvs(2) },
     shadowOpacity: 1,
     shadowRadius: rs(10),
     elevation: 3,
-    gap: rvs(12),
   },
+
   cardWarning: {
     borderColor: `${colors.warning}40`,
-    backgroundColor: `${colors.warning}04`,
   },
+
+  // ── Header ────────────────────────────────────────────
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: rs(14),
+    paddingTop: rvs(14),
+    paddingBottom: rvs(10),
   },
+
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: rs(8),
   },
+
   iconWrap: {
     width: rs(28),
     height: rs(28),
@@ -134,99 +165,158 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconWrapWarning: { backgroundColor: `${colors.warning}14` },
-  iconWrapOk:      { backgroundColor: `${colors.success}12` },
+
+  iconWrapWarning: {
+    backgroundColor: `${colors.warning}14`,
+    borderWidth: 1,
+    borderColor: `${colors.warning}25`,
+  },
+
+  iconWrapOk: {
+    backgroundColor: `${colors.success}12`,
+    borderWidth: 1,
+    borderColor: `${colors.success}20`,
+  },
+
   title: {
     fontSize: rfs(14),
     fontWeight: '800',
     color: colors.textPrimary,
   },
+
   viewAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: rs(2),
   },
+
   viewAll: {
     fontSize: rfs(11),
     fontWeight: '700',
     color: colors.primary,
   },
+
+  // ── Total due strip ───────────────────────────────────
   totalStrip: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: `${colors.warning}10`,
-    borderRadius: rs(10),
-    paddingHorizontal: rs(12),
+    backgroundColor: 'rgba(224,82,82,0.05)',
+    paddingHorizontal: rs(14),
     paddingVertical: rvs(8),
-    borderWidth: 1,
-    borderColor: `${colors.warning}25`,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderCard,
   },
+
   totalLabel: {
     fontSize: rfs(11),
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textSecondary,
   },
+
   totalValue: {
-    fontSize: rfs(16),
+    fontSize: rfs(15),
     fontWeight: '800',
-    color: '#E07B2A',
+    color: '#E05252',
   },
-  list: { gap: 0 },
+
+  // ── List ──────────────────────────────────────────────
+  list: {
+    paddingHorizontal: rs(14),
+    paddingBottom: rvs(6),
+  },
+
   divider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.borderCard,
-    marginVertical: rvs(8),
   },
+
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: rs(10),
+    paddingVertical: rvs(11),
   },
+
   supplierIconWrap: {
-    width: rs(32),
-    height: rs(32),
-    borderRadius: rs(8),
-    backgroundColor: `${colors.accent}14`,
+    width: rs(34),
+    height: rs(34),
+    borderRadius: rs(9),
+    backgroundColor: 'rgba(245,166,35,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,166,35,0.20)',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
-  info: { flex: 1, gap: rvs(2) },
+
+  info: {
+    flex: 1,
+    gap: rvs(2),
+  },
+
   supplier: {
     fontSize: rfs(13),
     fontWeight: '700',
     color: colors.textPrimary,
   },
+
   meta: {
     fontSize: rfs(10),
-    color: colors.textSecondary,
     fontWeight: '500',
+    color: colors.textSecondary,
   },
-  dueWrap: { alignItems: 'flex-end', gap: rvs(1) },
+
+  dueWrap: {
+    alignItems: 'flex-end',
+    gap: rvs(1),
+  },
+
   dueLabel: {
     fontSize: rfs(9),
-    color: colors.textSecondary,
     fontWeight: '600',
+    color: colors.textSecondary,
+    letterSpacing: 0.3,
   },
+
   dueValue: {
     fontSize: rfs(13),
     fontWeight: '800',
-    color: '#E07B2A',
+    color: '#E05252',
   },
-  skeletonWrap: { gap: rvs(10) },
+
+  // ── Skeleton ──────────────────────────────────────────
+  skeletonWrap: {
+    gap: rvs(10),
+    paddingHorizontal: rs(14),
+    paddingBottom: rvs(14),
+  },
+
   skeleton: {
     height: rvs(36),
     backgroundColor: 'rgba(45,74,82,0.07)',
     borderRadius: rs(8),
   },
+
+  // ── Empty / OK state ──────────────────────────────────
   okWrap: {
-    paddingVertical: rvs(12),
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: rs(7),
+    paddingVertical: rvs(14),
+    paddingHorizontal: rs(14),
   },
+
+  okIconWrap: {
+    // just wraps icon, no extra styling needed
+  },
+
   okText: {
     fontSize: rfs(13),
-    color: colors.success,
     fontWeight: '600',
+    color: colors.success,
   },
+
 });

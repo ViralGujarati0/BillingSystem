@@ -1,6 +1,10 @@
 import React from 'react';
 import {
-  TouchableOpacity, Text, StyleSheet, Dimensions,
+  View,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../theme/colors';
@@ -16,19 +20,25 @@ const rfs   = (n) => Math.round(n * Math.min(scale, vs));
  * DailyReportFab
  * Props: navigation, shopName, shopAddress, vm, periodLabel
  */
-const DailyReportFab = ({ navigation, shopName, shopAddress, vm, periodLabel = 'Today' }) => {
+const DailyReportFab = ({
+  navigation,
+  shopName,
+  shopAddress,
+  vm,
+  periodLabel = 'Today',
+}) => {
 
   const handlePress = () => {
     const reportData = {
-      shopName:      shopName     || 'My Shop',
-      shopAddress:   shopAddress  || '',
+      shopName:      shopName    || 'My Shop',
+      shopAddress:   shopAddress || '',
       periodLabel,
-      stats:         vm?.revenue?.stats      || {},
-      prevStats:     vm?.comparison?.prev    || null,
-      topProducts:   vm?.topProducts?.data   || [],
-      recentBills:   vm?.recentBills         || [],
-      lowStockItems: vm?.lowStockItems       || [],
-      dailyData:     vm?.chart?.dailyData    || [],
+      stats:         vm?.revenue?.stats    || {},
+      prevStats:     vm?.comparison?.prev  || null,
+      topProducts:   vm?.topProducts?.data || [],
+      recentBills:   vm?.recentBills       || [],
+      lowStockItems: vm?.lowStockItems     || [],
+      dailyData:     vm?.chart?.dailyData  || [],
       generatedAt:   new Date(),
     };
     navigation.navigate('DailyReportPreview', { reportData });
@@ -40,7 +50,14 @@ const DailyReportFab = ({ navigation, shopName, shopAddress, vm, periodLabel = '
       onPress={handlePress}
       activeOpacity={0.85}
     >
-      <Icon name="document-text-outline" size={rfs(18)} color="#fff" />
+      {/* Amber icon box — consistent with every action button in the app */}
+      <View style={styles.iconBox}>
+        <Icon
+          name="document-text-outline"
+          size={rfs(15)}
+          color={colors.primary}
+        />
+      </View>
       <Text style={styles.label}>Print Report</Text>
     </TouchableOpacity>
   );
@@ -49,28 +66,40 @@ const DailyReportFab = ({ navigation, shopName, shopAddress, vm, periodLabel = '
 export default DailyReportFab;
 
 const styles = StyleSheet.create({
+
   fab: {
     position:          'absolute',
     bottom:            rvs(28),
     right:             rs(20),
     flexDirection:     'row',
     alignItems:        'center',
-    gap:               rs(8),
+    gap:               rs(10),
     backgroundColor:   colors.primary,
-    paddingVertical:   rvs(13),
-    paddingHorizontal: rs(20),
+    paddingVertical:   rvs(12),
+    paddingHorizontal: rs(18),
     borderRadius:      rs(30),
-    shadowColor:       colors.shadowPrimary,
+    shadowColor:       colors.primary,
     shadowOffset:      { width: 0, height: rvs(4) },
-    shadowOpacity:     1,
+    shadowOpacity:     0.30,
     shadowRadius:      rs(14),
     elevation:         8,
     zIndex:            999,
   },
+
+  iconBox: {
+    width:            rs(26),
+    height:           rs(26),
+    borderRadius:     rs(8),
+    backgroundColor:  colors.accent,
+    alignItems:       'center',
+    justifyContent:   'center',
+  },
+
   label: {
     fontSize:      rfs(13),
     fontWeight:    '800',
-    color:         '#fff',
+    color:         '#FFFFFF',
     letterSpacing: 0.2,
   },
+
 });
