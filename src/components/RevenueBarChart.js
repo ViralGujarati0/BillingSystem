@@ -29,11 +29,10 @@ const RevenueBarChart = ({ dailyData = [], period, onChangePeriod, loading }) =>
   const [activeMode, setActiveMode] = useState('sales');
   const mode = BAR_MODES.find((m) => m.key === activeMode);
 
-  const values  = dailyData.map((d) => d[activeMode] || 0);
-  const maxVal  = Math.max(...values, 1);
+  const values = dailyData.map((d) => d[activeMode] || 0);
+  const maxVal = Math.max(...values, 1);
 
   const formatLabel = (key) => {
-    // key is like 'daily_2026_03_18' or 'Today'
     if (key === 'Today') return 'Today';
     const parts = key.replace('daily_', '').split('_');
     if (parts.length === 3) {
@@ -53,13 +52,17 @@ const RevenueBarChart = ({ dailyData = [], period, onChangePeriod, loading }) =>
   return (
     <View style={styles.card}>
 
-      {/* Header */}
+      {/* ── Header ── */}
       <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <View style={[styles.dot, { backgroundColor: mode.color }]} />
-          <Text style={styles.title}>Sales Trend</Text>
-        </View>
-        <PeriodToggle period={period} onChangePeriod={onChangePeriod} />
+        <Text style={styles.title}>Sales Trend</Text>
+
+        <PeriodToggle
+          period={period}
+          onChangePeriod={onChangePeriod}
+          loading={loading}
+          accentColor={colors.primary}
+          label="Sales Trend"
+        />
       </View>
 
       {/* Mode tabs */}
@@ -96,12 +99,7 @@ const RevenueBarChart = ({ dailyData = [], period, onChangePeriod, loading }) =>
               <View key={d.key || i} style={styles.barCol}>
                 <Text style={styles.barTopVal}>{val > 0 ? formatValue(val) : ''}</Text>
                 <View style={styles.barTrack}>
-                  <View
-                    style={[
-                      styles.bar,
-                      { height, backgroundColor: mode.color },
-                    ]}
-                  />
+                  <View style={[styles.bar, { height, backgroundColor: mode.color }]} />
                 </View>
                 <Text style={styles.barLabel}>{formatLabel(d.key)}</Text>
               </View>
@@ -124,38 +122,37 @@ const styles = StyleSheet.create({
     borderRadius: rs(16),
     borderWidth: 1,
     borderColor: colors.borderCard,
-    padding: rs(16),
+    overflow: 'hidden',
     shadowColor: colors.shadowCard,
     shadowOffset: { width: 0, height: rvs(2) },
     shadowOpacity: 1,
     shadowRadius: rs(10),
     elevation: 3,
-    gap: rvs(10),
   },
+
+  /* ── Header ── */
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(7),
-  },
-  dot: {
-    width: rs(8),
-    height: rs(8),
-    borderRadius: rs(4),
+    backgroundColor: colors.primary,
+    paddingHorizontal: rs(16),
+    paddingVertical: rvs(4),
   },
   title: {
-    fontSize: rfs(14),
+    fontSize: rfs(15),
     fontWeight: '800',
-    color: colors.textPrimary,
+    color: colors.textLight,
+    letterSpacing: 0.3,
   },
+
+  /* Mode tabs */
   modeTabs: {
     flexDirection: 'row',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.borderCard,
+    marginHorizontal: rs(16),
+    marginTop: rvs(10),
   },
   modeTab: {
     flex: 1,
@@ -169,6 +166,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textSecondary,
   },
+
+  /* Chart */
   chartWrap: {
     height: CHART_HEIGHT + rvs(40),
   },
@@ -184,6 +183,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingBottom: rvs(4),
+    paddingHorizontal: rs(16),
+    paddingTop: rvs(8),
     gap: rs(10),
     minWidth: '100%',
     justifyContent: 'space-around',

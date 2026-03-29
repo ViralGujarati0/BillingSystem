@@ -36,7 +36,7 @@ const BillRow = ({ bill, isLast }) => {
   return (
     <View style={[styles.row, !isLast && styles.rowBorder]}>
 
-      {/* Initial avatar — matches preview exactly */}
+      {/* Initial avatar */}
       <View style={[styles.avatar, { backgroundColor: avatar.bg }]}>
         <Text style={[styles.avatarLetter, { color: avatar.text }]}>
           {initial}
@@ -70,7 +70,15 @@ const RecentBillsCard = ({ bills = [], loading, onViewAll }) => (
 
     {/* ── Header ── */}
     <View style={styles.header}>
-      <Text style={styles.title}>Recent Bills</Text>
+      <View style={styles.titleRow}>
+        <Icon
+          name="receipt-outline"
+          size={rfs(16)}
+          color={colors.textLight}
+        />
+        <Text style={styles.title}>Recent Bills</Text>
+      </View>
+
       {onViewAll && (
         <TouchableOpacity
           onPress={onViewAll}
@@ -78,7 +86,7 @@ const RecentBillsCard = ({ bills = [], loading, onViewAll }) => (
           style={styles.viewAllBtn}
         >
           <Text style={styles.viewAll}>View All</Text>
-          <Icon name="chevron-forward" size={rfs(12)} color={colors.primary} />
+          <Icon name="chevron-forward" size={rfs(12)} color={colors.textLight} />
         </TouchableOpacity>
       )}
     </View>
@@ -132,15 +140,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: rs(14),
-    paddingTop: rvs(14),
-    paddingBottom: rvs(10),
+    backgroundColor: colors.primary,
+    paddingHorizontal: rs(16),
+    paddingVertical: rvs(12),
+  },
+
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(8),
   },
 
   title: {
-    fontSize: rfs(14),
+    fontSize: rfs(15),
     fontWeight: '800',
-    color: colors.textPrimary,
+    color: colors.textLight,
+    letterSpacing: 0.3,
   },
 
   viewAllBtn: {
@@ -152,7 +167,7 @@ const styles = StyleSheet.create({
   viewAll: {
     fontSize: rfs(11),
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.textLight,
   },
 
   // ── List ──────────────────────────────────────────────
@@ -173,7 +188,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.borderCard,
   },
 
-  // ── Avatar — initial letter, dynamic color from getAvatarColor ──
+  // ── Avatar ────────────────────────────────────────────
   avatar: {
     width: rs(36),
     height: rs(36),

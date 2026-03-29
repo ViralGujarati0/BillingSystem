@@ -37,13 +37,11 @@ const PendingPurchasesCard = ({ purchases = [], loading, onViewAll }) => {
       {/* ── Header ── */}
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <View style={[styles.iconWrap, hasDues ? styles.iconWrapWarning : styles.iconWrapOk]}>
-            <Icon
-              name={hasDues ? 'time-outline' : 'checkmark-circle-outline'}
-              size={rfs(15)}
-              color={hasDues ? colors.warning : colors.success}
-            />
-          </View>
+          <Icon
+            name={hasDues ? 'time-outline' : 'checkmark-circle-outline'}
+            size={rfs(16)}
+            color={colors.textLight}
+          />
           <Text style={styles.title}>Pending Payments</Text>
         </View>
 
@@ -54,7 +52,7 @@ const PendingPurchasesCard = ({ purchases = [], loading, onViewAll }) => {
             style={styles.viewAllBtn}
           >
             <Text style={styles.viewAll}>View All</Text>
-            <Icon name="chevron-forward" size={rfs(12)} color={colors.primary} />
+            <Icon name="chevron-forward" size={rfs(12)} color={colors.textLight} />
           </TouchableOpacity>
         )}
       </View>
@@ -147,9 +145,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: rs(14),
-    paddingTop: rvs(14),
-    paddingBottom: rvs(10),
+    backgroundColor: colors.primary,
+    paddingHorizontal: rs(16),
+    paddingVertical: rvs(12),
   },
 
   titleRow: {
@@ -158,30 +156,11 @@ const styles = StyleSheet.create({
     gap: rs(8),
   },
 
-  iconWrap: {
-    width: rs(28),
-    height: rs(28),
-    borderRadius: rs(8),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  iconWrapWarning: {
-    backgroundColor: `${colors.warning}14`,
-    borderWidth: 1,
-    borderColor: `${colors.warning}25`,
-  },
-
-  iconWrapOk: {
-    backgroundColor: `${colors.success}12`,
-    borderWidth: 1,
-    borderColor: `${colors.success}20`,
-  },
-
   title: {
-    fontSize: rfs(14),
+    fontSize: rfs(15),
     fontWeight: '800',
-    color: colors.textPrimary,
+    color: colors.textLight,
+    letterSpacing: 0.3,
   },
 
   viewAllBtn: {
@@ -193,7 +172,7 @@ const styles = StyleSheet.create({
   viewAll: {
     fontSize: rfs(11),
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.textLight,
   },
 
   // ── Total due strip ───────────────────────────────────
@@ -309,9 +288,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: rs(14),
   },
 
-  okIconWrap: {
-    // just wraps icon, no extra styling needed
-  },
+  okIconWrap: {},
 
   okText: {
     fontSize: rfs(13),

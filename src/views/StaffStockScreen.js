@@ -6,7 +6,6 @@ import AppHeaderLayout         from '../components/AppHeaderLayout';
 import InventorySearchBar      from '../components/InventorySearchBar';
 import InventoryStatsCards     from '../components/InventoryStatsCards';
 import InventoryStockHealth    from '../components/InventoryStockHealth';
-import InventoryCategoryFilter from '../components/InventoryCategoryFilter';
 import InventoryQuickActions   from '../components/InventoryQuickActions';
 import InventoryList           from '../components/InventoryList';
 
@@ -67,12 +66,6 @@ const StaffStockScreen = ({ navigation, route }) => {
             {stockPerms.searchBar && (
               <View style={styles.searchWrap}>
                 <InventorySearchBar navigation={navigation} onSearch={searchInventory} />
-              </View>
-            )}
-
-            {stockPerms.categoryFilter && (
-              <View style={styles.categoryWrap}>
-                <InventoryCategoryFilter selected={selectedCategory} onSelect={setSelectedCategory} />
               </View>
             )}
 

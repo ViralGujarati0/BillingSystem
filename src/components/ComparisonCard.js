@@ -185,11 +185,10 @@ const itemStyles = StyleSheet.create({
 // ─── Main component ───────────────────────────────────────────────────────────
 const ComparisonCard = ({ activeStats, prevStats, period, onChangePeriod, loading }) => {
 
-  // Max value across all metrics for proportional bars
   const maxValue = Math.max(
     activeStats?.totalSales  || 0,
     activeStats?.totalProfit || 0,
-    (activeStats?.totalBills || 0) * 1000, // scale bills to same magnitude
+    (activeStats?.totalBills || 0) * 1000,
     1,
   );
 
@@ -267,7 +266,7 @@ const styles = StyleSheet.create({
     shadowRadius: rs(10),
     elevation: 3,
     paddingHorizontal: rs(14),
-    paddingTop: rvs(14),
+    paddingTop: rvs(0),
     paddingBottom: rvs(14),
     gap: rvs(14),
   },
@@ -277,12 +276,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: colors.primary,
+    marginHorizontal: rs(-14),
+    paddingHorizontal: rs(16),
+    paddingVertical: rvs(4),
   },
 
   title: {
-    fontSize: rfs(14),
+    fontSize: rfs(15),
     fontWeight: '800',
-    color: colors.textPrimary,
+    color: colors.textLight,
+    letterSpacing: 0.3,
   },
 
   // ── List ──────────────────────────────────────────────

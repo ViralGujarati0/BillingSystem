@@ -27,7 +27,7 @@ export default function SupplierManagementCard({ navigation }) {
       activeOpacity={0.8}
     >
       <View style={styles.iconBox}>
-        <Icon name="business-outline" size={rfs(16)} color="#5B9E6D" />
+        <Icon name="business-outline" size={rfs(16)} color={colors.textLight} />
       </View>
 
       <View style={styles.textWrap}>
@@ -57,7 +57,8 @@ const styles = StyleSheet.create({
     width: rs(38),
     height: rs(38),
     borderRadius: rs(10),
-    backgroundColor: 'rgba(91,158,109,0.10)',
+    // backgroundColor: 'rgba(91,158,109,0.10)',
+    backgroundColor: colors.primary,
     borderWidth: 1,
     borderColor: 'rgba(91,158,109,0.18)',
     alignItems: 'center',
@@ -68,13 +69,13 @@ const styles = StyleSheet.create({
   textWrap: { flex: 1 },
 
   title: {
-    fontSize: rfs(13),
+    fontSize: rfs(16),
     fontWeight: '700',
     color: colors.textPrimary,
   },
 
   subtitle: {
-    fontSize: rfs(11),
+    fontSize: rfs(12),
     color: colors.textSecondary,
     marginTop: rvs(1),
   },

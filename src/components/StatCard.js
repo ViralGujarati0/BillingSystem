@@ -1,6 +1,10 @@
 import React from 'react';
 import {
-  View, Text, ActivityIndicator, StyleSheet, Dimensions,
+  View,
+  Text,
+  ActivityIndicator,
+  StyleSheet,
+  Dimensions,
 } from 'react-native';
 import { colors } from '../theme/colors';
 import PeriodToggle from './PeriodToggle';
@@ -15,12 +19,16 @@ const rfs   = (n) => Math.round(n * Math.min(scale, vs));
 /**
  * StatCard
  * Props:
- *   icon (string — Ionicons name, rendered by parent if needed)
- *   label, value, valueColor
- *   subLabel, subValue
- *   period, onChangePeriod, loading
- *   accentColor
- *   leftIcon (ReactNode) — optional icon to show in iconWrap
+ *   leftIcon      (ReactNode)  — icon shown in body icon wrap
+ *   label         (string)     — shown in colored header
+ *   value         (string)     — main metric value
+ *   valueColor    (string)     — override value text color
+ *   subLabel      (string)     — optional sub row label
+ *   subValue      (string)     — optional sub row value
+ *   period        (string)     — 'today' | '7d' | '30d'
+ *   onChangePeriod(fn)         — period change handler
+ *   loading       (bool)
+ *   accentColor   (string)     — drives header bg + icon + value colors
  */
 const StatCard = ({
   leftIcon,
@@ -36,47 +44,78 @@ const StatCard = ({
 }) => {
   const accent = accentColor || colors.primary;
 
-  return (
-    <View style={[styles.card, { borderLeftColor: accent }]}>
+  const PERIODS = [
+    { key: 'today', label: 'Today' },
+    { key: '7d',    label: 'Last 7 Days' },
+    { key: '30d',   label: 'Last 30 Days' },
+  ];
+  const periodLabel = PERIODS.find((p) => p.key === period)?.label ?? 'Today';
 
-      {/* Top row: icon + toggle */}
-      <View style={styles.topRow}>
-        {leftIcon ? (
-          <View style={[styles.iconWrap, { backgroundColor: `${accent}14`, borderColor: `${accent}22` }]}>
-            {leftIcon}
-          </View>
-        ) : null}
+  return (
+    <View style={styles.card}>
+
+      {/* ── Colored header strip ── */}
+      <View style={[styles.header, { backgroundColor: accent }]}>
+        <Text style={styles.headerLabel} numberOfLines={1}>{label}</Text>
+
         {onChangePeriod ? (
           <PeriodToggle
             period={period}
             onChangePeriod={onChangePeriod}
             loading={loading}
+            accentColor={accent}
+            label={label}
           />
         ) : null}
       </View>
 
-      {/* Label */}
-      <Text style={styles.label}>{label}</Text>
+      {/* ── Card body ── */}
+      <View style={styles.body}>
 
-      {/* Value or loader */}
-      {loading ? (
-        <View style={styles.loaderRow}>
-          <ActivityIndicator size="small" color={accent} />
-          <View style={styles.skeleton} />
-        </View>
-      ) : (
-        <Text style={[styles.value, valueColor && { color: valueColor }]}>
-          {value ?? '—'}
-        </Text>
-      )}
+        <View style={styles.iconValueRow}>
 
-      {/* Sub row */}
-      {subLabel && subValue && !loading ? (
-        <View style={styles.subRow}>
-          <Text style={styles.subLabel}>{subLabel}</Text>
-          <Text style={styles.subValue}>{subValue}</Text>
+          {leftIcon ? (
+            <View style={[styles.iconWrap, {
+              backgroundColor: `${accent}14`,
+              borderColor: `${accent}22`,
+            }]}>
+              {leftIcon}
+            </View>
+          ) : null}
+
+          <View style={styles.valueBlock}>
+            {loading ? (
+              <View style={styles.loaderRow}>
+                <ActivityIndicator size="small" color={accent} />
+                <View style={styles.skeleton} />
+              </View>
+            ) : (
+              <Text
+                style={[styles.value, { color: valueColor || accent }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {value ?? '—'}
+              </Text>
+            )}
+
+            {onChangePeriod && !loading ? (
+              <View style={styles.periodTag}>
+                <Text style={styles.periodTagText}>{periodLabel}</Text>
+              </View>
+            ) : null}
+          </View>
+
         </View>
-      ) : null}
+
+        {subLabel && subValue && !loading ? (
+          <View style={styles.subRow}>
+            <Text style={styles.subLabel}>{subLabel}</Text>
+            <Text style={styles.subValue}>{subValue}</Text>
+          </View>
+        ) : null}
+
+      </View>
 
     </View>
   );
@@ -85,26 +124,48 @@ const StatCard = ({
 export default StatCard;
 
 const styles = StyleSheet.create({
+
   card: {
     flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: rs(16),
     borderWidth: 1,
     borderColor: colors.borderCard,
-    borderLeftWidth: rs(3),
-    padding: rs(14),
     shadowColor: colors.shadowCard,
     shadowOffset: { width: 0, height: rvs(2) },
     shadowOpacity: 1,
     shadowRadius: rs(10),
     elevation: 3,
-    gap: rvs(5),
   },
-  topRow: {
+
+  /* ── Header ── */
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: rvs(2),
+    paddingHorizontal: rs(12),
+    paddingVertical: rvs(3),
+    borderTopLeftRadius: rs(15),
+    borderTopRightRadius: rs(15),
+  },
+  headerLabel: {
+    flex: 1,
+    fontSize: rfs(12),
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+
+  /* ── Body ── */
+  body: {
+    padding: rs(12),
+    gap: rvs(5),
+  },
+  iconValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(10),
   },
   iconWrap: {
     width: rs(34),
@@ -113,17 +174,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
-  label: {
-    fontSize: rfs(10),
-    fontWeight: '600',
-    color: colors.textSecondary,
-    letterSpacing: 0.2,
+  valueBlock: {
+    flex: 1,
+    gap: rvs(2),
   },
   value: {
     fontSize: rfs(22),
     fontWeight: '800',
-    color: colors.textPrimary,
     letterSpacing: -0.5,
   },
   loaderRow: {
@@ -138,6 +197,21 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(45,74,82,0.07)',
     borderRadius: rs(6),
   },
+
+  /* ── Period tag ── */
+  periodTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(3),
+    marginTop: rvs(1),
+  },
+  periodTagText: {
+    fontSize: rfs(9),
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+
+  /* ── Sub row ── */
   subRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -154,4 +228,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textSecondary,
   },
+
 });

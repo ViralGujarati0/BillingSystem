@@ -17,7 +17,7 @@
       // ── Brand primary (dark teal) ─────────────────────────
       primary:     "#2D4A52",
       primaryDark: "#1E3A42",
-    
+     
       // ── Brand accent (orange/amber) ───────────────────────
       accent:      "#F5A623",
       accentLight: "#FFF3E8",

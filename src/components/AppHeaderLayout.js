@@ -1,25 +1,168 @@
-import React, { useEffect, useRef } from "react";
-import { View, Text, StyleSheet, Animated, Easing, StatusBar, Platform, Dimensions } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  Easing,
+  StatusBar,
+  Platform,
+  Dimensions,
+  TouchableOpacity,
+  Modal,
+} from "react-native";
 import LinearGradient from "react-native-linear-gradient";
+import Icon from "react-native-vector-icons/Ionicons";
+import { useTranslation } from "react-i18next";
+import { useAtomValue, useSetAtom } from "jotai";
 import { colors } from "../theme/colors";
+import { setAppLocale } from "../locale/i18n";
+import { localeAtom } from "../atoms/locale";
 
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
+const scale = SCREEN_W / 390;
+const vs    = SCREEN_H / 844;
+const rs    = (n) => Math.round(n * scale);
+const rvs   = (n) => Math.round(n * vs);
+const rfs   = (n) => Math.round(n * Math.min(scale, vs));
 
-// ─── Responsive scale helpers ─────────────────────────────────────────────────
-// Base design is 390×844 (iPhone 14)
-const scale     = SCREEN_W / 390;
-const vs        = SCREEN_H / 844;
-const rs        = (size) => Math.round(size * scale);   // horizontal scale
-const rvs       = (size) => Math.round(size * vs);      // vertical scale
-const rfs       = (size) => Math.round(size * Math.min(scale, vs)); // font scale
+// ─── Languages config ─────────────────────────────────────────────────────────
+const LANGUAGES = [
+  { code: "en", labelKey: "language.english",  shortLabel: "EN" },
+  { code: "hi", labelKey: "language.hindi",    shortLabel: "HI" },
+  { code: "gu", labelKey: "language.gujarati", shortLabel: "GU" },
+];
+
+// ─── Language button in header ────────────────────────────────────────────────
+function LanguageButton({ onPress, currentLocale }) {
+  const { t } = useTranslation();
+  const lang  = LANGUAGES.find((l) => l.code === currentLocale);
+  const label = lang ? t(lang.labelKey) : "Language";
+
+  return (
+    <TouchableOpacity
+      style={langStyles.btn}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <Icon name="language-outline" size={rfs(18)} color="rgba(245,166,35,0.90)" />
+      <Text style={langStyles.btnText} numberOfLines={1}>{label}</Text>
+      <Icon name="chevron-down" size={rfs(11)} color="rgba(255,255,255,0.55)" />
+    </TouchableOpacity>
+  );
+}
+
+// ─── Language picker modal ────────────────────────────────────────────────────
+function LanguagePicker({ visible, onClose, currentLocale, onSelect }) {
+  const { t, i18n } = useTranslation();
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <TouchableOpacity
+        style={langStyles.overlay}
+        activeOpacity={1}
+        onPress={onClose}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          style={langStyles.pickerCard}
+          onPress={(e) => e.stopPropagation()}
+        >
+
+          {/* Header */}
+          <View style={langStyles.pickerHeader}>
+            <View style={langStyles.pickerIconBox}>
+              <Icon name="language-outline" size={rfs(18)} color={colors.accent} />
+            </View>
+            <View style={langStyles.pickerHeaderText}>
+              <Text style={langStyles.pickerTitle}>{t("language.title")}</Text>
+              <Text style={langStyles.pickerSubtitle}>{t("language.subtitle")}</Text>
+            </View>
+          </View>
+
+          <View style={langStyles.pickerDivider} />
+
+          {/* Options */}
+          {LANGUAGES.map((lang, idx) => {
+            const selected = i18n.language === lang.code;
+            return (
+              <TouchableOpacity
+                key={lang.code}
+                style={[
+                  langStyles.option,
+                  selected && langStyles.optionSelected,
+                  idx < LANGUAGES.length - 1 && langStyles.optionBorder,
+                ]}
+                onPress={() => onSelect(lang.code)}
+                activeOpacity={0.8}
+              >
+                {/* Left: icon box */}
+                <View style={[
+                  langStyles.optionIconBox,
+                  selected && langStyles.optionIconBoxSelected,
+                ]}>
+                  <Text style={langStyles.optionShort}>{lang.shortLabel}</Text>
+                </View>
+
+                {/* Label */}
+                <Text style={[
+                  langStyles.optionText,
+                  selected && langStyles.optionTextSelected,
+                ]}>
+                  {t(lang.labelKey)}
+                </Text>
+
+                {/* Checkmark */}
+                {selected && (
+                  <Icon
+                    name="checkmark-circle"
+                    size={rfs(20)}
+                    color={colors.primary}
+                  />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+
+          {/* Cancel */}
+          <TouchableOpacity
+            style={langStyles.cancelBtn}
+            onPress={onClose}
+            activeOpacity={0.8}
+          >
+            <Text style={langStyles.cancelText}>{t("common.cancel")}</Text>
+          </TouchableOpacity>
+
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
 
 // ─── Subtitle pill ────────────────────────────────────────────────────────────
-function AccentPill({ subtitle }) {
+// showBg=true  → original amber pill with dot  (default, all other screens)
+// showBg=false → plain text only, no bg, no dot (HomeScreen)
+function AccentPill({ subtitle, showBg = true }) {
+  if (showBg) {
+    return (
+      <View style={styles.pill}>
+        <View style={styles.pillDot} />
+        <Text style={styles.pillText}>{subtitle}</Text>
+      </View>
+    );
+  }
+
+  // Plain mode — just the text, no pill background, no dot
   return (
-    <View style={styles.pill}>
-      <View style={styles.pillDot} />
-      <Text style={styles.pillText}>{subtitle}</Text>
-    </View>
+    <Text style={styles.pillTextPlain} numberOfLines={1}>
+      {subtitle}
+    </Text>
   );
 }
 
@@ -30,9 +173,16 @@ export default function AppHeaderLayout({
   leftComponent,
   rightComponent,
   children,
+  showLanguagePicker = false,
+  showAccentBar      = true,  // NEW — set false on HomeScreen to hide vertical orange line
+  showSubtitlePill   = true,  // NEW — set false on HomeScreen to hide pill bg + dot
 }) {
   const fadeIn  = useRef(new Animated.Value(0)).current;
   const slideUp = useRef(new Animated.Value(10)).current;
+
+  const [langModal, setLangModal] = useState(false);
+  const currentLocale = useAtomValue(localeAtom);
+  const setLocale     = useSetAtom(localeAtom);
 
   useEffect(() => {
     Animated.parallel([
@@ -51,6 +201,12 @@ export default function AppHeaderLayout({
     ]).start();
   }, []);
 
+  const handleSelectLang = async (code) => {
+    await setAppLocale(code);
+    setLocale(code);
+    setLangModal(false);
+  };
+
   return (
     <View style={styles.container}>
 
@@ -59,6 +215,14 @@ export default function AppHeaderLayout({
         translucent={true}
         backgroundColor="transparent"
         barStyle="light-content"
+      />
+
+      {/* ── Language picker modal ── */}
+      <LanguagePicker
+        visible={langModal}
+        onClose={() => setLangModal(false)}
+        currentLocale={currentLocale || "en"}
+        onSelect={handleSelectLang}
       />
 
       {/* ── Gradient Header ── */}
@@ -74,7 +238,10 @@ export default function AppHeaderLayout({
         {/* Mesh lines */}
         <View style={styles.meshOverlay} pointerEvents="none">
           {[0, 1, 2].map((i) => (
-            <View key={i} style={[styles.meshLine, { top: rvs(8) + i * rvs(18) }]} />
+            <View
+              key={i}
+              style={[styles.meshLine, { top: rvs(8) + i * rvs(18) }]}
+            />
           ))}
         </View>
 
@@ -85,23 +252,38 @@ export default function AppHeaderLayout({
             { opacity: fadeIn, transform: [{ translateY: slideUp }] },
           ]}
         >
+          {/* Left slot */}
           {leftComponent ? (
             <View style={styles.leftSlot}>{leftComponent}</View>
           ) : null}
 
+          {/* Title + subtitle */}
           <View style={styles.titleBlock}>
-            <View style={styles.accentBar} />
+
+            {/* Vertical accent bar — hidden when showAccentBar=false */}
+            {showAccentBar && <View style={styles.accentBar} />}
+
             <View style={styles.titleInner}>
               <Text style={styles.title} numberOfLines={1}>
                 {title}
               </Text>
-              {subtitle ? <AccentPill subtitle={subtitle} /> : null}
+              {subtitle ? (
+                <AccentPill subtitle={subtitle} showBg={showSubtitlePill} />
+              ) : null}
             </View>
           </View>
 
-          {rightComponent ? (
-            <View style={styles.rightSlot}>{rightComponent}</View>
-          ) : null}
+          {/* Right slot */}
+          <View style={styles.rightSlot}>
+            {rightComponent ? (
+              rightComponent
+            ) : showLanguagePicker ? (
+              <LanguageButton
+                currentLocale={currentLocale || "en"}
+                onPress={() => setLangModal(true)}
+              />
+            ) : null}
+          </View>
         </Animated.View>
 
         {/* Bottom glow line */}
@@ -115,9 +297,9 @@ export default function AppHeaderLayout({
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// ─── Header styles ────────────────────────────────────────────────────────────
 const HEADER_PADDING_BOTTOM = rvs(35);
-const BODY_OVERLAP          = rvs(18);   // body pulls up over header by this amount
+const BODY_OVERLAP          = rvs(18);
 
 const styles = StyleSheet.create({
 
@@ -127,7 +309,7 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    paddingTop: Platform.OS === 'android'
+    paddingTop: Platform.OS === "android"
       ? (StatusBar.currentHeight ?? rvs(24)) + rvs(12)
       : rvs(20),
     paddingHorizontal: rs(20),
@@ -150,6 +332,7 @@ const styles = StyleSheet.create({
   meshOverlay: {
     ...StyleSheet.absoluteFillObject,
   },
+
   meshLine: {
     position: "absolute",
     left: 0,
@@ -179,7 +362,7 @@ const styles = StyleSheet.create({
   accentBar: {
     width: rs(3),
     height: rvs(36),
-    borderRadius: 2,
+    borderRadius: rs(2),
     backgroundColor: colors.accent,
     shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 0 },
@@ -195,16 +378,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: rfs(20),
     fontWeight: "700",
-    color: colors.textLight,
+    color: "#FFFFFF",
     letterSpacing: 0.3,
   },
 
   rightSlot: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rs(12),
+    gap: rs(8),
+    flexShrink: 0,
   },
 
+  // ── Subtitle pill (default — with bg + dot) ───────────
   pill: {
     alignSelf: "flex-start",
     flexDirection: "row",
@@ -217,12 +402,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: rs(10),
     paddingVertical: rvs(3),
   },
+
   pillDot: {
     width: rs(5),
     height: rs(5),
     borderRadius: rs(3),
     backgroundColor: colors.accent,
   },
+
   pillText: {
     fontSize: rfs(11),
     fontWeight: "500",
@@ -230,13 +417,22 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
 
+  // ── Subtitle plain (no bg, no dot — HomeScreen) ───────
+  pillTextPlain: {
+    fontSize: rfs(16),
+    fontWeight: "500",
+    color: "rgba(255,255,255,0.55)",
+    letterSpacing: 0.3,
+  },
+
+  // ── Bottom glow ───────────────────────────────────────
   glowBorder: {
     position: "absolute",
     bottom: 0,
     left: rs(20),
     right: rs(20),
-    height: 1.5,
-    borderRadius: 2,
+    height: rvs(2),
+    borderRadius: rs(2),
     backgroundColor: "rgba(245,166,35,0.22)",
     shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 0 },
@@ -244,6 +440,7 @@ const styles = StyleSheet.create({
     shadowRadius: rs(6),
   },
 
+  // ── Body ──────────────────────────────────────────────
   body: {
     flex: 1,
     backgroundColor: colors.background,
@@ -253,4 +450,161 @@ const styles = StyleSheet.create({
     paddingTop: BODY_OVERLAP,
     overflow: "hidden",
   },
+
+});
+
+// ─── Language button styles ───────────────────────────────────────────────────
+const langStyles = StyleSheet.create({
+
+  btn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: rs(5),
+    backgroundColor: "rgba(255,255,255,0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.16)",
+    borderRadius: rs(20),
+    paddingHorizontal: rs(11),
+    paddingVertical: rvs(7),
+    maxWidth: rs(120),
+  },
+
+  btnText: {
+    fontSize: rfs(15),
+    fontWeight: "700",
+    color: "#FFFFFF",
+    flex: 1,
+  },
+
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(26,46,51,0.55)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: rs(24),
+  },
+
+  pickerCard: {
+    width: "100%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: rs(20),
+    paddingHorizontal: rs(20),
+    paddingTop: rvs(22),
+    paddingBottom: rvs(18),
+    shadowColor: "rgba(26,46,51,0.25)",
+    shadowOffset: { width: 0, height: rvs(8) },
+    shadowOpacity: 1,
+    shadowRadius: rs(24),
+    elevation: 14,
+  },
+
+  pickerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: rs(12),
+    marginBottom: rvs(16),
+  },
+
+  pickerIconBox: {
+    width: rs(44),
+    height: rs(44),
+    borderRadius: rs(12),
+    backgroundColor: "rgba(245,166,35,0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(245,166,35,0.20)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+
+  pickerHeaderText: { flex: 1 },
+
+  pickerTitle: {
+    fontSize: rfs(17),
+    fontWeight: "800",
+    color: colors.textPrimary,
+  },
+
+  pickerSubtitle: {
+    fontSize: rfs(12),
+    color: colors.textSecondary,
+    marginTop: rvs(2),
+  },
+
+  pickerDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.borderCard,
+    marginBottom: rvs(4),
+  },
+
+  option: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: rs(12),
+    paddingVertical: rvs(13),
+    paddingHorizontal: rs(4),
+    borderRadius: rs(10),
+  },
+
+  optionBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderCard,
+  },
+
+  optionSelected: {
+    backgroundColor: "rgba(45,74,82,0.05)",
+  },
+
+  optionIconBox: {
+    width: rs(36),
+    height: rs(36),
+    borderRadius: rs(10),
+    backgroundColor: "rgba(45,74,82,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(45,74,82,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+
+  optionIconBoxSelected: {
+    backgroundColor: "rgba(45,74,82,0.12)",
+    borderColor: colors.primary,
+  },
+
+  optionShort: {
+    fontSize: rfs(11),
+    fontWeight: "800",
+    color: colors.primary,
+    letterSpacing: 0.5,
+  },
+
+  optionText: {
+    flex: 1,
+    fontSize: rfs(14),
+    fontWeight: "600",
+    color: colors.textPrimary,
+  },
+
+  optionTextSelected: {
+    color: colors.primary,
+    fontWeight: "700",
+  },
+
+  cancelBtn: {
+    marginTop: rvs(12),
+    paddingVertical: rvs(13),
+    borderRadius: rs(12),
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    alignItems: "center",
+    backgroundColor: "rgba(45,74,82,0.04)",
+  },
+
+  cancelText: {
+    fontSize: rfs(14),
+    fontWeight: "700",
+    color: colors.textSecondary,
+  },
+
 });

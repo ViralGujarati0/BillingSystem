@@ -31,16 +31,11 @@ const LowStockCard = ({ items = [], loading, onViewAll }) => {
       {/* ── Header ── */}
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <View style={[
-            styles.iconWrap,
-            hasAlert ? styles.iconWrapAlert : styles.iconWrapOk,
-          ]}>
-            <Icon
-              name={hasAlert ? 'warning-outline' : 'checkmark-circle-outline'}
-              size={rfs(15)}
-              color={hasAlert ? colors.danger : colors.success}
-            />
-          </View>
+          <Icon
+            name={hasAlert ? 'warning-outline' : 'checkmark-circle-outline'}
+            size={rfs(16)}
+            color={colors.textLight}
+          />
           <Text style={styles.title}>Low Stock Alerts</Text>
           {hasAlert && (
             <View style={styles.badge}>
@@ -56,7 +51,7 @@ const LowStockCard = ({ items = [], loading, onViewAll }) => {
             style={styles.viewAllBtn}
           >
             <Text style={styles.viewAll}>Restock</Text>
-            <Icon name="chevron-forward" size={rfs(12)} color={colors.primary} />
+            <Icon name="chevron-forward" size={rfs(12)} color={colors.textLight} />
           </TouchableOpacity>
         )}
       </View>
@@ -157,9 +152,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: rs(14),
-    paddingTop: rvs(14),
-    paddingBottom: rvs(10),
+    backgroundColor: colors.primary,
+    paddingHorizontal: rs(16),
+    paddingVertical: rvs(12),
   },
 
   titleRow: {
@@ -168,29 +163,11 @@ const styles = StyleSheet.create({
     gap: rs(8),
   },
 
-  iconWrap: {
-    width: rs(28),
-    height: rs(28),
-    borderRadius: rs(8),
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  iconWrapAlert: {
-    backgroundColor: `${colors.danger}10`,
-    borderColor: `${colors.danger}25`,
-  },
-
-  iconWrapOk: {
-    backgroundColor: `${colors.success}10`,
-    borderColor: `${colors.success}22`,
-  },
-
   title: {
-    fontSize: rfs(14),
+    fontSize: rfs(15),
     fontWeight: '800',
-    color: colors.textPrimary,
+    color: colors.textLight,
+    letterSpacing: 0.3,
   },
 
   badge: {
@@ -217,7 +194,7 @@ const styles = StyleSheet.create({
   viewAll: {
     fontSize: rfs(11),
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.textLight,
   },
 
   // ── List ──────────────────────────────────────────────

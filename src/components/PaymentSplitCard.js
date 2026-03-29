@@ -31,9 +31,9 @@ const PAYMENT_COLORS = {
  */
 const PaymentSplitCard = ({ stats, period, onChangePeriod, loading }) => {
 
-  const cash = stats?.cashSales  || 0;
-  const upi  = stats?.upiSales   || 0;
-  const card = stats?.cardSales  || 0;
+  const cash  = stats?.cashSales || 0;
+  const upi   = stats?.upiSales  || 0;
+  const card  = stats?.cardSales || 0;
   const total = cash + upi + card;
 
   const segments = [
@@ -61,12 +61,19 @@ const PaymentSplitCard = ({ stats, period, onChangePeriod, loading }) => {
   return (
     <View style={styles.card}>
 
-      {/* Header */}
+      {/* ── Header ── */}
       <View style={styles.header}>
         <Text style={styles.title}>Payment Split</Text>
-        <PeriodToggle period={period} onChangePeriod={onChangePeriod} />
+        <PeriodToggle
+          period={period}
+          onChangePeriod={onChangePeriod}
+          loading={loading}
+          accentColor={colors.primary}
+          label="Payment Split"
+        />
       </View>
 
+      {/* ── Body ── */}
       <View style={styles.body}>
 
         {/* Donut */}
@@ -139,28 +146,36 @@ const styles = StyleSheet.create({
     borderRadius: rs(16),
     borderWidth: 1,
     borderColor: colors.borderCard,
-    padding: rs(16),
+    overflow: 'hidden',
     shadowColor: colors.shadowCard,
     shadowOffset: { width: 0, height: rvs(2) },
     shadowOpacity: 1,
     shadowRadius: rs(10),
     elevation: 3,
-    gap: rvs(14),
   },
+
+  /* ── Header ── */
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: colors.primary,
+    paddingHorizontal: rs(16),
+    paddingVertical: rvs(4),
   },
   title: {
-    fontSize: rfs(14),
+    fontSize: rfs(15),
     fontWeight: '800',
-    color: colors.textPrimary,
+    color: colors.textLight,
+    letterSpacing: 0.3,
   },
+
+  /* ── Body ── */
   body: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: rs(16),
+    padding: rs(16),
   },
   donutWrap: {
     position: 'relative',

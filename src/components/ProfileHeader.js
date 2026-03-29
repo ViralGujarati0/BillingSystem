@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../theme/colors';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -18,25 +17,38 @@ const rfs   = (n) => Math.round(n * Math.min(scale, vs));
 
 /**
  * ProfileHeader
- * Props: photoURL, email, role (optional), displayName (optional),
+ * Props: photoURL, email, role, displayName,
  *        billsCount, staffCount, suppliersCount
  */
-const ProfileHeader = ({ photoURL, email, role, displayName, billsCount, staffCount, suppliersCount }) => {
+const ProfileHeader = ({
+  photoURL,
+  email,
+  role,
+  displayName,
+  billsCount,
+  staffCount,
+  suppliersCount,
+}) => {
 
-  // ── Derive initials from email or displayName ──
-  const initial = displayName
+  const initial    = displayName
     ? displayName.trim()[0].toUpperCase()
-    : email
-    ? email[0].toUpperCase()
-    : '?';
+    : email ? email[0].toUpperCase() : '?';
+
+  const roleLabel  = (role || 'OWNER').toUpperCase();
 
   return (
     <View style={styles.card}>
 
-      {/* Left teal→amber gradient stripe */}
+      {/* ── Left teal stripe ── */}
       <View style={styles.stripe} />
 
       <View style={styles.inner}>
+
+        {/* ── Role badge — absolute top-right corner ── */}
+        <View style={styles.roleBadge}>
+          <View style={styles.roleDot} />
+          <Text style={styles.roleBadgeText}>{roleLabel}</Text>
+        </View>
 
         {/* ── Top row: avatar + info ── */}
         <View style={styles.topRow}>
@@ -52,22 +64,16 @@ const ProfileHeader = ({ photoURL, email, role, displayName, billsCount, staffCo
             )}
           </View>
 
-          {/* Info block */}
+          {/* Info — role pill removed from here, now top-right */}
           <View style={styles.infoBlock}>
-            {displayName ? (
+            {!!displayName && (
               <Text style={styles.displayName} numberOfLines={1}>
                 {displayName}
               </Text>
-            ) : null}
+            )}
             <Text style={styles.email} numberOfLines={2}>
               {email || '—'}
             </Text>
-            <View style={styles.rolePill}>
-              <View style={styles.roleDot} />
-              <Text style={styles.roleText}>
-                {role || 'OWNER'}
-              </Text>
-            </View>
           </View>
 
         </View>
@@ -123,7 +129,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
-  // ── Gradient stripe ───────────────────────────────────
+  // ── Left stripe ───────────────────────────────────────
   stripe: {
     width: rs(4),
     backgroundColor: colors.primary,
@@ -135,27 +141,59 @@ const styles = StyleSheet.create({
     padding: rs(16),
   },
 
-  // ── Top row ──────────────────────────────────────────
+  // ── Role badge — pinned top-right inside card ─────────
+  roleBadge: {
+    position: 'absolute',
+    top: rs(14),
+    right: rs(14),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(5),
+    backgroundColor: 'rgba(45,74,82,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(45,74,82,0.14)',
+    borderRadius: rs(20),
+    paddingHorizontal: rs(10),
+    paddingVertical: rvs(4),
+    zIndex: 1,
+  },
+
+  roleDot: {
+    width: rs(6),
+    height: rs(6),
+    borderRadius: rs(3),
+    backgroundColor: colors.accent,
+  },
+
+  roleBadgeText: {
+    fontSize: rfs(10),
+    fontWeight: '800',
+    color: colors.primary,
+    letterSpacing: 0.8,
+  },
+
+  // ── Top row ───────────────────────────────────────────
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: rs(14),
+    paddingRight: rs(74), // reserve space so text doesn't slide under badge
   },
 
-  // ── Avatar ───────────────────────────────────────────
+  // ── Avatar ────────────────────────────────────────────
   avatarWrap: {
     flexShrink: 0,
   },
 
   avatarImage: {
-    width: rs(64),
-    height: rs(64),
+    width: rs(68),
+    height: rs(68),
     borderRadius: rs(18),
   },
 
   avatarFallback: {
-    width: rs(64),
-    height: rs(64),
+    width: rs(68),
+    height: rs(68),
     borderRadius: rs(18),
     backgroundColor: colors.accent,
     alignItems: 'center',
@@ -168,7 +206,7 @@ const styles = StyleSheet.create({
   },
 
   avatarLetter: {
-    fontSize: rfs(26),
+    fontSize: rfs(28),       // was 26
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: -1,
@@ -177,50 +215,21 @@ const styles = StyleSheet.create({
   // ── Info block ────────────────────────────────────────
   infoBlock: {
     flex: 1,
-    gap: rvs(0),
+    gap: rvs(3),
   },
 
   displayName: {
-    fontSize: rfs(15),
+    fontSize: rfs(20),       // was 15
     fontWeight: '800',
     color: colors.textPrimary,
     letterSpacing: 0.1,
   },
 
   email: {
-    fontSize: rfs(11),
+    fontSize: rfs(16),       // was 11
     fontWeight: '500',
     color: colors.textSecondary,
-    marginTop: rvs(2),
-    lineHeight: rfs(16),
-  },
-
-  rolePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(4),
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(45,74,82,0.07)',
-    borderWidth: 1,
-    borderColor: 'rgba(45,74,82,0.12)',
-    borderRadius: rs(20),
-    paddingHorizontal: rs(9),
-    paddingVertical: rvs(3),
-    marginTop: rvs(6),
-  },
-
-  roleDot: {
-    width: rs(5),
-    height: rs(5),
-    borderRadius: rs(3),
-    backgroundColor: colors.accent,
-  },
-
-  roleText: {
-    fontSize: rfs(9),
-    fontWeight: '800',
-    color: colors.primary,
-    letterSpacing: 0.7,
+    lineHeight: rfs(18),
   },
 
   // ── Divider ───────────────────────────────────────────
@@ -239,26 +248,27 @@ const styles = StyleSheet.create({
   statCell: {
     flex: 1,
     alignItems: 'center',
-    gap: rvs(2),
+    gap: rvs(3),
   },
 
   statDivider: {
     width: StyleSheet.hairlineWidth,
-    height: rvs(28),
+    height: rvs(32),
     backgroundColor: colors.borderCard,
   },
 
   statValue: {
-    fontSize: rfs(18),
+    fontSize: rfs(21),       // was 18
     fontWeight: '800',
     color: colors.textPrimary,
+    fontVariant: ['tabular-nums'],
   },
 
   statLabel: {
-    fontSize: rfs(8),
+    fontSize: rfs(9),        // was 8
     fontWeight: '700',
     color: colors.textSecondary,
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
   },
 
 });

@@ -10,7 +10,6 @@ import AppHeaderLayout          from "../components/AppHeaderLayout";
 import InventorySearchBar       from "../components/InventorySearchBar";
 import InventoryStatsCards      from "../components/InventoryStatsCards";
 import InventoryStockHealth     from "../components/InventoryStockHealth";
-import InventoryCategoryFilter  from "../components/InventoryCategoryFilter";
 import InventoryQuickActions    from "../components/InventoryQuickActions";
 import InventoryList            from "../components/InventoryList";
 
@@ -65,22 +64,14 @@ const StockScreen = ({ navigation }) => {
           />
         </View>
 
-        {/* ── FIXED: Category filter chips ── */}
-        <View style={styles.categoryWrap}>
-          <InventoryCategoryFilter
-            selected={selectedCategory}
-            onSelect={setSelectedCategory}
-          />
-        </View>
-
         {/* ── SCROLLABLE: stats + health bar + product list ── */}
         <InventoryList
           inventory={displayInventory}
           navigation={navigation}
           listHeaderContent={
             <View style={styles.scrollHeaderContent}>
-              <InventoryStatsCards inventory={inventory} />
               <InventoryStockHealth inventory={filteredInventory} />
+              <InventoryStatsCards inventory={inventory} />
             </View>
           }
           refreshControl={
@@ -112,7 +103,7 @@ const styles = StyleSheet.create({
   // Search bar — owns its own horizontal padding + top gap
   searchWrap: {
     paddingHorizontal: rs(16),
-    paddingTop: rvs(14),
+    paddingTop: rvs(2),
     paddingBottom: rvs(10),
   },
 
