@@ -17,6 +17,7 @@ import ShopInfoCard           from '../components/ShopInfoCard';
 import StaffManagementCard    from '../components/StaffManagementCard';
 import SupplierManagementCard from '../components/SupplierManagementCard';
 import PurchaseManagementCard from '../components/PurchaseManagementCard';
+import PrivacyPolicyCard      from '../components/PrivacyPolicyCard';
 import SignOutCard             from '../components/SignOutCard';
 import { currentOwnerAtom, staffListAtom } from '../atoms/owner';
 import { subscribeSuppliers } from '../services/supplierService';
@@ -103,6 +104,7 @@ export default function ProfileScreen({ navigation }) {
           <StaffManagementCard    navigation={navigation} />
           <SupplierManagementCard navigation={navigation} />
           <PurchaseManagementCard navigation={navigation} />
+          <PrivacyPolicyCard navigation={navigation} />
         </NavCard>
 
         {/* ════════════════════════

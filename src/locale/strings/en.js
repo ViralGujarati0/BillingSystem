@@ -242,4 +242,9 @@ export const en = {
     itemsInStock: ' items',
     inStockSuffix: ' in stock.',
   },
+
+  "privacy": {
+    "policy": "Privacy Policy",
+    "tapToView": "Tap to view our privacy policy"
+  }
 };

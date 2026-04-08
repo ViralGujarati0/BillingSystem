@@ -232,4 +232,10 @@ export const hi = {
     itemsInStock: ' आइटम',
     inStockSuffix: ' स्टॉक में हैं।',
   },
+
+  "privacy": {
+    "policy": "गोपनीयता नीति",
+    "tapToView": "हमारी गोपनीयता नीति देखने के लिए टैप करें"
+  }
 };
+

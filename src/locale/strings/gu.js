@@ -201,4 +201,9 @@ export const gu = {
     itemsInStock: ' આઇટમ્સ',
     inStockSuffix: ' સ્ટોકમાં છે।',
   },
+
+  "privacy": {
+    "policy": "ગોપનીયતા નીતિ",
+    "tapToView": "અમારી ગોપનીયતા નીતિ જોવા માટે ટેપ કરો"
+  }
 };

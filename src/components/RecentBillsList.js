@@ -34,7 +34,8 @@ function SectionHeader({ count }) {
       {count > 0 && (
         <View style={styles.headerBadge}>
           <Text style={styles.headerBadgeText}>
-            {t('billing.recentBillsCount', { count })}
+            {count}
+            {/* {t('billing.recentBillsCount', { count })} */}
           </Text>
         </View>
       )}
