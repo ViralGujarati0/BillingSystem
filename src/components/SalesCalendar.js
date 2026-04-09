@@ -54,14 +54,7 @@ function parseDayFromId(id) {
 
 /* ───────── MONTH/YEAR PICKER MODAL ───────── */
 
-// ─── Drum-roll item height ────────────────────────────────────────────────────
-const ITEM_H     = rvs(52);
-const VISIBLE    = 5;                    // visible rows at once
-const DRUM_H     = ITEM_H * VISIBLE;     // total column height
-const PAD        = ITEM_H * 2;           // top+bottom padding so center = selected
-const LABEL_H    = rvs(24);             // drumColLabel paddingVertical * 2
-
-function MonthYearPicker({ visible, currentMonth, currentYear, onSelect, onClose }) {
+function MonthYearPicker({ visible, currentDay, currentMonth, currentYear, onSelect, onClose }) {
   const { t } = useTranslation();
   const now   = new Date();
   const years = Array.from(
@@ -69,164 +62,211 @@ function MonthYearPicker({ visible, currentMonth, currentYear, onSelect, onClose
     (_, i) => START_YEAR + i
   );
 
-  // Use refs so handleConfirm always reads latest value
-  const pickerYearRef  = useRef(currentYear);
-  const pickerMonthRef = useRef(currentMonth);
-
   const [pickerYear,  setPickerYear]  = useState(currentYear);
   const [pickerMonth, setPickerMonth] = useState(currentMonth);
-
-  const yearScrollRef  = useRef(null);
-  const monthScrollRef = useRef(null);
-
-  const setYear  = (v) => { pickerYearRef.current  = v; setPickerYear(v);  };
-  const setMonth = (v) => { pickerMonthRef.current = v; setPickerMonth(v); };
+  const [pickerDay, setPickerDay] = useState(currentDay);
+  const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
+  const [monthDropdownOpen, setMonthDropdownOpen] = useState(false);
 
   // Sync + scroll every time modal opens
   React.useEffect(() => {
     if (visible) {
-      setYear(currentYear);
-      setMonth(currentMonth);
-      setTimeout(() => {
-        const yIdx = years.indexOf(currentYear);
-        yearScrollRef.current?.scrollTo({ y: yIdx * ITEM_H, animated: false });
-        monthScrollRef.current?.scrollTo({ y: currentMonth * ITEM_H, animated: false });
-      }, 100);
+      setPickerYear(currentYear);
+      setPickerMonth(currentMonth);
+      setPickerDay(currentDay);
+      setYearDropdownOpen(false);
+      setMonthDropdownOpen(false);
     }
-  }, [visible]);
+  }, [visible, currentYear, currentMonth, currentDay]);
 
   const handleConfirm = () => {
-    onSelect(pickerMonthRef.current, pickerYearRef.current);
+    onSelect(pickerDay, pickerMonth, pickerYear);
     onClose();
   };
 
-  const snapYear = (e) => {
-    const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_H);
-    const yr  = years[Math.max(0, Math.min(idx, years.length - 1))];
-    setYear(yr);
+  const daysInPickerMonth = new Date(pickerYear, pickerMonth + 1, 0).getDate();
+
+  const onSelectYear = (yr) => {
+    setPickerYear(yr);
+    const maxDay = new Date(yr, pickerMonth + 1, 0).getDate();
+    if (pickerDay > maxDay) setPickerDay(maxDay);
+    setYearDropdownOpen(false);
   };
 
-  const snapMonth = (e) => {
-    const idx = Math.max(0, Math.min(
-      Math.round(e.nativeEvent.contentOffset.y / ITEM_H), 11
-    ));
-    setMonth(idx);
+  const onSelectMonth = (monthIdx) => {
+    setPickerMonth(monthIdx);
+    const maxDay = new Date(pickerYear, monthIdx + 1, 0).getDate();
+    if (pickerDay > maxDay) setPickerDay(maxDay);
+    setMonthDropdownOpen(false);
   };
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
+      statusBarTranslucent
       onRequestClose={onClose}
     >
-      {/* Backdrop */}
-      <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={handleConfirm} />
+      <View style={styles.backdropCenter}>
+        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
 
-      <View style={styles.pickerCard}>
+        <View style={styles.pickerCard}>
+          <Text style={styles.pickerTitle}>{t("sales.selectMonthYear")}</Text>
+          <Text style={styles.pickerSubtitle}>
+            {MONTH_NAMES[pickerMonth]} {pickerYear}
+          </Text>
 
-        {/* Handle */}
-        <View style={styles.pickerHeader}>
-          <View style={styles.pickerHandleBar} />
-        </View>
+          <Text style={styles.sectionLabel}>{t("sales.yearLabel")}</Text>
+          <TouchableOpacity
+            style={styles.yearSelectBtn}
+            onPress={() => {
+              setYearDropdownOpen((v) => !v);
+              setMonthDropdownOpen(false);
+            }}
+            activeOpacity={0.82}
+          >
+            <Text style={styles.yearSelectText}>{pickerYear}</Text>
+            <Text style={styles.yearSelectChevron}>{yearDropdownOpen ? "▲" : "▼"}</Text>
+          </TouchableOpacity>
 
-        <Text style={styles.pickerTitle}>{t("sales.selectMonthYear")}</Text>
-
-        {/* Drum columns */}
-        <View style={styles.drumWrap}>
-
-          {/* Selection band */}
-          <View pointerEvents="none" style={styles.selectionBand} />
-          <View pointerEvents="none" style={styles.fadeTop} />
-          <View pointerEvents="none" style={styles.fadeBottom} />
-
-          {/* YEAR */}
-          <View style={styles.drumCol}>
-            <Text style={styles.drumColLabel}>{t("sales.yearLabel")}</Text>
+          {yearDropdownOpen && (
             <ScrollView
-              ref={yearScrollRef}
-              style={{ height: DRUM_H }}
+              style={styles.yearDropdown}
+              contentContainerStyle={styles.yearDropdownContent}
+              nestedScrollEnabled
               showsVerticalScrollIndicator={false}
-              snapToInterval={ITEM_H}
-              decelerationRate={0.92}
-              contentContainerStyle={{ paddingVertical: ITEM_H * 2 }}
-              onMomentumScrollEnd={snapYear}
-              onScrollEndDrag={snapYear}
             >
-              {years.map((yr) => {
-                const isActive = yr === pickerYear;
-                return (
-                  <TouchableOpacity
-                    key={yr}
-                    style={[styles.drumItem, { height: ITEM_H }]}
-                    onPress={() => {
-                      setYear(yr);
-                      yearScrollRef.current?.scrollTo({
-                        y: years.indexOf(yr) * ITEM_H,
-                        animated: true,
-                      });
-                    }}
-                    activeOpacity={0.6}
-                  >
-                    <Text style={[styles.drumText, isActive && styles.drumTextActive]}>
-                      {yr}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+              {years
+                .slice()
+                .reverse()
+                .map((yr) => {
+                  const isActive = yr === pickerYear;
+                  return (
+                    <TouchableOpacity
+                      key={yr}
+                      style={[styles.yearOption, isActive && styles.yearOptionActive]}
+                      onPress={() => onSelectYear(yr)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.yearOptionText, isActive && styles.yearOptionTextActive]}>
+                        {yr}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
             </ScrollView>
-          </View>
+          )}
 
-          <View style={styles.drumDivider} />
+          {!yearDropdownOpen && (
+            <>
+              <Text style={styles.sectionLabel}>{t("sales.monthLabel")}</Text>
+              <TouchableOpacity
+                style={styles.yearSelectBtn}
+                onPress={() => {
+                  setMonthDropdownOpen((v) => !v);
+                  setYearDropdownOpen(false);
+                }}
+                activeOpacity={0.82}
+              >
+                <Text style={styles.yearSelectText}>{MONTH_NAMES[pickerMonth]}</Text>
+                <Text style={styles.yearSelectChevron}>{monthDropdownOpen ? "▲" : "▼"}</Text>
+              </TouchableOpacity>
 
-          {/* MONTH */}
-          <View style={styles.drumCol}>
-            <Text style={styles.drumColLabel}>{t("sales.monthLabel")}</Text>
-            <ScrollView
-              ref={monthScrollRef}
-              style={{ height: DRUM_H }}
-              showsVerticalScrollIndicator={false}
-              snapToInterval={ITEM_H}
-              decelerationRate={0.92}
-              contentContainerStyle={{ paddingVertical: ITEM_H * 2 }}
-              onMomentumScrollEnd={snapMonth}
-              onScrollEndDrag={snapMonth}
-            >
-              {MONTH_SHORT.map((name, idx) => {
-                const isActive = idx === pickerMonth;
-                const isFuture =
-                  pickerYearRef.current > now.getFullYear() ||
-                  (pickerYearRef.current === now.getFullYear() && idx > now.getMonth());
-                return (
-                  <TouchableOpacity
-                    key={idx}
-                    style={[styles.drumItem, { height: ITEM_H }, isFuture && styles.drumItemDisabled]}
-                    disabled={isFuture}
-                    onPress={() => {
-                      setMonth(idx);
-                      monthScrollRef.current?.scrollTo({ y: idx * ITEM_H, animated: true });
-                    }}
-                    activeOpacity={0.6}
+              {monthDropdownOpen ? (
+                <ScrollView
+                  style={styles.yearDropdown}
+                  contentContainerStyle={styles.yearDropdownContent}
+                  nestedScrollEnabled
+                  showsVerticalScrollIndicator={false}
+                >
+                  {MONTH_SHORT.map((name, idx) => {
+                    const isActive = idx === pickerMonth;
+                    const isFuture =
+                      pickerYear > now.getFullYear() ||
+                      (pickerYear === now.getFullYear() && idx > now.getMonth());
+                    return (
+                      <TouchableOpacity
+                        key={idx}
+                        style={[
+                          styles.yearOption,
+                          isActive && styles.yearOptionActive,
+                          isFuture && styles.chipDisabled,
+                        ]}
+                        disabled={isFuture}
+                        onPress={() => onSelectMonth(idx)}
+                        activeOpacity={0.8}
+                      >
+                        <Text
+                          style={[
+                            styles.yearOptionText,
+                            isActive && styles.yearOptionTextActive,
+                            isFuture && styles.chipTextDisabled,
+                          ]}
+                        >
+                          {name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              ) : (
+                <>
+                  <Text style={styles.sectionLabel}>{t("sales.dayLabel", "Day")}</Text>
+                  <ScrollView
+                    style={styles.dayWrap}
+                    contentContainerStyle={styles.dayGrid}
+                    showsVerticalScrollIndicator={false}
                   >
-                    <Text style={[
-                      styles.drumText,
-                      isActive  && styles.drumTextActive,
-                      isFuture  && styles.drumTextMuted,
-                    ]}>
-                      {name}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
+                    {Array.from({ length: daysInPickerMonth }, (_, i) => i + 1).map((day) => {
+                      const isActive = day === pickerDay;
+                      const isFuture =
+                        pickerYear > now.getFullYear() ||
+                        (pickerYear === now.getFullYear() && pickerMonth > now.getMonth()) ||
+                        (pickerYear === now.getFullYear() &&
+                          pickerMonth === now.getMonth() &&
+                          day > now.getDate());
 
+                      return (
+                        <TouchableOpacity
+                          key={day}
+                          style={[
+                            styles.dayChip,
+                            isActive && styles.chipActive,
+                            isFuture && styles.chipDisabled,
+                          ]}
+                          disabled={isFuture}
+                          onPress={() => setPickerDay(day)}
+                          activeOpacity={0.8}
+                        >
+                          <Text
+                            style={[
+                              styles.chipText,
+                              isActive && styles.chipTextActive,
+                              isFuture && styles.chipTextDisabled,
+                            ]}
+                          >
+                            {day}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </>
+              )}
+            </>
+          )}
+
+          <View style={styles.actionsRow}>
+            <TouchableOpacity style={styles.cancelBtn} onPress={onClose} activeOpacity={0.82}>
+              <Text style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.applyBtn} onPress={handleConfirm} activeOpacity={0.82}>
+              <Text style={styles.applyText}>Apply</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-
-        <TouchableOpacity style={styles.applyBtn} onPress={handleConfirm} activeOpacity={0.82}>
-          <Text style={styles.applyText}>Apply</Text>
-        </TouchableOpacity>
-
       </View>
     </Modal>
   );
@@ -296,6 +336,7 @@ function CalDay({ date, isActive, isToday, saleTier, onPress }) {
 const SalesCalendar = ({ stats = [], selectedDate, onSelectDate }) => {
 
   const now = new Date();
+  const dayStripRef = useRef(null);
 
   const [calMonth,      setCalMonth]      = useState(now.getMonth());
   const [calYear,       setCalYear]       = useState(now.getFullYear());
@@ -355,6 +396,25 @@ const SalesCalendar = ({ stats = [], selectedDate, onSelectDate }) => {
     onSelectDate(new Date());
   }
 
+  React.useEffect(() => {
+    if (
+      selectedDate.getFullYear() !== calYear ||
+      selectedDate.getMonth() !== calMonth
+    ) {
+      return;
+    }
+
+    const selectedDayIndex = selectedDate.getDate() - 1;
+    const itemWidthWithGap = rs(52) + rs(6);
+    const targetX = Math.max(0, selectedDayIndex * itemWidthWithGap - rs(24));
+
+    const timer = setTimeout(() => {
+      dayStripRef.current?.scrollTo({ x: targetX, animated: true });
+    }, 80);
+
+    return () => clearTimeout(timer);
+  }, [selectedDate, calMonth, calYear]);
+
   return (
     <View style={styles.section}>
 
@@ -412,6 +472,7 @@ const SalesCalendar = ({ stats = [], selectedDate, onSelectDate }) => {
 
       {/* ── Day strip ── */}
       <ScrollView
+        ref={dayStripRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.dayStrip}
@@ -434,9 +495,14 @@ const SalesCalendar = ({ stats = [], selectedDate, onSelectDate }) => {
       {/* ── Picker modal ── */}
       <MonthYearPicker
         visible={pickerVisible}
+        currentDay={selectedDate.getDate()}
         currentMonth={calMonth}
         currentYear={calYear}
-        onSelect={(month, year) => { setCalMonth(month); setCalYear(year); }}
+        onSelect={(day, month, year) => {
+          setCalMonth(month);
+          setCalYear(year);
+          onSelectDate(new Date(year, month, day));
+        }}
         onClose={() => setPickerVisible(false)}
       />
 
@@ -657,147 +723,190 @@ const styles = StyleSheet.create({
   // ── Modal backdrop ────────────────────────────────────
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.40)',
+    backgroundColor: 'rgba(26,43,48,0.50)',
   },
 
-  // ── Picker card — bottom sheet ────────────────────────
-  pickerCard: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: rs(24),
-    borderTopRightRadius: rs(24),
-    paddingBottom: rvs(28),
-    shadowColor: 'rgba(0,0,0,0.20)',
-    shadowOffset: { width: 0, height: -rvs(4) },
-    shadowOpacity: 1,
-    shadowRadius: rs(20),
-    elevation: 20,
-  },
-
-  pickerHeader: {
+  backdropCenter: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: rvs(12),
-    paddingBottom: rvs(4),
+    paddingHorizontal: rs(20),
   },
 
-  pickerHandleBar: {
-    width: rs(40),
-    height: rvs(4),
-    borderRadius: rs(2),
-    backgroundColor: colors.borderCard,
+  // ── Picker card — centered modal ──────────────────────
+  pickerCard: {
+    width: '100%',
+    maxWidth: rs(360),
+    backgroundColor: '#FFFFFF',
+    borderRadius: rs(20),
+    paddingHorizontal: rs(16),
+    paddingTop: rvs(16),
+    paddingBottom: rvs(16),
+    shadowColor: 'rgba(26,46,51,0.25)',
+    shadowOffset: { width: 0, height: rvs(8) },
+    shadowOpacity: 1,
+    shadowRadius: rs(24),
+    elevation: 14,
   },
 
   pickerTitle: {
-    fontSize: rfs(14),
-    fontWeight: '700',
+    fontSize: rfs(17),
+    fontWeight: '800',
     color: colors.textPrimary,
     textAlign: 'center',
-    marginTop: rvs(6),
-    marginBottom: rvs(12),
+    marginBottom: rvs(2),
     letterSpacing: 0.2,
   },
-
-  // ── Drum roll wrapper ─────────────────────────────────
-  drumWrap: {
-    flexDirection: 'row',
-    marginHorizontal: rs(20),
-    borderRadius: rs(16),
-    borderWidth: 1,
-    borderColor: colors.borderCard,
-    backgroundColor: 'rgba(45,74,82,0.02)',
-    overflow: 'hidden',
-    position: 'relative',
+  pickerSubtitle: {
+    fontSize: rfs(12),
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: rvs(12),
   },
 
-  // Center highlight band
-  selectionBand: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: ITEM_H * 2 + LABEL_H,          // 2 padded rows + label height
-    height: ITEM_H,
-    backgroundColor: 'rgba(45,74,82,0.08)',
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: colors.borderCard,
-    zIndex: 10,
-  },
-
-  // Top gradient fade mask
-  fadeTop: {
-    position: 'absolute',
-    left: 0, right: 0, top: LABEL_H,
-    height: ITEM_H * 2,
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    zIndex: 10,
-  },
-
-  // Bottom gradient fade mask
-  fadeBottom: {
-    position: 'absolute',
-    left: 0, right: 0,
-    bottom: 0,
-    height: ITEM_H * 2,
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    zIndex: 10,
-  },
-
-  drumCol: {
-    flex: 1,
-    alignItems: 'center',
-  },
-
-  drumColLabel: {
-    fontSize: rfs(9),
+  sectionLabel: {
+    fontSize: rfs(10),
     fontWeight: '700',
     color: colors.textSecondary,
-    letterSpacing: 0.8,
-    paddingVertical: rvs(6),
-    textAlign: 'center',
+    letterSpacing: 0.6,
+    marginBottom: rvs(8),
+    marginTop: rvs(2),
   },
-
-  drumDivider: {
-    width: 1,
-    backgroundColor: colors.borderCard,
-    alignSelf: 'stretch',
+  monthGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: rs(8),
+    marginBottom: rvs(12),
   },
-
-  drumItem: {
-    width: '100%',
+  dayWrap: {
+    maxHeight: rvs(150),
+    marginBottom: rvs(4),
+  },
+  dayGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: rs(8),
+    paddingBottom: rvs(6),
+  },
+  dayChip: {
+    minWidth: rs(44),
+    minHeight: rvs(36),
+    paddingHorizontal: rs(8),
+    borderRadius: rs(10),
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  drumText: {
-    fontSize: rfs(15),
-    fontWeight: '500',
+  monthChip: {
+    width: `${(100 / 4) - 1}%`,
+    minHeight: rvs(40),
+    borderRadius: rs(10),
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  yearSelectBtn: {
+    minHeight: rvs(44),
+    borderRadius: rs(12),
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: rs(12),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: rvs(8),
+  },
+  yearSelectText: {
+    fontSize: rfs(14),
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  yearSelectChevron: {
+    fontSize: rfs(11),
     color: colors.textSecondary,
-    textAlign: 'center',
+    fontWeight: '700',
   },
-
-  drumTextActive: {
-    fontSize: rfs(18),
-    fontWeight: '800',
+  yearDropdown: {
+    maxHeight: rvs(170),
+    borderRadius: rs(12),
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    backgroundColor: '#FFFFFF',
+    marginBottom: rvs(12),
+  },
+  yearDropdownContent: {
+    paddingVertical: rvs(6),
+  },
+  yearOption: {
+    minHeight: rvs(38),
+    paddingHorizontal: rs(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  yearOptionActive: {
+    backgroundColor: 'rgba(45,74,82,0.08)',
+  },
+  yearOptionText: {
+    fontSize: rfs(13),
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  yearOptionTextActive: {
     color: colors.primary,
+    fontWeight: '800',
   },
-
-  drumTextMuted: {
-    opacity: 0.25,
+  chipActive: {
+    backgroundColor: 'rgba(45,74,82,0.08)',
+    borderColor: colors.primary,
   },
-
-  drumItemDisabled: {
-    opacity: 0.25,
+  chipDisabled: {
+    backgroundColor: 'rgba(45,74,82,0.03)',
+    borderColor: colors.borderCard,
+  },
+  chipText: {
+    fontSize: rfs(13),
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  chipTextActive: {
+    color: colors.primary,
+    fontWeight: '800',
+  },
+  chipTextDisabled: {
+    color: colors.textSecondary,
+    opacity: 0.4,
   },
 
   // ── Apply button ──────────────────────────────────────
-  applyBtn: {
-    marginHorizontal: rs(20),
+  actionsRow: {
+    flexDirection: 'row',
+    gap: rs(10),
     marginTop: rvs(14),
-    height: rvs(48),
-    borderRadius: rs(14),
+  },
+  cancelBtn: {
+    flex: 1,
+    height: rvs(46),
+    borderRadius: rs(12),
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(45,74,82,0.04)',
+  },
+  cancelText: {
+    fontSize: rfs(14),
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  applyBtn: {
+    flex: 1,
+    height: rvs(46),
+    borderRadius: rs(12),
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',

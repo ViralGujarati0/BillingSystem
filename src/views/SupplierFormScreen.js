@@ -17,7 +17,7 @@ import useSupplierViewModel from '../viewmodels/SupplierViewModel';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const scale = SCREEN_W / 390;
-const vs    = SCREEN_H / 844;
+const vs    = SCREEN_H / 844; 
 const rs    = (n) => Math.round(n * scale);
 const rvs   = (n) => Math.round(n * vs);
 const rfs   = (n) => Math.round(n * Math.min(scale, vs));

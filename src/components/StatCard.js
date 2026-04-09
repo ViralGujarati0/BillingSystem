@@ -28,7 +28,8 @@ const rfs   = (n) => Math.round(n * Math.min(scale, vs));
  *   period        (string)     — 'today' | '7d' | '30d'
  *   onChangePeriod(fn)         — period change handler
  *   loading       (bool)
- *   accentColor   (string)     — drives header bg + icon + value colors
+ *   accentColor   (string)     — drives value color fallback
+ *   headerColor   (string)     — drives header + floating icon color
  */
 const StatCard = ({
   leftIcon,
@@ -41,8 +42,10 @@ const StatCard = ({
   onChangePeriod,
   loading,
   accentColor,
+  headerColor,
 }) => {
   const accent = accentColor || colors.primary;
+  const headerAccent = headerColor || accent;
 
   const PERIODS = [
     { key: 'today', label: 'Today' },
@@ -55,66 +58,66 @@ const StatCard = ({
     <View style={styles.card}>
 
       {/* ── Colored header strip ── */}
-      <View style={[styles.header, { backgroundColor: accent }]}>
+      <View style={[styles.header, { backgroundColor: headerAccent }]}>
         <Text style={styles.headerLabel} numberOfLines={1}>{label}</Text>
 
         {onChangePeriod ? (
-          <PeriodToggle
-            period={period}
-            onChangePeriod={onChangePeriod}
-            loading={loading}
-            accentColor={accent}
-            label={label}
-          />
+          <View style={styles.toggleWrap}>
+            <PeriodToggle
+              period={period}
+              onChangePeriod={onChangePeriod}
+              loading={loading}
+              accentColor={headerAccent}
+              label={label}
+            />
+          </View>
         ) : null}
+
+        <View pointerEvents="none" style={styles.decoBigCircle} />
+        <View pointerEvents="none" style={styles.decoSmallCircle} />
       </View>
+
+      {/* ── Floating icon ── */}
+      {leftIcon ? (
+        <View style={[styles.floatingIcon, { backgroundColor: headerAccent }]}>
+          {React.isValidElement(leftIcon)
+            ? React.cloneElement(leftIcon, {
+                color: 'rgba(255,255,255,0.95)',
+                size: rfs(13),
+              })
+            : leftIcon}
+        </View>
+      ) : null}
 
       {/* ── Card body ── */}
       <View style={styles.body}>
-
-        <View style={styles.iconValueRow}>
-
-          {leftIcon ? (
-            <View style={[styles.iconWrap, {
-              backgroundColor: `${accent}14`,
-              borderColor: `${accent}22`,
-            }]}>
-              {leftIcon}
-            </View>
-          ) : null}
-
-          <View style={styles.valueBlock}>
-            {loading ? (
-              <View style={styles.loaderRow}>
-                <ActivityIndicator size="small" color={accent} />
-                <View style={styles.skeleton} />
-              </View>
-            ) : (
-              <Text
-                style={[styles.value, { color: valueColor || accent }]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-              >
-                {value ?? '—'}
-              </Text>
-            )}
-
-            {onChangePeriod && !loading ? (
-              <View style={styles.periodTag}>
-                <Text style={styles.periodTagText}>{periodLabel}</Text>
-              </View>
-            ) : null}
+        {loading ? (
+          <View style={styles.loaderRow}>
+            <ActivityIndicator size="small" color={accent} />
+            <View style={styles.skeleton} />
           </View>
+        ) : (
+          <Text
+            style={[styles.value, { color: valueColor || accent }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
+            {value ?? '—'}
+          </Text>
+        )}
 
-        </View>
-
-        {subLabel && subValue && !loading ? (
-          <View style={styles.subRow}>
-            <Text style={styles.subLabel}>{subLabel}</Text>
-            <Text style={styles.subValue}>{subValue}</Text>
+        {onChangePeriod && !loading ? (
+          <View style={styles.periodTag}>
+            <Text style={styles.periodTagText}>{periodLabel}</Text>
           </View>
         ) : null}
 
+        {subLabel && subValue && !loading ? (
+          <View style={styles.subRow}>
+            <Text style={styles.subText}>{subLabel}</Text>
+            <Text style={styles.subText}>{subValue}</Text>
+          </View>
+        ) : null}
       </View>
 
     </View>
@@ -136,53 +139,71 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: rs(10),
     elevation: 3,
+    overflow: 'hidden',
   },
 
   /* ── Header ── */
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: rs(12),
-    paddingVertical: rvs(3),
-    borderTopLeftRadius: rs(15),
-    borderTopRightRadius: rs(15),
+    paddingTop: rvs(11),
+    paddingBottom: rvs(18),
+    overflow: 'hidden',
+  },
+  toggleWrap: {
+    position: 'absolute',
+    top: rvs(6),
+    right: rs(6),
+    zIndex: 3,
+    elevation: 3,
   },
   headerLabel: {
-    flex: 1,
-    fontSize: rfs(12),
-    fontWeight: '700',
+    fontSize: rfs(16),
+    fontWeight: '800',
     color: '#FFFFFF',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
+    letterSpacing: 0.2,
+    paddingRight: rs(40),
+  },
+  decoBigCircle: {
+    position: 'absolute',
+    top: rvs(-10),
+    right: rs(-10),
+    width: rs(40),
+    height: rs(40),
+    borderRadius: rs(20),
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+  decoSmallCircle: {
+    position: 'absolute',
+    top: rvs(3),
+    right: rs(4),
+    width: rs(20),
+    height: rs(20),
+    borderRadius: rs(10),
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
 
   /* ── Body ── */
   body: {
-    padding: rs(12),
-    gap: rvs(5),
-  },
-  iconValueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(10),
-  },
-  iconWrap: {
-    width: rs(34),
-    height: rs(34),
-    borderRadius: rs(9),
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  valueBlock: {
-    flex: 1,
+    paddingHorizontal: rs(12),
+    paddingTop: rvs(6),
+    paddingBottom: rvs(13),
     gap: rvs(2),
   },
+  floatingIcon: {
+    marginTop: rvs(-14),
+    marginLeft: rs(12),
+    width: rs(28),
+    height: rs(28),
+    borderRadius: rs(8),
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
   value: {
-    fontSize: rfs(22),
-    fontWeight: '800',
+    fontSize: rfs(20),
+    fontWeight: '900',
     letterSpacing: -0.5,
   },
   loaderRow: {
@@ -202,7 +223,6 @@ const styles = StyleSheet.create({
   periodTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: rs(3),
     marginTop: rvs(1),
   },
   periodTagText: {
@@ -218,15 +238,10 @@ const styles = StyleSheet.create({
     gap: rs(5),
     marginTop: rvs(1),
   },
-  subLabel: {
+  subText: {
     fontSize: rfs(9),
     color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  subValue: {
-    fontSize: rfs(9),
-    fontWeight: '700',
-    color: colors.textSecondary,
+    fontWeight: '600',
   },
 
 });

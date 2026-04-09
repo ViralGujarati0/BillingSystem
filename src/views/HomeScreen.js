@@ -432,6 +432,7 @@
                   onChangePeriod={vm.revenue.setPeriod}
                   loading={vm.revenue.loading}
                   accentColor={colors.primary}
+                  headerColor={colors.primary}
                 />
                 <StatCard
                   leftIcon={<Icon name="trending-up-outline" size={rfs(16)} color={colors.success} />}
@@ -442,6 +443,7 @@
                   onChangePeriod={vm.profit.setPeriod}
                   loading={vm.profit.loading}
                   accentColor={colors.success}
+                  headerColor={colors.primary}
                 />
               </View>
   
@@ -454,6 +456,7 @@
                   onChangePeriod={vm.bills.setPeriod}
                   loading={vm.bills.loading}
                   accentColor={colors.accent}
+                  headerColor={colors.primary}
                 />
                 <StatCard
                   leftIcon={<Icon name="cube-outline" size={rfs(16)} color="#7C6AF5" />}
@@ -463,6 +466,7 @@
                   onChangePeriod={vm.items.setPeriod}
                   loading={vm.items.loading}
                   accentColor="#7C6AF5"
+                  headerColor={colors.primary}
                 />
               </View>
   
@@ -478,6 +482,7 @@
                   onChangePeriod={vm.avgBill.setPeriod}
                   loading={vm.avgBill.loading}
                   accentColor="#E07B2A"
+                  headerColor={colors.primary}
                 />
                 <StatCard
                   leftIcon={<Icon name="cart-outline" size={rfs(16)} color={colors.danger} />}
@@ -487,6 +492,7 @@
                   onChangePeriod={vm.purchase.setPeriod}
                   loading={vm.purchase.loading}
                   accentColor={colors.danger}
+                  headerColor={colors.primary}
                 />
               </View>
   
