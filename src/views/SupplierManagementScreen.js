@@ -14,6 +14,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useTranslation } from 'react-i18next';
 
 import AppHeaderLayout    from '../components/AppHeaderLayout';
+import HeaderBackButton   from '../components/HeaderBackButton';
 import SupplierCard       from '../components/SupplierCard';
 import ConfirmActionModal from '../components/ConfirmActionModal';
 import useSupplierViewModel from '../viewmodels/SupplierViewModel';
@@ -29,14 +30,6 @@ const rfs   = (n) => Math.round(n * Math.min(scale, vs));
 // ── Local atoms scoped to this screen ────────────────────────────────────────
 const suppliersAtom = atom([]);
 const loadingAtom   = atom(true);
-
-// ─── Back pill ────────────────────────────────────────────────────────────────
-const BackPill = ({ onPress }) => (
-  <TouchableOpacity style={styles.backPill} onPress={onPress} activeOpacity={0.75}>
-    <Icon name="chevron-back" size={rfs(16)} color="#FFFFFF" />
-    <Text style={styles.backPillText}>Back</Text>
-  </TouchableOpacity>
-);
 
 // ─── Loading state ────────────────────────────────────────────────────────────
 const LoadingState = () => (
@@ -113,7 +106,9 @@ export default function SupplierManagementScreen({ navigation }) {
 
   const handleAdd = () => navigation.navigate('SupplierForm');
 
-  const headerLeft = <BackPill onPress={() => navigation.goBack()} />;
+  const headerLeft = (
+    <HeaderBackButton onPress={() => navigation.goBack()} />
+  );
 
   return (
     <AppHeaderLayout
@@ -183,25 +178,6 @@ export default function SupplierManagementScreen({ navigation }) {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-
-  // ── Back pill ────────────────────────────────────────
-  backPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(4),
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    borderRadius: rs(20),
-    paddingHorizontal: rs(12),
-    paddingVertical: rvs(7),
-  },
-
-  backPillText: {
-    fontSize: rfs(13),
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
 
   // ── Container ────────────────────────────────────────
   container: {

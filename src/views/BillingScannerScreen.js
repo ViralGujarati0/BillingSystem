@@ -108,7 +108,17 @@ const BillingScannerScreen = ({ navigation, route }) => {
 
       isProcessing.current = true;
       try {
-        await vmRef.current.addScannedBarcode({ shopId, barcode: cleanValue });
+        const result = await vmRef.current.addScannedBarcode({
+          shopId,
+          barcode: cleanValue,
+        });
+        // Same flows as Stock scan: unknown barcode → Create Product; known catalog, not stocked → Add to Inventory
+        if (result?.status === 'NEEDS_SETUP') {
+          navigation.navigate('ProductScanResult', {
+            barcode: cleanValue,
+            mode: 'billing',
+          });
+        }
       } catch (e) {
         Alert.alert('Error', e.message);
       } finally {

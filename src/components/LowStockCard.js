@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -22,6 +23,7 @@ const rfs   = (n) => Math.round(n * Math.min(scale, vs));
  * items: [{ id, barcode, name, stock }]
  */
 const LowStockCard = ({ items = [], loading, onViewAll }) => {
+  const { t } = useTranslation();
 
   const hasAlert = items.length > 0;
 
@@ -36,7 +38,7 @@ const LowStockCard = ({ items = [], loading, onViewAll }) => {
             size={rfs(16)}
             color={colors.textLight}
           />
-          <Text style={styles.title}>Low Stock Alerts</Text>
+          <Text style={styles.title}>{t('home.lowStockAlerts')}</Text>
           {hasAlert && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{items.length}</Text>
@@ -50,7 +52,7 @@ const LowStockCard = ({ items = [], loading, onViewAll }) => {
             activeOpacity={0.75}
             style={styles.viewAllBtn}
           >
-            <Text style={styles.viewAll}>Restock</Text>
+            <Text style={styles.viewAll}>{t('home.restock')}</Text>
             <Icon name="chevron-forward" size={rfs(12)} color={colors.textLight} />
           </TouchableOpacity>
         )}
@@ -68,7 +70,7 @@ const LowStockCard = ({ items = [], loading, onViewAll }) => {
             size={rfs(18)}
             color={colors.success}
           />
-          <Text style={styles.okText}>All items are well stocked</Text>
+          <Text style={styles.okText}>{t('home.allStocked')}</Text>
         </View>
       ) : (
         <View style={styles.list}>
@@ -112,7 +114,9 @@ const LowStockCard = ({ items = [], loading, onViewAll }) => {
                   { backgroundColor: `${stockColor}10`, borderColor: `${stockColor}28` },
                 ]}>
                   <Text style={[styles.stockText, { color: stockColor }]}>
-                    {stock === 0 ? 'Out of stock' : `${stock} left`}
+                    {stock === 0
+                      ? t('home.outOfStock')
+                      : t('home.stockLeft', { count: stock })}
                   </Text>
                 </View>
 

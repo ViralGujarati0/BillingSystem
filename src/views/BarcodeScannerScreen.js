@@ -23,6 +23,7 @@ import { barcodeScannerRequestingPermissionAtom } from '../atoms/forms';
 import { purchaseScannedBarcodeAtom }             from '../atoms/purchase';
 
 import AppHeaderLayout from '../components/AppHeaderLayout';
+import HeaderBackButton from '../components/HeaderBackButton';
 import ScannerFrame    from '../components/ScannerFrame';
 import { colors }      from '../theme/colors';
 
@@ -43,14 +44,6 @@ const MODE_CONFIG = {
   searchInventory: { title: 'Search Inventory', subtitle: 'Search mode',   hint: 'Scan barcode to search inventory',            icon: 'search-outline'       },
   default:         { title: 'Scan Barcode',     subtitle: 'Add mode',      hint: 'Scan barcode to add product to bill',         icon: 'barcode-outline'      },
 };
-
-// ─── Back pill ────────────────────────────────────────────────────────────────
-const BackPill = ({ onPress }) => (
-  <TouchableOpacity style={styles.backPill} onPress={onPress} activeOpacity={0.75}>
-    <Icon name="chevron-back" size={rfs(16)} color="#FFFFFF" />
-    <Text style={styles.backPillText}>Back</Text>
-  </TouchableOpacity>
-);
 
 // ─── Permission denied state ─────────────────────────────────────────────────
 const PermissionState = ({ requesting, onRequest, onBack }) => (
@@ -187,7 +180,7 @@ const BarcodeScannerScreen = ({ navigation, route }) => {
   };
   // ────────────────────────────────────────────────────────────────────────────
 
-  const backPill = <BackPill onPress={() => navigation.goBack()} />;
+  const headerBack = <HeaderBackButton onPress={() => navigation.goBack()} />;
 
   // ── No permission ──
   if (!hasPermission) {
@@ -195,7 +188,7 @@ const BarcodeScannerScreen = ({ navigation, route }) => {
       <AppHeaderLayout
         title={cfg.title}
         subtitle={cfg.subtitle}
-        leftComponent={backPill}
+        leftComponent={headerBack}
       >
         <PermissionState
           requesting={requestingPermission}
@@ -212,7 +205,7 @@ const BarcodeScannerScreen = ({ navigation, route }) => {
       <AppHeaderLayout
         title={cfg.title}
         subtitle={cfg.subtitle}
-        leftComponent={backPill}
+        leftComponent={headerBack}
       >
         <NoDeviceState onBack={() => navigation.goBack()} />
       </AppHeaderLayout>
@@ -224,7 +217,7 @@ const BarcodeScannerScreen = ({ navigation, route }) => {
     <AppHeaderLayout
       title={cfg.title}
       subtitle={cfg.subtitle}
-      leftComponent={backPill}
+      leftComponent={headerBack}
     >
       <View style={styles.body}>
 
@@ -276,25 +269,6 @@ export default BarcodeScannerScreen;
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-
-  // ── Back pill ────────────────────────────────────────────
-  backPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(4),
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    borderRadius: rs(20),
-    paddingHorizontal: rs(12),
-    paddingVertical: rvs(7),
-  },
-
-  backPillText: {
-    fontSize: rfs(13),
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
 
   // ── Main body ────────────────────────────────────────────
   body: {

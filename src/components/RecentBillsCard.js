@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
 import { getAvatarColor } from '../utils/avatarColor';
 
@@ -29,9 +30,12 @@ function formatTime(date) {
 
 // ─── Bill row ─────────────────────────────────────────────────────────────────
 const BillRow = ({ bill, isLast }) => {
-  const name   = bill.customerName || 'Walk-in';
+  const { t } = useTranslation();
+  const name   = bill.customerName || t('home.walkIn');
   const avatar = getAvatarColor(name);
   const initial = name[0].toUpperCase();
+  const itemCount = (bill.items || []).length;
+  const itemsPhrase = t('home.billMetaItems', { count: itemCount });
 
   return (
     <View style={[styles.row, !isLast && styles.rowBorder]}>
@@ -51,7 +55,7 @@ const BillRow = ({ bill, isLast }) => {
           {' · '}
           {formatTime(bill.createdAt)}
           {' · '}
-          {(bill.items || []).length} item{(bill.items || []).length !== 1 ? 's' : ''}
+          {itemsPhrase}
         </Text>
       </View>
 
@@ -65,7 +69,10 @@ const BillRow = ({ bill, isLast }) => {
 };
 
 // ─── Main component ───────────────────────────────────────────────────────────
-const RecentBillsCard = ({ bills = [], loading, onViewAll }) => (
+const RecentBillsCard = ({ bills = [], loading, onViewAll }) => {
+  const { t } = useTranslation();
+
+  return (
   <View style={styles.card}>
 
     {/* ── Header ── */}
@@ -76,7 +83,7 @@ const RecentBillsCard = ({ bills = [], loading, onViewAll }) => (
           size={rfs(16)}
           color={colors.textLight}
         />
-        <Text style={styles.title}>Recent Bills</Text>
+        <Text style={styles.title}>{t('home.recentBills')}</Text>
       </View>
 
       {onViewAll && (
@@ -85,7 +92,7 @@ const RecentBillsCard = ({ bills = [], loading, onViewAll }) => (
           activeOpacity={0.75}
           style={styles.viewAllBtn}
         >
-          <Text style={styles.viewAll}>View All</Text>
+          <Text style={styles.viewAll}>{t('home.viewAll')}</Text>
           <Icon name="chevron-forward" size={rfs(12)} color={colors.textLight} />
         </TouchableOpacity>
       )}
@@ -101,7 +108,7 @@ const RecentBillsCard = ({ bills = [], loading, onViewAll }) => (
         <View style={styles.emptyIconWrap}>
           <Icon name="receipt-outline" size={rfs(22)} color={colors.textSecondary} />
         </View>
-        <Text style={styles.emptyText}>No bills today</Text>
+        <Text style={styles.emptyText}>{t('home.noBillsToday')}</Text>
       </View>
     ) : (
       <View style={styles.list}>
@@ -116,7 +123,8 @@ const RecentBillsCard = ({ bills = [], loading, onViewAll }) => (
     )}
 
   </View>
-);
+  );
+};
 
 export default RecentBillsCard;
 

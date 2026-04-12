@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -27,6 +28,7 @@ const fmt = (v) =>
  * purchases: [{ id, supplierName, subtotal, paidAmount, dueAmount, purchaseNoFormatted }]
  */
 const PendingPurchasesCard = ({ purchases = [], loading, onViewAll }) => {
+  const { t } = useTranslation();
 
   const totalDue = purchases.reduce((s, p) => s + (p.dueAmount || 0), 0);
   const hasDues  = purchases.length > 0;
@@ -42,7 +44,7 @@ const PendingPurchasesCard = ({ purchases = [], loading, onViewAll }) => {
             size={rfs(16)}
             color={colors.textLight}
           />
-          <Text style={styles.title}>Pending Payments</Text>
+          <Text style={styles.title}>{t('home.pendingPayments')}</Text>
         </View>
 
         {onViewAll && hasDues && (
@@ -51,7 +53,7 @@ const PendingPurchasesCard = ({ purchases = [], loading, onViewAll }) => {
             activeOpacity={0.75}
             style={styles.viewAllBtn}
           >
-            <Text style={styles.viewAll}>View All</Text>
+            <Text style={styles.viewAll}>{t('home.viewAll')}</Text>
             <Icon name="chevron-forward" size={rfs(12)} color={colors.textLight} />
           </TouchableOpacity>
         )}
@@ -60,7 +62,7 @@ const PendingPurchasesCard = ({ purchases = [], loading, onViewAll }) => {
       {/* ── Total due strip ── */}
       {hasDues && !loading && (
         <View style={styles.totalStrip}>
-          <Text style={styles.totalLabel}>Total Due</Text>
+          <Text style={styles.totalLabel}>{t('home.totalDue')}</Text>
           <Text style={styles.totalValue}>{fmt(totalDue)}</Text>
         </View>
       )}
@@ -75,7 +77,7 @@ const PendingPurchasesCard = ({ purchases = [], loading, onViewAll }) => {
           <View style={styles.okIconWrap}>
             <Icon name="checkmark-circle-outline" size={rfs(22)} color={colors.success} />
           </View>
-          <Text style={styles.okText}>No pending payments</Text>
+          <Text style={styles.okText}>{t('home.noPendingPayments')}</Text>
         </View>
       ) : (
         <View style={styles.list}>
@@ -96,7 +98,7 @@ const PendingPurchasesCard = ({ purchases = [], loading, onViewAll }) => {
                 {/* Info */}
                 <View style={styles.info}>
                   <Text style={styles.supplier} numberOfLines={1}>
-                    {p.supplierName || 'Supplier'}
+                    {p.supplierName || t('home.supplierDefault')}
                   </Text>
                   <Text style={styles.meta}>
                     {p.purchaseNoFormatted} · {fmt(p.subtotal)} total

@@ -12,6 +12,7 @@ import { useAtomValue, useSetAtom } from 'jotai';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 import AppHeaderLayout   from '../components/AppHeaderLayout';
+import HeaderBackButton  from '../components/HeaderBackButton';
 import ProductInfoCard   from '../components/ProductInfoCard';
 import ScanStatusBanner  from '../components/ScanStatusBanner';
 import { colors }        from '../theme/colors';
@@ -36,14 +37,6 @@ const vs    = SCREEN_H / 844;
 const rs    = (n) => Math.round(n * scale);
 const rvs   = (n) => Math.round(n * vs);
 const rfs   = (n) => Math.round(n * Math.min(scale, vs));
-
-// ─── Back pill ────────────────────────────────────────────────────────────────
-const BackPill = ({ onPress }) => (
-  <TouchableOpacity style={styles.backPill} onPress={onPress} activeOpacity={0.75}>
-    <Icon name="chevron-back" size={rfs(16)} color="#FFFFFF" />
-    <Text style={styles.backPillText}>Back</Text>
-  </TouchableOpacity>
-);
 
 // ─── Loading state ────────────────────────────────────────────────────────────
 const LoadingState = () => (
@@ -109,6 +102,8 @@ const SecondaryBtn = ({ label, icon, onPress }) => (
 const ProductScanResultScreen = ({ navigation, route }) => {
   const { barcode, mode = 'default' } = route.params || {};
   const isCheckMode = mode === 'check';
+  /** From billing scanner — same actions as stock add flow, copy nudges back to billing */
+  const isBillingMode = mode === 'billing';
 
   const owner = useAtomValue(currentOwnerAtom);
 
@@ -164,12 +159,12 @@ const ProductScanResultScreen = ({ navigation, route }) => {
   }, [barcode, owner?.shopId]);
   // ────────────────────────────────────────────────────────────────────────
 
-  const backPill = <BackPill onPress={() => navigation.goBack()} />;
+  const headerBack = <HeaderBackButton onPress={() => navigation.goBack()} />;
 
   // ── Guard ────────────────────────────────────────────────────────────────
   if (!barcode || !owner?.shopId) {
     return (
-      <AppHeaderLayout title="Scan Result" leftComponent={backPill}>
+      <AppHeaderLayout title="Scan Result" leftComponent={headerBack}>
         <ErrorState
           message="Missing barcode or shop information."
           onBack={() => navigation.goBack()}
@@ -181,7 +176,7 @@ const ProductScanResultScreen = ({ navigation, route }) => {
   // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <AppHeaderLayout title="Scan Result" leftComponent={backPill}>
+      <AppHeaderLayout title="Scan Result" leftComponent={headerBack}>
         <LoadingState />
       </AppHeaderLayout>
     );
@@ -190,7 +185,7 @@ const ProductScanResultScreen = ({ navigation, route }) => {
   // ── Error ────────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <AppHeaderLayout title="Scan Result" leftComponent={backPill}>
+      <AppHeaderLayout title="Scan Result" leftComponent={headerBack}>
         <ErrorState message={error} onBack={() => navigation.goBack()} />
       </AppHeaderLayout>
     );
@@ -207,7 +202,7 @@ const ProductScanResultScreen = ({ navigation, route }) => {
       <AppHeaderLayout
         title="Scan Result"
         subtitle="Product not found"
-        leftComponent={backPill}
+        leftComponent={headerBack}
       >
         <ScrollView
           style={styles.scroll}
@@ -216,19 +211,30 @@ const ProductScanResultScreen = ({ navigation, route }) => {
         >
           <ScanStatusBanner
             type="warning"
-            message="This barcode is not in the database yet."
+            message={
+              isBillingMode
+                ? 'Not in the catalog — create the product first, then add stock to bill it.'
+                : 'This barcode is not in the database yet.'
+            }
           />
 
           <BarcodeBox barcode={barcode} />
 
           <Text style={styles.hintText}>
-            Create this as a new product and it will be added to your inventory automatically.
+            {isBillingMode
+              ? 'Create this product (global catalog), then add it to your inventory — you can scan again on the billing screen to add it to the bill.'
+              : 'Create this as a new product and it will be added to your inventory automatically.'}
           </Text>
 
           <PrimaryBtn
             label="Create Product"
             icon="add-circle-outline"
-            onPress={() => navigation.navigate('CreateProduct', { barcode })}
+            onPress={() =>
+              navigation.navigate('CreateProduct', {
+                barcode,
+                ...(isBillingMode && { returnToBillingScanner: true }),
+              })
+            }
           />
 
         </ScrollView>
@@ -242,7 +248,7 @@ const ProductScanResultScreen = ({ navigation, route }) => {
       <AppHeaderLayout
         title="Scan Result"
         subtitle="In your inventory"
-        leftComponent={backPill}
+        leftComponent={headerBack}
       >
         <ScrollView
           style={styles.scroll}
@@ -271,7 +277,7 @@ const ProductScanResultScreen = ({ navigation, route }) => {
       <AppHeaderLayout
         title="Scan Result"
         subtitle="Already in inventory"
-        leftComponent={backPill}
+        leftComponent={headerBack}
       >
         <ScrollView
           style={styles.scroll}
@@ -305,7 +311,7 @@ const ProductScanResultScreen = ({ navigation, route }) => {
     <AppHeaderLayout
       title="Scan Result"
       subtitle="Not in inventory"
-      leftComponent={backPill}
+      leftComponent={headerBack}
     >
       <ScrollView
         style={styles.scroll}
@@ -314,7 +320,11 @@ const ProductScanResultScreen = ({ navigation, route }) => {
       >
         <ScanStatusBanner
           type="info"
-          message="Product found — not yet in your inventory"
+          message={
+            isBillingMode
+              ? 'In the catalog but not in your shop — add stock to sell it on this bill.'
+              : 'Product found — not yet in your inventory'
+          }
         />
 
         <ProductInfoCard
@@ -330,6 +340,7 @@ const ProductScanResultScreen = ({ navigation, route }) => {
             navigation.navigate('InventoryForm', {
               barcode,
               product: resolvedProduct,
+              ...(isBillingMode && { returnToBillingScanner: true }),
             })
           }
         />
@@ -343,25 +354,6 @@ export default ProductScanResultScreen;
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-
-  // ── Back pill ────────────────────────────────────────────
-  backPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(4),
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    borderRadius: rs(20),
-    paddingHorizontal: rs(12),
-    paddingVertical: rvs(7),
-  },
-
-  backPillText: {
-    fontSize: rfs(13),
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
 
   // ── Scroll ───────────────────────────────────────────────
   scroll: {

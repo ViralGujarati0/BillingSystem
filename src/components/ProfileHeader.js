@@ -15,6 +15,8 @@ const rs    = (n) => Math.round(n * scale);
 const rvs   = (n) => Math.round(n * vs);
 const rfs   = (n) => Math.round(n * Math.min(scale, vs));
 
+const AVATAR_SIZE = rs(60);
+
 /**
  * ProfileHeader
  * Props: photoURL, email, role, displayName,
@@ -53,10 +55,14 @@ const ProfileHeader = ({
         {/* ── Top row: avatar + info ── */}
         <View style={styles.topRow}>
 
-          {/* Avatar */}
+          {/* Avatar — small circle */}
           <View style={styles.avatarWrap}>
             {photoURL ? (
-              <Image source={{ uri: photoURL }} style={styles.avatarImage} />
+              <Image
+                source={{ uri: photoURL }}
+                style={styles.avatarImage}
+                resizeMode="cover"
+              />
             ) : (
               <View style={styles.avatarFallback}>
                 <Text style={styles.avatarLetter}>{initial}</Text>
@@ -71,7 +77,11 @@ const ProfileHeader = ({
                 {displayName}
               </Text>
             )}
-            <Text style={styles.email} numberOfLines={2}>
+            <Text
+              style={styles.email}
+              numberOfLines={2}
+              textBreakStrategy="simple"
+            >
               {email || '—'}
             </Text>
           </View>
@@ -180,41 +190,42 @@ const styles = StyleSheet.create({
     paddingRight: rs(74), // reserve space so text doesn't slide under badge
   },
 
-  // ── Avatar ────────────────────────────────────────────
+  // ── Avatar (compact circle) ─────────────────────────
   avatarWrap: {
     flexShrink: 0,
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(45,74,82,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(45,74,82,0.10)',
   },
 
   avatarImage: {
-    width: rs(68),
-    height: rs(68),
-    borderRadius: rs(18),
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
   },
 
   avatarFallback: {
-    width: rs(68),
-    height: rs(68),
-    borderRadius: rs(18),
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: rvs(4) },
-    shadowOpacity: 0.38,
-    shadowRadius: rs(10),
-    elevation: 4,
   },
 
   avatarLetter: {
-    fontSize: rfs(28),       // was 26
+    fontSize: rfs(22),
     fontWeight: '800',
     color: '#FFFFFF',
-    letterSpacing: -1,
+    letterSpacing: -0.5,
   },
 
-  // ── Info block ────────────────────────────────────────
+  // ── Info block (minWidth: 0 so email uses full row width for wrapping) ──
   infoBlock: {
     flex: 1,
+    minWidth: 0,
     gap: rvs(3),
   },
 
@@ -226,10 +237,10 @@ const styles = StyleSheet.create({
   },
 
   email: {
-    fontSize: rfs(16),       // was 11
+    fontSize: rfs(15),
     fontWeight: '500',
     color: colors.textSecondary,
-    lineHeight: rfs(18),
+    lineHeight: rfs(20),
   },
 
   // ── Divider ───────────────────────────────────────────

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import firestore from '@react-native-firebase/firestore';
 import { useAtomValue } from 'jotai';
+import { useTranslation } from 'react-i18next';
 
 import AppHeaderLayout   from '../components/AppHeaderLayout';
 import SalesSummaryStrip from '../components/SalesSummaryStrip';
@@ -33,6 +34,7 @@ const NoAccessPlaceholder = ({ message }) => (
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 const StaffSalesScreen = ({ navigation, route }) => {
+  const { t } = useTranslation();
   const staffFromRoute = route.params?.userDoc;
   const staffFromAtom  = useAtomValue(currentStaffAtom);
   const staff          = staffFromAtom || staffFromRoute;
@@ -56,23 +58,41 @@ const StaffSalesScreen = ({ navigation, route }) => {
   }, [shopId, hasAnySalesAccess]);
 
   useEffect(() => {
-    if (!shopId || !salesPerms.recentBills) return;
+    if (!shopId || !salesPerms.recentBills) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
     const start = startOfDay(selectedDate);
     const end   = endOfDay(selectedDate);
+    const startTs = firestore.Timestamp.fromDate(start);
+    const endTs   = firestore.Timestamp.fromDate(end);
+
     const unsub = firestore()
-      .collection('billing_shops').doc(shopId).collection('bills')
-      .where('createdAt', '>=', start)
-      .where('createdAt', '<=', end)
+      .collection('billing_shops')
+      .doc(shopId)
+      .collection('bills')
+      .where('createdAt', '>=', startTs)
+      .where('createdAt', '<=', endTs)
       .orderBy('createdAt', 'desc')
-      .onSnapshot((snap) => {
-        setBills(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-        setLoading(false);
-      });
+      .onSnapshot(
+        (snap) => {
+          setBills(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+          setLoading(false);
+        },
+        (error) => {
+          console.error('[StaffSalesScreen] bills query error:', error?.code, error?.message);
+          setLoading(false);
+        }
+      );
+
     return () => unsub();
   }, [shopId, selectedDate, salesPerms.recentBills]);
 
   return (
-    <AppHeaderLayout title="Sales">
+    <AppHeaderLayout title={t('sales.title')}>
       <View style={styles.screen}>
 
         {!hasAnySalesAccess ? (

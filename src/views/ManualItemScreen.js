@@ -18,6 +18,7 @@ import LinearGradient from "react-native-linear-gradient";
 import { manualItemFormAtom } from "../atoms/billing";
 import useBillingViewModel    from "../viewmodels/BillingViewModel";
 import ManualItemForm         from "../components/ManualItemForm";
+import HeaderBackButton       from "../components/HeaderBackButton";
 import { colors }             from "../theme/colors";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
@@ -95,19 +96,11 @@ const ManualItemScreen = ({ navigation }) => {
           <View style={styles.orbTopRight} />
           <View style={styles.orbBottomLeft} />
 
-          {/* Back pill */}
-          <TouchableOpacity
-            style={styles.backPill}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.75}
-          >
-            <Icon name="chevron-back" size={rfs(14)} color="rgba(255,255,255,0.85)" />
-            <Text style={styles.backPillText}>Back</Text>
-          </TouchableOpacity>
+          <View style={styles.backWrap}>
+            <HeaderBackButton onPress={() => navigation.goBack()} />
+          </View>
 
-          {/* Title row */}
           <View style={styles.titleRow}>
-            <View style={styles.titleAccent} />
             <View>
               <Text style={styles.titleText}>Add Manual Item</Text>
               <Text style={styles.titleSub}>Enter item details to add to bill</Text>
@@ -200,26 +193,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.04)",
   },
 
-  backPill: {
-    flexDirection: "row",
-    alignItems: "center",
+  backWrap: {
     alignSelf: "flex-start",
-    gap: rs(4),
-    backgroundColor: "rgba(255,255,255,0.10)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
-    borderRadius: rs(20),
-    paddingVertical: rvs(6),
-    paddingHorizontal: rs(14),
     marginBottom: rvs(18),
     position: "relative",
     zIndex: 1,
-  },
-
-  backPillText: {
-    fontSize: rfs(14),
-    fontWeight: "600",
-    color: "rgba(255,255,255,0.85)",
   },
 
   titleRow: {
@@ -228,14 +206,6 @@ const styles = StyleSheet.create({
     gap: rs(10),
     position: "relative",
     zIndex: 1,
-  },
-
-  titleAccent: {
-    width: rs(3),
-    height: rvs(36),
-    borderRadius: rs(2),
-    backgroundColor: colors.accent,
-    flexShrink: 0,
   },
 
   titleText: {

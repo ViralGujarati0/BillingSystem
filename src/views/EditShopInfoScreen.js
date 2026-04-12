@@ -13,6 +13,7 @@ import { useAtom } from 'jotai';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
 import AppHeaderLayout from '../components/AppHeaderLayout';
+import HeaderBackButton from '../components/HeaderBackButton';
 import ConfirmActionModal from '../components/ConfirmActionModal';
 import ShopForm from '../components/ShopForm';
 import { currentOwnerAtom } from '../atoms/owner';
@@ -29,14 +30,6 @@ const vs    = SCREEN_H / 844;
 const rs    = (n) => Math.round(n * scale);
 const rvs   = (n) => Math.round(n * vs);
 const rfs   = (n) => Math.round(n * Math.min(scale, vs));
-
-// ─── Back pill ────────────────────────────────────────────────────────────────
-const BackPill = ({ onPress }) => (
-  <TouchableOpacity style={styles.backPill} onPress={onPress} activeOpacity={0.75}>
-    <Icon name="chevron-back" size={rfs(16)} color="#FFFFFF" />
-    <Text style={styles.backPillText}>Back</Text>
-  </TouchableOpacity>
-);
 
 // ─── Loading state ────────────────────────────────────────────────────────────
 const LoadingState = () => (
@@ -118,7 +111,7 @@ export default function EditShopInfoScreen({ navigation }) {
     }
   };
 
-  const headerLeft = <BackPill onPress={() => navigation.goBack()} />;
+  const headerLeft = <HeaderBackButton onPress={() => navigation.goBack()} />;
 
   // ── Loading ──
   if (loading) {
@@ -206,25 +199,6 @@ export default function EditShopInfoScreen({ navigation }) {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-
-  // ── Back pill ────────────────────────────────────────
-  backPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(4),
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    borderRadius: rs(20),
-    paddingHorizontal: rs(12),
-    paddingVertical: rvs(7),
-  },
-
-  backPillText: {
-    fontSize: rfs(13),
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
 
   // ── Scroll ───────────────────────────────────────────
   scroll: { flex: 1 },

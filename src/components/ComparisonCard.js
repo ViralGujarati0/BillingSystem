@@ -6,6 +6,7 @@ import {
   Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
 import PeriodToggle from './PeriodToggle';
 
@@ -32,6 +33,7 @@ const fmt = (v, isCount = false) => {
 
 // ─── Single metric row ────────────────────────────────────────────────────────
 const ComparisonItem = ({ label, current, prev, isCount, accentColor, maxValue }) => {
+  const { t } = useTranslation();
   const change  = calcChange(current, prev);
   const isUp    = change !== null && change >= 0;
   const accent  = accentColor || colors.primary;
@@ -46,7 +48,7 @@ const ComparisonItem = ({ label, current, prev, isCount, accentColor, maxValue }
       {/* Label + value + bar */}
       <View style={itemStyles.body}>
         <View style={itemStyles.topRow}>
-          <Text style={itemStyles.label}>{label.toUpperCase()}</Text>
+          <Text style={itemStyles.label}>{label}</Text>
           {change !== null ? (
             <View style={[
               itemStyles.changePill,
@@ -87,7 +89,7 @@ const ComparisonItem = ({ label, current, prev, isCount, accentColor, maxValue }
             {fmt(current, isCount)}
           </Text>
           <Text style={itemStyles.prevValue}>
-            prev {fmt(prev, isCount)}
+            {t('home.prevPeriod', { value: fmt(prev, isCount) })}
           </Text>
         </View>
       </View>
@@ -184,6 +186,7 @@ const itemStyles = StyleSheet.create({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 const ComparisonCard = ({ activeStats, prevStats, period, onChangePeriod, loading }) => {
+  const { t } = useTranslation();
 
   const maxValue = Math.max(
     activeStats?.totalSales  || 0,
@@ -197,15 +200,19 @@ const ComparisonCard = ({ activeStats, prevStats, period, onChangePeriod, loadin
 
       {/* ── Header ── */}
       <View style={styles.header}>
-        <Text style={styles.title}>vs Last Period</Text>
-        <PeriodToggle period={period} onChangePeriod={onChangePeriod} />
+        <Text style={styles.title}>{t('home.comparisonTitle')}</Text>
+        <PeriodToggle
+          period={period}
+          onChangePeriod={onChangePeriod}
+          label={t('home.comparisonTitle')}
+        />
       </View>
 
       {/* ── Content ── */}
       {period === 'today' ? (
         <View style={styles.naWrap}>
           <Icon name="information-circle-outline" size={rfs(20)} color={colors.textSecondary} />
-          <Text style={styles.naText}>Switch to 7D or 30D to compare periods</Text>
+          <Text style={styles.naText}>{t('home.comparisonSwitchHint')}</Text>
         </View>
       ) : loading ? (
         <View style={styles.skeletonWrap}>
@@ -215,7 +222,7 @@ const ComparisonCard = ({ activeStats, prevStats, period, onChangePeriod, loadin
         <View style={styles.list}>
 
           <ComparisonItem
-            label="Revenue"
+            label={t('home.metricRevenue')}
             current={activeStats?.totalSales}
             prev={prevStats?.totalSales}
             accentColor={colors.primary}
@@ -225,7 +232,7 @@ const ComparisonCard = ({ activeStats, prevStats, period, onChangePeriod, loadin
           <View style={styles.divider} />
 
           <ComparisonItem
-            label="Profit"
+            label={t('home.metricProfit')}
             current={activeStats?.totalProfit}
             prev={prevStats?.totalProfit}
             accentColor={colors.success}
@@ -235,7 +242,7 @@ const ComparisonCard = ({ activeStats, prevStats, period, onChangePeriod, loadin
           <View style={styles.divider} />
 
           <ComparisonItem
-            label="Bills"
+            label={t('home.metricBills')}
             current={activeStats?.totalBills}
             prev={prevStats?.totalBills}
             isCount

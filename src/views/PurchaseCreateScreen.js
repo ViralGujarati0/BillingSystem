@@ -14,6 +14,7 @@ import { useAtom } from 'jotai';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 import AppHeaderLayout   from '../components/AppHeaderLayout';
+import HeaderBackButton  from '../components/HeaderBackButton';
 import SupplierDropdown  from '../components/SupplierDropdown';
 import PurchaseItemRow   from '../components/PurchaseItemRow';
 import ConfirmActionModal from '../components/ConfirmActionModal';
@@ -30,14 +31,6 @@ const rvs   = (n) => Math.round(n * vs);
 const rfs   = (n) => Math.round(n * Math.min(scale, vs));
 
 const PAYMENT_TYPES = ['CASH', 'UPI', 'BANK'];
-
-// ─── Back pill ────────────────────────────────────────────────────────────────
-const BackPill = ({ onPress }) => (
-  <TouchableOpacity style={styles.backPill} onPress={onPress} activeOpacity={0.75}>
-    <Icon name="chevron-back" size={rfs(16)} color="#FFFFFF" />
-    <Text style={styles.backPillText}>Back</Text>
-  </TouchableOpacity>
-);
 
 // ─── Section label ────────────────────────────────────────────────────────────
 const SectionLabel = ({ icon, label }) => (
@@ -166,7 +159,7 @@ export default function PurchaseCreateScreen({ navigation }) {
     }
   };
 
-  const headerLeft = <BackPill onPress={() => navigation.goBack()} />;
+  const headerLeft = <HeaderBackButton onPress={() => navigation.goBack()} />;
 
   return (
     <AppHeaderLayout
@@ -410,25 +403,6 @@ export default function PurchaseCreateScreen({ navigation }) {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-
-  // ── Back pill ────────────────────────────────────────
-  backPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(4),
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    borderRadius: rs(20),
-    paddingHorizontal: rs(12),
-    paddingVertical: rvs(7),
-  },
-
-  backPillText: {
-    fontSize: rfs(13),
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
 
   // ── Scroll ───────────────────────────────────────────
   scroll: { flex: 1 },

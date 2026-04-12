@@ -10,6 +10,7 @@ import { StatusBar } from 'react-native';
 import { generateDailyReportPdf } from '../services/generateDailyReportPdf';
 import { buildDailyReportHtml }   from '../utils/buildDailyReportHtml';
 import { colors } from '../theme/colors';
+import HeaderBackButton from '../components/HeaderBackButton';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const scale = SCREEN_W / 390;
@@ -62,18 +63,9 @@ const DailyReportPreviewScreen = ({ navigation, route }) => {
         end={{ x: 1, y: 1 }}
         style={styles.header}
       >
-        {/* Back button */}
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.75}
-        >
-          <Icon name="arrow-back" size={rfs(18)} color="#fff" />
-        </TouchableOpacity>
+        <HeaderBackButton onPress={() => navigation.goBack()} />
 
-        {/* Title */}
         <View style={styles.titleBlock}>
-          <View style={styles.accentBar} />
           <View>
             <Text style={styles.title}>Report Preview</Text>
             <View style={styles.pill}>
@@ -165,29 +157,9 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
   },
-  backBtn: {
-    width: rs(36),
-    height: rs(36),
-    borderRadius: rs(10),
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
   titleBlock: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(10),
-  },
-  accentBar: {
-    width: rs(3),
-    height: rvs(36),
-    borderRadius: 2,
-    backgroundColor: colors.accent,
-    flexShrink: 0,
+    justifyContent: 'center',
   },
   title: {
     fontSize: rfs(18),

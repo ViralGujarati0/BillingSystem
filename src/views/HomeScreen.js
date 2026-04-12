@@ -1,275 +1,4 @@
-  // import React from 'react';
-  // import {
-  //   View,
-  //   Text,
-  //   TouchableOpacity,
-  //   StyleSheet,
-  //   ActivityIndicator,
-  //   Dimensions,
-  // } from 'react-native';
-  // import Icon from 'react-native-vector-icons/Ionicons';
-  // import { useTranslation } from 'react-i18next';
 
-  // import AppHeaderLayout  from '../components/AppHeaderLayout';
-  // import useHomeViewModel from '../viewmodels/useHomeViewModel';
-  // import { colors }       from '../theme/colors';
-
-  // const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-  // const scale = SCREEN_W / 390;
-  // const vs    = SCREEN_H / 844;
-  // const rs    = (n) => Math.round(n * scale);
-  // const rvs   = (n) => Math.round(n * vs);
-  // const rfs   = (n) => Math.round(n * scale);
-
-  // // ─── Search Button (right slot) ───────────────────────────────────────────────
-  // const SearchButton = ({ onPress }) => (
-  //   <TouchableOpacity style={styles.searchBtn} onPress={onPress} activeOpacity={0.75}>
-  //     <Icon name="search-outline" size={rfs(18)} color="#fff" />
-  //   </TouchableOpacity>
-  // );
-
-  // // ─── Stat Card ────────────────────────────────────────────────────────────────
-  // const StatCard = ({ icon, label, value, valueColor }) => (
-  //   <View style={styles.statCard}>
-  //     <View style={styles.statIconWrap}>
-  //       <Icon name={icon} size={rfs(20)} color={colors.primary} />
-  //     </View>
-  //     <Text style={styles.statLabel}>{label}</Text>
-  //     <Text style={[styles.statValue, valueColor && { color: valueColor }]}>
-  //       {value}
-  //     </Text>
-  //   </View>
-  // );
-
-  // // ─── Main Screen ──────────────────────────────────────────────────────────────
-  // const HomeScreen = ({ navigation, route }) => {
-  //   const { t } = useTranslation();
-  //   const userDoc = route.params?.userDoc;
-  //   const { stats, loadingStats, greeting, hasShop } = useHomeViewModel({ userDoc });
-
-  //   return (
-  //     <AppHeaderLayout
-  //       title={userDoc?.name || 'Home'}
-  //       subtitle={greeting}
-  //       rightComponent={
-  //         userDoc?.shopId ? (
-  //           <SearchButton
-  //             onPress={() =>
-  //               navigation.navigate('GlobalSearch', {
-  //                 shopId: userDoc.shopId,
-  //                 userDoc,
-  //               })
-  //             }
-  //           />
-  //         ) : null
-  //       }
-  //     >
-  //       <View style={styles.container}>
-
-  //         {/* ── No shop yet ── */}
-  //         {!userDoc?.shopId && (
-  //           <View style={styles.createShopWrap}>
-  //             <View style={styles.createShopIconWrap}>
-  //               <Icon name="storefront-outline" size={rfs(40)} color={colors.primary} />
-  //             </View>
-  //             <Text style={styles.createShopTitle}>{t('home.setUpShop')}</Text>
-  //             <Text style={styles.createShopSub}>{t('home.setUpShopSub')}</Text>
-  //             <TouchableOpacity
-  //               style={styles.createShopBtn}
-  //               onPress={() => navigation.getParent()?.navigate('CreateShop', { userDoc })}
-  //               activeOpacity={0.85}
-  //             >
-  //               <Icon name="add-outline" size={rfs(18)} color="#fff" />
-  //               <Text style={styles.createShopBtnText}>{t('home.createShop')}</Text>
-  //             </TouchableOpacity>
-  //           </View>
-  //         )}
-
-  //         {/* ── Stats cards ── */}
-  //         {userDoc?.shopId && (
-  //           <View style={styles.statsWrap}>
-
-  //             <Text style={styles.sectionLabel}>{t('home.todaysOverview')}</Text>
-
-  //             {loadingStats ? (
-  //               <View style={styles.loadingWrap}>
-  //                 <ActivityIndicator size="large" color={colors.primary} />
-  //               </View>
-  //             ) : (
-  //               <View style={styles.statsGrid}>
-  //                 <StatCard
-  //                   icon="cash-outline"
-  //                   label={t('home.totalSales')}
-  //                   value={`₹${Number(stats?.totalSales || 0).toFixed(2)}`}
-  //                   valueColor={colors.primary}
-  //                 />
-  //                 <StatCard
-  //                   icon="trending-up-outline"
-  //                   label={t('home.todayProfit')}
-  //                   value={`₹${Number(stats?.totalProfit || 0).toFixed(2)}`}
-  //                   valueColor="#16a34a"
-  //                 />
-  //                 <StatCard
-  //                   icon="receipt-outline"
-  //                   label={t('home.bills')}
-  //                   value={String(stats?.totalBills || 0)}
-  //                 />
-  //               </View>
-  //             )}
-
-  //           </View>
-  //         )}
-
-  //       </View>
-  //     </AppHeaderLayout>
-  //   );
-  // };
-
-  // export default HomeScreen;
-
-  // // ─── Styles ───────────────────────────────────────────────────────────────────
-  // const styles = StyleSheet.create({
-
-  //   // ── Search button ──────────────────────────────────────
-  //   searchBtn: {
-  //     width: rs(36),
-  //     height: rs(36),
-  //     borderRadius: rs(10),
-  //     backgroundColor: 'rgba(255,255,255,0.12)',
-  //     borderWidth: 1,
-  //     borderColor: 'rgba(255,255,255,0.18)',
-  //     alignItems: 'center',
-  //     justifyContent: 'center',
-  //   },
-
-  //   container: {
-  //     flex: 1,
-  //     backgroundColor: colors.background,
-  //     paddingHorizontal: rs(16),
-  //     paddingTop: rvs(24),
-  //   },
-
-  //   // ── Create shop state ──────────────────────────────────
-  //   createShopWrap: {
-  //     flex: 1,
-  //     alignItems: 'center',
-  //     justifyContent: 'center',
-  //     paddingHorizontal: rs(24),
-  //     gap: rvs(12),
-  //   },
-
-  //   createShopIconWrap: {
-  //     width: rs(80),
-  //     height: rs(80),
-  //     borderRadius: rs(24),
-  //     backgroundColor: 'rgba(45,74,82,0.07)',
-  //     borderWidth: 1,
-  //     borderColor: colors.borderCard,
-  //     alignItems: 'center',
-  //     justifyContent: 'center',
-  //     marginBottom: rvs(4),
-  //   },
-
-  //   createShopTitle: {
-  //     fontSize: rfs(20),
-  //     fontWeight: '800',
-  //     color: colors.textPrimary,
-  //     textAlign: 'center',
-  //   },
-
-  //   createShopSub: {
-  //     fontSize: rfs(13),
-  //     fontWeight: '400',
-  //     color: colors.textSecondary,
-  //     textAlign: 'center',
-  //     lineHeight: rfs(20),
-  //   },
-
-  //   createShopBtn: {
-  //     flexDirection: 'row',
-  //     alignItems: 'center',
-  //     gap: rs(8),
-  //     backgroundColor: colors.primary,
-  //     paddingVertical: rvs(13),
-  //     paddingHorizontal: rs(28),
-  //     borderRadius: rs(12),
-  //     marginTop: rvs(8),
-  //     shadowColor: colors.primary,
-  //     shadowOffset: { width: 0, height: rvs(4) },
-  //     shadowOpacity: 0.25,
-  //     shadowRadius: rs(10),
-  //     elevation: 4,
-  //   },
-
-  //   createShopBtnText: {
-  //     fontSize: rfs(15),
-  //     fontWeight: '700',
-  //     color: '#fff',
-  //   },
-
-  //   // ── Stats section ──────────────────────────────────────
-  //   statsWrap: {
-  //     gap: rvs(14),
-  //   },
-
-  //   sectionLabel: {
-  //     fontSize: rfs(11),
-  //     fontWeight: '700',
-  //     color: colors.textSecondary,
-  //     letterSpacing: 0.8,
-  //   },
-
-  //   loadingWrap: {
-  //     paddingVertical: rvs(48),
-  //     alignItems: 'center',
-  //   },
-
-  //   statsGrid: {
-  //     gap: rvs(12),
-  //   },
-
-  //   statCard: {
-  //     backgroundColor: '#fff',
-  //     borderRadius: rs(14),
-  //     borderWidth: 1,
-  //     borderColor: colors.borderCard,
-  //     padding: rs(16),
-  //     flexDirection: 'row',
-  //     alignItems: 'center',
-  //     gap: rs(14),
-  //     shadowColor: colors.shadowCard,
-  //     shadowOffset: { width: 0, height: rvs(2) },
-  //     shadowOpacity: 1,
-  //     shadowRadius: rs(8),
-  //     elevation: 2,
-  //   },
-
-  //   statIconWrap: {
-  //     width: rs(44),
-  //     height: rs(44),
-  //     borderRadius: rs(12),
-  //     backgroundColor: 'rgba(45,74,82,0.07)',
-  //     borderWidth: 1,
-  //     borderColor: colors.borderCard,
-  //     alignItems: 'center',
-  //     justifyContent: 'center',
-  //     flexShrink: 0,
-  //   },
-
-  //   statLabel: {
-  //     flex: 1,
-  //     fontSize: rfs(13),
-  //     fontWeight: '600',
-  //     color: colors.textSecondary,
-  //   },
-
-  //   statValue: {
-  //     fontSize: rfs(18),
-  //     fontWeight: '800',
-  //     color: colors.textPrimary,
-  //   },
-
-  // });
   import React, { useState, useEffect } from 'react';
   import {
     View,
@@ -297,6 +26,7 @@
   import { formatCurrency }   from '../utils/statsUtils';
   import { colors }           from '../theme/colors';
   import DailyReportFab       from '../components/DailyReportFab';
+  import { ActionPill }       from '../components/InventoryQuickActions';
   
   const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
   const scale = SCREEN_W / 390;
@@ -327,13 +57,6 @@
     );
   };
   
-  // ─── Search button — no background ────────────────────────────────────────────
-  const SearchButton = ({ onPress }) => (
-    <TouchableOpacity style={styles.searchBtnPlain} onPress={onPress} activeOpacity={0.75}>
-      <Icon name="search-outline" size={rfs(18)} color="#FFFFFF" />
-    </TouchableOpacity>
-  );
-  
   // ─── Section label — amber bar + text + extending hairline ────────────────────
   const SectionLabel = ({ label }) => (
     <View style={styles.sectionLabel}>
@@ -361,20 +84,31 @@
     return (
       <AppHeaderLayout
         title={vm.greeting}
-        subtitle={userDoc?.name || 'Home'}
+        subtitle={userDoc?.name || t('home.headerSubtitleFallback')}
         showAccentBar={false}
         showSubtitlePill={false}
         leftComponent={<ProfileAvatar photoURL={photoURL} />}
         rightComponent={
           userDoc?.shopId ? (
-            <SearchButton
-              onPress={() =>
-                navigation.navigate('GlobalSearch', {
-                  shopId: userDoc.shopId,
-                  userDoc,
-                })
-              }
-            />
+            <View style={styles.headerRightRow}>
+              <ActionPill
+                icon="search-outline"
+                label={t('common.search')}
+                accessibilityLabel={t('common.search')}
+                onPress={() =>
+                  navigation.navigate('GlobalSearch', {
+                    shopId: userDoc.shopId,
+                    userDoc,
+                  })
+                }
+              />
+              <ActionPill
+                icon="storefront-outline"
+                label={t('home.headerShopPill')}
+                accessibilityLabel={t('home.headerShopProfile')}
+                onPress={() => navigation.navigate('ShopInfo')}
+              />
+            </View>
           ) : null
         }
       >
@@ -420,12 +154,12 @@
             >
   
               {/* ── OVERVIEW ── */}
-              <SectionLabel label="Overview" />
+              <SectionLabel label={t('home.sectionOverview')} />
   
               <View style={styles.statRow}>
                 <StatCard
                   leftIcon={<Icon name="cash-outline" size={rfs(16)} color={colors.primary} />}
-                  label="Total Revenue"
+                  label={t('home.totalRevenue')}
                   value={formatCurrency(vm.revenue.stats.totalSales)}
                   valueColor={colors.primary}
                   period={vm.revenue.period}
@@ -436,7 +170,7 @@
                 />
                 <StatCard
                   leftIcon={<Icon name="trending-up-outline" size={rfs(16)} color={colors.success} />}
-                  label="Total Profit"
+                  label={t('home.totalProfit')}
                   value={formatCurrency(vm.profit.stats.totalProfit)}
                   valueColor={colors.success}
                   period={vm.profit.period}
@@ -450,7 +184,7 @@
               <View style={styles.statRow}>
                 <StatCard
                   leftIcon={<Icon name="receipt-outline" size={rfs(16)} color={colors.accent} />}
-                  label="Total Bills"
+                  label={t('home.totalBillsStat')}
                   value={String(vm.bills.stats.totalBills || 0)}
                   period={vm.bills.period}
                   onChangePeriod={vm.bills.setPeriod}
@@ -460,7 +194,7 @@
                 />
                 <StatCard
                   leftIcon={<Icon name="cube-outline" size={rfs(16)} color="#7C6AF5" />}
-                  label="Items Sold"
+                  label={t('home.itemsSold')}
                   value={String(vm.items.stats.totalItemsSold || 0)}
                   period={vm.items.period}
                   onChangePeriod={vm.items.setPeriod}
@@ -473,7 +207,7 @@
               <View style={styles.statRow}>
                 <StatCard
                   leftIcon={<Icon name="calculator-outline" size={rfs(16)} color="#E07B2A" />}
-                  label="Avg Bill Value"
+                  label={t('home.avgBillValue')}
                   value={fmtAvg(
                     vm.avgBill.stats.totalSales,
                     vm.avgBill.stats.totalBills,
@@ -486,7 +220,7 @@
                 />
                 <StatCard
                   leftIcon={<Icon name="cart-outline" size={rfs(16)} color={colors.danger} />}
-                  label="Purchases"
+                  label={t('home.purchasesStat')}
                   value={formatCurrency(vm.purchase.stats.totalPurchaseAmount)}
                   period={vm.purchase.period}
                   onChangePeriod={vm.purchase.setPeriod}
@@ -497,7 +231,7 @@
               </View>
   
               {/* ── CHARTS ── */}
-              <SectionLabel label="Charts" />
+              <SectionLabel label={t('home.sectionCharts')} />
   
               <RevenueBarChart
                 dailyData={vm.chart.dailyData}
@@ -514,7 +248,7 @@
               />
   
               {/* ── PRODUCTS ── */}
-              <SectionLabel label="Products" />
+              <SectionLabel label={t('home.sectionProducts')} />
   
               <TopProductsCard
                 products={vm.topProducts.data}
@@ -524,7 +258,7 @@
               />
   
               {/* ── PERFORMANCE ── */}
-              <SectionLabel label="Performance" />
+              <SectionLabel label={t('home.sectionPerformance')} />
   
               <ComparisonCard
                 activeStats={vm.comparison.stats}
@@ -535,7 +269,7 @@
               />
   
               {/* ── ALERTS & ACTIVITY ── */}
-              <SectionLabel label="Alerts & Activity" />
+              <SectionLabel label={t('home.sectionAlerts')} />
   
               <LowStockCard
                 items={vm.lowStockItems}
@@ -573,9 +307,11 @@
               shopAddress={userDoc?.shopAddress || ''}
               vm={vm}
               periodLabel={
-                vm.chart.period === '7d'  ? 'Last 7 Days'
-                : vm.chart.period === '30d' ? 'Last 30 Days'
-                : 'Today'
+                vm.chart.period === '7d'
+                  ? t('home.periodLast7Days')
+                  : vm.chart.period === '30d'
+                    ? t('home.periodLast30Days')
+                    : t('home.periodToday')
               }
             />
   
@@ -604,12 +340,11 @@
       gap: rvs(10),
     },
   
-    // ── Search button — plain, no bg ──────────────────────
-    searchBtnPlain: {
-      width: rs(36),
-      height: rs(36),
+    // ── Header right — same pill row as Stock (InventoryQuickActions) ──
+    headerRightRow: {
+      flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
+      gap: rs(6),
     },
   
     // ── Profile avatar ────────────────────────────────────

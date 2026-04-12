@@ -43,6 +43,7 @@ const StaffProfileScreen = ({ navigation, route }) => {
   const permissions = staff?.permissions || {};
   const salesPerms  = permissions.sales  || {};
   const stockPerms  = permissions.stock  || {};
+  const homePerms   = permissions.home   || {};
 
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -108,6 +109,24 @@ const StaffProfileScreen = ({ navigation, route }) => {
           <PermRow icon="flash-outline"      label="Quick Actions"    enabled={!!stockPerms.quickActions}       color="#8b5cf6" />
           <View style={styles.divider} />
           <PermRow icon="cube-outline"       label="Inventory List"   enabled={!!stockPerms.inventoryList}      color="#8b5cf6" />
+          <View style={styles.divider} />
+          <PermRow icon="home-outline"       label="Home: Overview"  enabled={!!homePerms.overviewStats}       color="#0d9488" />
+          <View style={styles.divider} />
+          <PermRow icon="bar-chart-outline"  label="Home: Revenue chart" enabled={!!homePerms.revenueChart}   color="#0d9488" />
+          <View style={styles.divider} />
+          <PermRow icon="pie-chart-outline"   label="Home: Payments"   enabled={!!homePerms.paymentSplit}       color="#0d9488" />
+          <View style={styles.divider} />
+          <PermRow icon="trophy-outline"      label="Home: Top products" enabled={!!homePerms.topProducts}    color="#0d9488" />
+          <View style={styles.divider} />
+          <PermRow icon="analytics-outline"  label="Home: Comparison" enabled={!!homePerms.comparison}       color="#0d9488" />
+          <View style={styles.divider} />
+          <PermRow icon="warning-outline"     label="Home: Low stock" enabled={!!homePerms.lowStock}           color="#0d9488" />
+          <View style={styles.divider} />
+          <PermRow icon="cart-outline"       label="Home: Pending purchases" enabled={!!homePerms.pendingPurchases} color="#0d9488" />
+          <View style={styles.divider} />
+          <PermRow icon="document-text-outline" label="Home: Recent bills" enabled={!!homePerms.recentBillsCard} color="#0d9488" />
+          <View style={styles.divider} />
+          <PermRow icon="print-outline"       label="Home: Daily report" enabled={!!homePerms.dailyReportFab}   color="#0d9488" />
         </View>
 
         {/* ── Sign out ── */}

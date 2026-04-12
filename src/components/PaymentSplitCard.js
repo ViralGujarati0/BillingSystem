@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, Dimensions,
 } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
 import PeriodToggle from './PeriodToggle';
 
@@ -30,6 +31,7 @@ const PAYMENT_COLORS = {
  * Props: stats, period, onChangePeriod, loading
  */
 const PaymentSplitCard = ({ stats, period, onChangePeriod, loading }) => {
+  const { t } = useTranslation();
 
   const cash  = stats?.cashSales || 0;
   const upi   = stats?.upiSales  || 0;
@@ -37,9 +39,9 @@ const PaymentSplitCard = ({ stats, period, onChangePeriod, loading }) => {
   const total = cash + upi + card;
 
   const segments = [
-    { key: 'CASH', label: 'Cash', value: cash, bills: stats?.cashBills || 0 },
-    { key: 'UPI',  label: 'UPI',  value: upi,  bills: stats?.upiBills  || 0 },
-    { key: 'CARD', label: 'Card', value: card, bills: stats?.cardBills || 0 },
+    { key: 'CASH', label: t('home.payCash'), value: cash, bills: stats?.cashBills || 0 },
+    { key: 'UPI',  label: t('home.payUpi'),  value: upi,  bills: stats?.upiBills  || 0 },
+    { key: 'CARD', label: t('home.payCard'), value: card, bills: stats?.cardBills || 0 },
   ];
 
   // Build donut arcs
@@ -63,13 +65,13 @@ const PaymentSplitCard = ({ stats, period, onChangePeriod, loading }) => {
 
       {/* ── Header ── */}
       <View style={styles.header}>
-        <Text style={styles.title}>Payment Split</Text>
+        <Text style={styles.title}>{t('home.paymentSplit')}</Text>
         <PeriodToggle
           period={period}
           onChangePeriod={onChangePeriod}
           loading={loading}
           accentColor={colors.primary}
-          label="Payment Split"
+          label={t('home.paymentSplit')}
         />
       </View>
 
@@ -109,7 +111,7 @@ const PaymentSplitCard = ({ stats, period, onChangePeriod, loading }) => {
           {/* Center label */}
           <View style={styles.donutCenter}>
             <Text style={styles.donutTotal}>{formatVal(total)}</Text>
-            <Text style={styles.donutLabel}>Total</Text>
+            <Text style={styles.donutLabel}>{t('home.paymentTotal')}</Text>
           </View>
         </View>
 
@@ -122,7 +124,9 @@ const PaymentSplitCard = ({ stats, period, onChangePeriod, loading }) => {
                 <View style={[styles.legendDot, { backgroundColor: PAYMENT_COLORS[seg.key] }]} />
                 <View style={styles.legendInfo}>
                   <Text style={styles.legendLabel}>{seg.label}</Text>
-                  <Text style={styles.legendBills}>{seg.bills} bills</Text>
+                  <Text style={styles.legendBills}>
+                    {t('home.legendBillsCount', { count: seg.bills })}
+                  </Text>
                 </View>
                 <View style={styles.legendRight}>
                   <Text style={styles.legendValue}>{formatVal(seg.value)}</Text>

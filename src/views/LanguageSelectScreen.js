@@ -5,17 +5,17 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-  Platform,
   StatusBar,
+  Modal,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 import { colors } from '../theme/colors';
 import { setAppLocale } from '../locale/i18n';
 import { localeAtom } from '../atoms/locale';
 import { useSetAtom } from 'jotai';
+import { APP_LANGUAGES } from '../constants/languages';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const scale = SCREEN_W / 390;
@@ -23,12 +23,6 @@ const vs = SCREEN_H / 844;
 const rs = (n) => Math.round(n * scale);
 const rvs = (n) => Math.round(n * vs);
 const rfs = (n) => Math.round(n * scale);
-
-const LANGUAGES = [
-  { code: 'en', labelKey: 'language.english', flag: '🇬🇧' },
-  { code: 'hi', labelKey: 'language.hindi', flag: '🇮🇳' },
-  { code: 'gu', labelKey: 'language.gujarati', flag: '🇮🇳' },
-];
 
 export default function LanguageSelectScreen({ navigation }) {
   const { t } = useTranslation();
@@ -44,63 +38,78 @@ export default function LanguageSelectScreen({ navigation }) {
 
   return (
     <View style={styles.root}>
-      <LinearGradient
-        colors={[colors.primaryDark, colors.primary, colors.darkSurface]}
-        style={styles.header}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="light-content"
+      />
+      <Modal
+        visible
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => {}}
       >
-        <View style={styles.headerContent}>
-          <View style={styles.iconWrap}>
-            <Icon name="language-outline" size={rfs(40)} color={colors.accent} />
-          </View>
-          <Text style={styles.title}>{t('language.title')}</Text>
-          <Text style={styles.subtitle}>{t('language.subtitle')}</Text>
-        </View>
-      </LinearGradient>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalIconBox}>
+                <Icon name="language-outline" size={rfs(20)} color={colors.accent} />
+              </View>
+              <View style={styles.modalHeaderText}>
+                <Text style={styles.title}>{t('language.title')}</Text>
+                <Text style={styles.subtitle}>{t('language.subtitle')}</Text>
+              </View>
+            </View>
 
-      <View style={styles.card}>
-        {LANGUAGES.map((lang) => (
-          <TouchableOpacity
-            key={lang.code}
-            style={[
-              styles.option,
-              selected === lang.code && styles.optionSelected,
-            ]}
-            onPress={() => setSelected(lang.code)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.optionFlag}>{lang.flag}</Text>
-            <Text
-              style={[
-                styles.optionLabel,
-                selected === lang.code && styles.optionLabelSelected,
-              ]}
+            <View style={styles.modalDivider} />
+
+            <View style={styles.langList}>
+              {APP_LANGUAGES.map((lang, idx) => {
+                const isOn = selected === lang.code;
+                return (
+                  <TouchableOpacity
+                    key={lang.code}
+                    style={[
+                      styles.langRow,
+                      idx < APP_LANGUAGES.length - 1 && styles.langRowBorder,
+                    ]}
+                    onPress={() => setSelected(lang.code)}
+                    activeOpacity={0.85}
+                  >
+                    <View style={styles.codeCircle}>
+                      <Text style={styles.codeCircleText}>{lang.short}</Text>
+                    </View>
+                    <Text
+                      style={[styles.langName, isOn && styles.langNameSelected]}
+                    >
+                      {t(lang.labelKey)}
+                    </Text>
+                    {isOn ? (
+                      <Icon
+                        name="checkmark-circle"
+                        size={rfs(22)}
+                        color={colors.primary}
+                      />
+                    ) : (
+                      <View style={styles.checkPlaceholder} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.continueBtn, !selected && styles.continueBtnDisabled]}
+              onPress={handleContinue}
+              disabled={!selected}
+              activeOpacity={0.85}
             >
-              {t(lang.labelKey)}
-            </Text>
-            {selected === lang.code && (
-              <Icon
-                name="checkmark-circle"
-                size={rfs(22)}
-                color={colors.primary}
-              />
-            )}
-          </TouchableOpacity>
-        ))}
-
-        <TouchableOpacity
-          style={[
-            styles.continueBtn,
-            !selected && styles.continueBtnDisabled,
-          ]}
-          onPress={handleContinue}
-          disabled={!selected}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.continueBtnText}>{t('language.continue')}</Text>
-        </TouchableOpacity>
-      </View>
+              <Text style={styles.continueBtnText}>{t('language.continue')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -108,95 +117,125 @@ export default function LanguageSelectScreen({ navigation }) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'rgba(26,46,51,0.55)',
   },
-  header: {
-    paddingTop: Platform.OS === 'android'
-      ? (StatusBar.currentHeight ?? rvs(24)) + rvs(20)
-      : rvs(48),
-    paddingBottom: rvs(28),
-    paddingHorizontal: rs(24),
-    alignItems: 'center',
-  },
-  headerContent: {
-    alignItems: 'center',
-  },
-  iconWrap: {
-    width: rs(72),
-    height: rs(72),
-    borderRadius: rs(36),
-    backgroundColor: colors.glassWhite,
-    alignItems: 'center',
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(26,46,51,0.55)',
     justifyContent: 'center',
-    marginBottom: rvs(16),
+    alignItems: 'center',
+    paddingHorizontal: rs(20),
+    paddingVertical: rvs(24),
   },
-  title: {
-    fontSize: rfs(24),
-    fontWeight: '800',
-    color: colors.darkText,
-    textAlign: 'center',
-    marginBottom: rvs(8),
+  modalCard: {
+    width: '100%',
+    maxWidth: rs(400),
+    backgroundColor: '#FFFFFF',
+    borderRadius: rs(16),
+    paddingHorizontal: rs(20),
+    paddingTop: rvs(20),
+    paddingBottom: rvs(18),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.divider,
+    shadowColor: 'rgba(26,46,51,0.2)',
+    shadowOffset: { width: 0, height: rvs(6) },
+    shadowOpacity: 1,
+    shadowRadius: rs(20),
+    elevation: 12,
   },
-  subtitle: {
-    fontSize: rfs(14),
-    color: colors.darkTextMuted,
-    textAlign: 'center',
-    lineHeight: rfs(20),
-  },
-  card: {
-    marginHorizontal: rs(20),
-    marginTop: -rvs(16),
-    backgroundColor: colors.card,
-    borderRadius: rs(20),
-    padding: rs(20),
-    shadowColor: colors.shadowCard,
-    shadowOffset: { width: 0, height: rvs(4) },
-    shadowOpacity: 0.12,
-    shadowRadius: rs(16),
-    elevation: 8,
-  },
-  option: {
+  modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: rvs(16),
-    paddingHorizontal: rs(16),
-    borderRadius: rs(14),
-    marginBottom: rvs(10),
-    borderWidth: 2,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    gap: rs(12),
+    marginBottom: rvs(14),
   },
-  optionSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.accentLight,
-  },
-  optionFlag: {
-    fontSize: rfs(24),
-    marginRight: rs(14),
-  },
-  optionLabel: {
+  modalHeaderText: {
     flex: 1,
-    fontSize: rfs(16),
+  },
+  modalIconBox: {
+    width: rs(44),
+    height: rs(44),
+    borderRadius: rs(12),
+    backgroundColor: 'rgba(245,166,35,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,166,35,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  title: {
+    fontSize: rfs(18),
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+  subtitle: {
+    fontSize: rfs(12),
+    color: colors.textSecondary,
+    marginTop: rvs(3),
+    lineHeight: rfs(17),
+  },
+  modalDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.divider,
+    marginBottom: rvs(4),
+  },
+  langList: {
+    marginBottom: rvs(4),
+  },
+  langRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: rvs(12),
+    paddingHorizontal: rs(4),
+    gap: rs(12),
+  },
+  langRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.divider,
+  },
+  codeCircle: {
+    width: rs(40),
+    height: rs(40),
+    borderRadius: rs(20),
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  codeCircleText: {
+    fontSize: rfs(13),
+    fontWeight: '800',
+    color: colors.textLight,
+    letterSpacing: 0.6,
+  },
+  langName: {
+    flex: 1,
+    fontSize: rfs(15),
     fontWeight: '600',
     color: colors.textPrimary,
   },
-  optionLabelSelected: {
+  langNameSelected: {
     color: colors.primary,
+    fontWeight: '700',
+  },
+  checkPlaceholder: {
+    width: rfs(22),
+    height: rfs(22),
   },
   continueBtn: {
     backgroundColor: colors.primary,
-    paddingVertical: rvs(16),
+    paddingVertical: rvs(15),
     borderRadius: rs(14),
     alignItems: 'center',
-    marginTop: rvs(8),
+    marginTop: rvs(16),
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: rvs(4) },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.28,
     shadowRadius: rs(10),
     elevation: 4,
   },
   continueBtnDisabled: {
-    opacity: 0.5,
+    opacity: 0.45,
   },
   continueBtnText: {
     fontSize: rfs(16),

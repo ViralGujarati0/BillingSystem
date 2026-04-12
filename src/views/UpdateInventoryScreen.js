@@ -14,6 +14,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../theme/colors';
 import useInventoryViewModel from '../viewmodels/InventoryViewModel';
 import AppHeaderLayout from '../components/AppHeaderLayout';
+import HeaderBackButton from '../components/HeaderBackButton';
 import ConfirmActionModal from '../components/ConfirmActionModal';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -57,14 +58,6 @@ const EmptyState = ({ onBack }) => (
       <Text style={styles.stateBtnText}>Go Back</Text>
     </TouchableOpacity>
   </View>
-);
-
-// ─── Back pill — passed as leftComponent ─────────────────────────────────────
-const BackPill = ({ onPress }) => (
-  <TouchableOpacity style={styles.backPill} onPress={onPress} activeOpacity={0.75}>
-    <Icon name="chevron-back" size={rfs(16)} color="#FFFFFF" />
-    <Text style={styles.backPillText}>Back</Text>
-  </TouchableOpacity>
 );
 
 // ─── Delete button — passed as rightComponent ─────────────────────────────────
@@ -183,7 +176,7 @@ const UpdateInventoryScreen = ({ navigation, route }) => {
   })();
 
   // ── Shared header props ──
-  const headerLeft  = <BackPill onPress={() => navigation.goBack()} />;
+  const headerLeft  = <HeaderBackButton onPress={() => navigation.goBack()} />;
   const headerRight = inventory
     ? <DeleteButton onPress={() => setDeleteModal(true)} />
     : null;
@@ -386,25 +379,6 @@ export default UpdateInventoryScreen;
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-
-  // ── Back pill ────────────────────────────────────────────
-  backPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(4),
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    borderRadius: rs(20),
-    paddingHorizontal: rs(12),
-    paddingVertical: rvs(7),
-  },
-
-  backPillText: {
-    fontSize: rfs(13),
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
 
   // ── Delete header button ─────────────────────────────────
   deleteHeaderBtn: {

@@ -116,6 +116,7 @@ import { addStaffFormAtom }          from '../atoms/forms';
 import { DEFAULT_STAFF_PERMISSIONS } from '../atoms/staff';
 import { createStaff }               from '../services/staffService';
 import { colors }                    from '../theme/colors';
+import HeaderBackButton              from '../components/HeaderBackButton';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const scale = SCREEN_W / 390;
@@ -147,6 +148,20 @@ const PERMISSION_SECTIONS = [
       { key: 'categoryFilter', label: 'Category Filter',  description: 'Filter inventory by category' },
       { key: 'quickActions',   label: 'Quick Actions',    description: 'Scan, add and create product buttons' },
       { key: 'inventoryList',  label: 'Inventory List',   description: 'View all inventory items' },
+    ],
+  },
+  {
+    key: 'home', label: 'Home dashboard', icon: 'home-outline', color: '#0d9488', flat: false,
+    items: [
+      { key: 'overviewStats',    label: 'Overview stats',     description: 'Revenue, profit, bills, items, avg bill, purchases' },
+      { key: 'revenueChart',     label: 'Revenue chart',      description: 'Bar chart of daily sales' },
+      { key: 'paymentSplit',     label: 'Payment split',      description: 'Cash vs online vs other' },
+      { key: 'topProducts',      label: 'Top products',       description: 'Best-selling products' },
+      { key: 'comparison',     label: 'Period comparison',  description: 'This period vs previous' },
+      { key: 'lowStock',         label: 'Low stock alert',    description: 'Products running low' },
+      { key: 'pendingPurchases', label: 'Pending purchases',  description: 'Unpaid purchase invoices' },
+      { key: 'recentBillsCard',  label: 'Recent bills',       description: 'Latest bills on home (separate from Sales list)' },
+      { key: 'dailyReportFab',   label: 'Print daily report', description: 'Floating button to build / print report' },
     ],
   },
 ];
@@ -251,7 +266,17 @@ const AddStaffScreen = ({ navigation }) => {
     try {
       await createStaff({ name: form.name.trim(), email: form.email.trim(), password: form.password, permissions: form.permissions });
       Alert.alert(t('common.success'), t('staff.staffAdded', { name: form.name }));
-      setForm({ name: '', email: '', password: '', permissions: DEFAULT_STAFF_PERMISSIONS });
+      setForm({
+        name: '',
+        email: '',
+        password: '',
+        permissions: {
+          ...DEFAULT_STAFF_PERMISSIONS,
+          sales: { ...DEFAULT_STAFF_PERMISSIONS.sales },
+          stock: { ...DEFAULT_STAFF_PERMISSIONS.stock },
+          home: { ...DEFAULT_STAFF_PERMISSIONS.home },
+        },
+      });
       navigation.goBack();
     } catch (err) {
       Alert.alert(t('common.error'), err.message);
@@ -262,10 +287,9 @@ const AddStaffScreen = ({ navigation }) => {
     <View style={styles.root}>
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backPill} onPress={() => navigation.goBack()} activeOpacity={0.75}>
-          <Icon name="chevron-back" size={rfs(16)} color="#FFFFFF" />
-          <Text style={styles.backPillText}>{t('common.back')}</Text>
-        </TouchableOpacity>
+        <View style={styles.backWrap}>
+          <HeaderBackButton onPress={() => navigation.goBack()} />
+        </View>
         <Text style={styles.headerTitle}>{t('staff.addStaff')}</Text>
         <Text style={styles.headerSub}>{t('staff.addStaffSub')}</Text>
       </View>
@@ -322,8 +346,7 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { paddingTop: rvs(16), paddingBottom: rvs(48), gap: rvs(12) },
   header: { backgroundColor: colors.primary, paddingTop: STATUS_H + rvs(12), paddingBottom: rvs(24), paddingHorizontal: rs(20) },
-  backPill: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: rs(4), backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', borderRadius: rs(20), paddingHorizontal: rs(12), paddingVertical: rvs(6), marginBottom: rvs(16) },
-  backPillText: { fontSize: rfs(13), fontWeight: '600', color: '#FFFFFF' },
+  backWrap: { alignSelf: 'flex-start', marginBottom: rvs(16) },
   headerTitle: { fontSize: rfs(22), fontWeight: '800', color: '#FFFFFF' },
   headerSub: { fontSize: rfs(12), color: 'rgba(255,255,255,0.55)', fontWeight: '500', marginTop: rvs(4) },
   sectionCard: { backgroundColor: '#FFFFFF', borderRadius: rs(16), borderWidth: 1, borderColor: colors.borderCard, marginHorizontal: rs(16), overflow: 'hidden', shadowColor: colors.shadowCard, shadowOffset: { width: 0, height: rvs(2) }, shadowOpacity: 1, shadowRadius: rs(8), elevation: 2 },

@@ -18,6 +18,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { colors } from "../theme/colors";
 import { setAppLocale } from "../locale/i18n";
 import { localeAtom } from "../atoms/locale";
+import { APP_LANGUAGES } from "../constants/languages";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 const scale = SCREEN_W / 390;
@@ -26,17 +27,10 @@ const rs    = (n) => Math.round(n * scale);
 const rvs   = (n) => Math.round(n * vs);
 const rfs   = (n) => Math.round(n * Math.min(scale, vs));
 
-// ─── Languages config ─────────────────────────────────────────────────────────
-const LANGUAGES = [
-  { code: "en", labelKey: "language.english",  shortLabel: "EN" },
-  { code: "hi", labelKey: "language.hindi",    shortLabel: "HI" },
-  { code: "gu", labelKey: "language.gujarati", shortLabel: "GU" },
-];
-
 // ─── Language button in header ────────────────────────────────────────────────
 function LanguageButton({ onPress, currentLocale }) {
   const { t } = useTranslation();
-  const lang  = LANGUAGES.find((l) => l.code === currentLocale);
+  const lang  = APP_LANGUAGES.find((l) => l.code === currentLocale);
   const label = lang ? t(lang.labelKey) : "Language";
 
   return (
@@ -64,6 +58,11 @@ function LanguagePicker({ visible, onClose, currentLocale, onSelect }) {
       statusBarTranslucent
       onRequestClose={onClose}
     >
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="light-content"
+      />
       <TouchableOpacity
         style={langStyles.overlay}
         activeOpacity={1}
@@ -89,25 +88,20 @@ function LanguagePicker({ visible, onClose, currentLocale, onSelect }) {
           <View style={langStyles.pickerDivider} />
 
           {/* Options */}
-          {LANGUAGES.map((lang, idx) => {
+          {APP_LANGUAGES.map((lang, idx) => {
             const selected = i18n.language === lang.code;
             return (
               <TouchableOpacity
                 key={lang.code}
                 style={[
                   langStyles.option,
-                  selected && langStyles.optionSelected,
-                  idx < LANGUAGES.length - 1 && langStyles.optionBorder,
+                  idx < APP_LANGUAGES.length - 1 && langStyles.optionBorder,
                 ]}
                 onPress={() => onSelect(lang.code)}
                 activeOpacity={0.8}
               >
-                {/* Left: icon box */}
-                <View style={[
-                  langStyles.optionIconBox,
-                  selected && langStyles.optionIconBoxSelected,
-                ]}>
-                  <Text style={langStyles.optionShort}>{lang.shortLabel}</Text>
+                <View style={langStyles.optionIconBox}>
+                  <Text style={langStyles.optionShort}>{lang.short}</Text>
                 </View>
 
                 {/* Label */}
@@ -118,13 +112,14 @@ function LanguagePicker({ visible, onClose, currentLocale, onSelect }) {
                   {t(lang.labelKey)}
                 </Text>
 
-                {/* Checkmark */}
-                {selected && (
+                {selected ? (
                   <Icon
                     name="checkmark-circle"
-                    size={rfs(20)}
+                    size={rfs(22)}
                     color={colors.primary}
                   />
+                ) : (
+                  <View style={langStyles.checkPlaceholder} />
                 )}
               </TouchableOpacity>
             );
@@ -260,8 +255,8 @@ export default function AppHeaderLayout({
           {/* Title + subtitle */}
           <View style={styles.titleBlock}>
 
-            {/* Vertical accent bar — hidden when showAccentBar=false */}
-            {showAccentBar && <View style={styles.accentBar} />}
+            {/* Vertical accent bar — hidden with left slot (e.g. back) or showAccentBar=false */}
+            {showAccentBar && !leftComponent && <View style={styles.accentBar} />}
 
             <View style={styles.titleInner}>
               <Text style={styles.title} numberOfLines={1}>
@@ -481,20 +476,24 @@ const langStyles = StyleSheet.create({
     backgroundColor: "rgba(26,46,51,0.55)",
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: rs(24),
+    paddingHorizontal: rs(20),
+    paddingVertical: rvs(24),
   },
 
   pickerCard: {
     width: "100%",
+    maxWidth: rs(400),
     backgroundColor: "#FFFFFF",
-    borderRadius: rs(20),
+    borderRadius: rs(16),
     paddingHorizontal: rs(20),
-    paddingTop: rvs(22),
+    paddingTop: rvs(20),
     paddingBottom: rvs(18),
-    shadowColor: "rgba(26,46,51,0.25)",
-    shadowOffset: { width: 0, height: rvs(8) },
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.divider,
+    shadowColor: "rgba(26,46,51,0.2)",
+    shadowOffset: { width: 0, height: rvs(6) },
     shadowOpacity: 1,
-    shadowRadius: rs(24),
+    shadowRadius: rs(20),
     elevation: 14,
   },
 
@@ -551,32 +550,26 @@ const langStyles = StyleSheet.create({
     borderBottomColor: colors.borderCard,
   },
 
-  optionSelected: {
-    backgroundColor: "rgba(45,74,82,0.05)",
-  },
-
   optionIconBox: {
-    width: rs(36),
-    height: rs(36),
-    borderRadius: rs(10),
-    backgroundColor: "rgba(45,74,82,0.07)",
-    borderWidth: 1,
-    borderColor: "rgba(45,74,82,0.12)",
+    width: rs(40),
+    height: rs(40),
+    borderRadius: rs(20),
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
 
-  optionIconBoxSelected: {
-    backgroundColor: "rgba(45,74,82,0.12)",
-    borderColor: colors.primary,
+  optionShort: {
+    fontSize: rfs(13),
+    fontWeight: "800",
+    color: colors.textLight,
+    letterSpacing: 0.6,
   },
 
-  optionShort: {
-    fontSize: rfs(11),
-    fontWeight: "800",
-    color: colors.primary,
-    letterSpacing: 0.5,
+  checkPlaceholder: {
+    width: rfs(22),
+    height: rfs(22),
   },
 
   optionText: {

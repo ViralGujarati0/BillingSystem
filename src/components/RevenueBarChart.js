@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, Dimensions, ScrollView, TouchableOpacity,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
 import PeriodToggle from './PeriodToggle';
 
@@ -13,27 +14,31 @@ const rvs   = (n) => Math.round(n * vs);
 const rfs   = (n) => Math.round(n * Math.min(scale, vs));
 
 const CHART_HEIGHT = rvs(130);
-const BAR_MODES = [
-  { key: 'sales',     label: 'Revenue', color: colors.primary  },
-  { key: 'profit',    label: 'Profit',  color: colors.success  },
-  { key: 'purchases', label: 'Purchase',color: colors.accent   },
-];
-
 /**
  * RevenueBarChart
  * Props: dailyData, period, onChangePeriod, loading
  * dailyData: [{ key, sales, profit, purchases }]
  */
 const RevenueBarChart = ({ dailyData = [], period, onChangePeriod, loading }) => {
+  const { t } = useTranslation();
+
+  const barModes = useMemo(
+    () => [
+      { key: 'sales',     label: t('home.chartRevenue'),  color: colors.primary },
+      { key: 'profit',    label: t('home.chartProfit'),   color: colors.success },
+      { key: 'purchases', label: t('home.chartPurchase'), color: colors.accent },
+    ],
+    [t],
+  );
 
   const [activeMode, setActiveMode] = useState('sales');
-  const mode = BAR_MODES.find((m) => m.key === activeMode);
+  const mode = barModes.find((m) => m.key === activeMode);
 
   const values = dailyData.map((d) => d[activeMode] || 0);
   const maxVal = Math.max(...values, 1);
 
   const formatLabel = (key) => {
-    if (key === 'Today') return 'Today';
+    if (key === 'Today') return t('home.periodToday');
     const parts = key.replace('daily_', '').split('_');
     if (parts.length === 3) {
       const months = ['J','F','M','A','M','J','J','A','S','O','N','D'];
@@ -54,20 +59,20 @@ const RevenueBarChart = ({ dailyData = [], period, onChangePeriod, loading }) =>
 
       {/* ── Header ── */}
       <View style={styles.header}>
-        <Text style={styles.title}>Sales Trend</Text>
+        <Text style={styles.title}>{t('home.salesTrend')}</Text>
 
         <PeriodToggle
           period={period}
           onChangePeriod={onChangePeriod}
           loading={loading}
           accentColor={colors.primary}
-          label="Sales Trend"
+          label={t('home.salesTrend')}
         />
       </View>
 
       {/* Mode tabs */}
       <View style={styles.modeTabs}>
-        {BAR_MODES.map((m) => (
+        {barModes.map((m) => (
           <TouchableOpacity
             key={m.key}
             style={[styles.modeTab, activeMode === m.key && { borderBottomColor: m.color, borderBottomWidth: 2 }]}
@@ -84,7 +89,7 @@ const RevenueBarChart = ({ dailyData = [], period, onChangePeriod, loading }) =>
       {/* Chart */}
       {loading || dailyData.length === 0 ? (
         <View style={[styles.chartWrap, styles.emptyWrap]}>
-          <Text style={styles.emptyText}>No data</Text>
+          <Text style={styles.emptyText}>{t('common.noData')}</Text>
         </View>
       ) : (
         <ScrollView

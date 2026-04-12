@@ -7,6 +7,7 @@ import {
   Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -25,14 +26,16 @@ const DailyReportFab = ({
   shopName,
   shopAddress,
   vm,
-  periodLabel = 'Today',
+  periodLabel,
 }) => {
+  const { t } = useTranslation();
+  const resolvedPeriod = periodLabel || t('home.periodToday');
 
   const handlePress = () => {
     const reportData = {
-      shopName:      shopName    || 'My Shop',
+      shopName:      shopName    || t('home.myShopDefault'),
       shopAddress:   shopAddress || '',
-      periodLabel,
+      periodLabel: resolvedPeriod,
       stats:         vm?.revenue?.stats    || {},
       prevStats:     vm?.comparison?.prev  || null,
       topProducts:   vm?.topProducts?.data || [],
@@ -58,7 +61,7 @@ const DailyReportFab = ({
           color={colors.primary}
         />
       </View>
-      <Text style={styles.label}>Print Report</Text>
+      <Text style={styles.label}>{t('home.printReport')}</Text>
     </TouchableOpacity>
   );
 };

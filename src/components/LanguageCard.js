@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Modal,
   Dimensions,
+  StatusBar,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +14,7 @@ import { useSetAtom } from 'jotai';
 import { colors } from '../theme/colors';
 import { setAppLocale } from '../locale/i18n';
 import { localeAtom } from '../atoms/locale';
+import { APP_LANGUAGES } from '../constants/languages';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const scale = SCREEN_W / 390;
@@ -20,12 +22,6 @@ const vs    = SCREEN_H / 844;
 const rs    = (n) => Math.round(n * scale);
 const rvs   = (n) => Math.round(n * vs);
 const rfs   = (n) => Math.round(n * Math.min(scale, vs));
-
-const LANGUAGES = [
-  { code: 'en', labelKey: 'language.english',  flag: '🇬🇧' },
-  { code: 'hi', labelKey: 'language.hindi',    flag: '🇮🇳' },
-  { code: 'gu', labelKey: 'language.gujarati', flag: '🇮🇳' },
-];
 
 export default function LanguageCard({ currentLocale = 'en' }) {
   const { t, i18n } = useTranslation();
@@ -38,7 +34,7 @@ export default function LanguageCard({ currentLocale = 'en' }) {
     setModalVisible(false);
   };
 
-  const currentLang = LANGUAGES.find((l) => l.code === currentLocale);
+  const currentLang = APP_LANGUAGES.find((l) => l.code === currentLocale);
   const currentLabel = currentLang
     ? t(currentLang.labelKey)
     : t('language.english');
@@ -76,8 +72,14 @@ export default function LanguageCard({ currentLocale = 'en' }) {
         visible={modalVisible}
         transparent
         animationType="fade"
+        statusBarTranslucent
         onRequestClose={() => setModalVisible(false)}
       >
+        <StatusBar
+          translucent
+          backgroundColor="transparent"
+          barStyle="light-content"
+        />
         <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
@@ -102,37 +104,44 @@ export default function LanguageCard({ currentLocale = 'en' }) {
 
             <View style={styles.modalDivider} />
 
-            {/* Language options */}
-            {LANGUAGES.map((lang, idx) => {
-              const selected = i18n.language === lang.code;
-              return (
-                <TouchableOpacity
-                  key={lang.code}
-                  style={[
-                    styles.langOption,
-                    selected && styles.langOptionSelected,
-                    idx < LANGUAGES.length - 1 && styles.langOptionBorder,
-                  ]}
-                  onPress={() => handleSelect(lang.code)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.langFlag}>{lang.flag}</Text>
-                  <Text style={[
-                    styles.langText,
-                    selected && styles.langTextSelected,
-                  ]}>
-                    {t(lang.labelKey)}
-                  </Text>
-                  {selected && (
-                    <Icon
-                      name="checkmark-circle"
-                      size={rfs(20)}
-                      color={colors.primary}
-                    />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
+            {/* Language options — row: code circle | name | check (theme colors) */}
+            <View>
+              {APP_LANGUAGES.map((lang, idx) => {
+                const selected = i18n.language === lang.code;
+                return (
+                  <TouchableOpacity
+                    key={lang.code}
+                    style={[
+                      styles.langRow,
+                      idx < APP_LANGUAGES.length - 1 && styles.langRowBorder,
+                    ]}
+                    onPress={() => handleSelect(lang.code)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.codeCircle}>
+                      <Text style={styles.codeCircleText}>{lang.short}</Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.langPickerLabel,
+                        selected && styles.langPickerLabelSelected,
+                      ]}
+                    >
+                      {t(lang.labelKey)}
+                    </Text>
+                    {selected ? (
+                      <Icon
+                        name="checkmark-circle"
+                        size={rfs(22)}
+                        color={colors.primary}
+                      />
+                    ) : (
+                      <View style={styles.checkPlaceholder} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
 
             {/* Cancel */}
             <TouchableOpacity
@@ -224,20 +233,24 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(26,46,51,0.55)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: rs(24),
+    paddingHorizontal: rs(20),
+    paddingVertical: rvs(24),
   },
 
   modalCard: {
     width: '100%',
+    maxWidth: rs(400),
     backgroundColor: '#FFFFFF',
-    borderRadius: rs(20),
+    borderRadius: rs(16),
     paddingHorizontal: rs(20),
-    paddingTop: rvs(22),
+    paddingTop: rvs(20),
     paddingBottom: rvs(18),
-    shadowColor: 'rgba(26,46,51,0.25)',
-    shadowOffset: { width: 0, height: rvs(8) },
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.divider,
+    shadowColor: 'rgba(26,46,51,0.2)',
+    shadowOffset: { width: 0, height: rvs(6) },
     shadowOpacity: 1,
-    shadowRadius: rs(24),
+    shadowRadius: rs(20),
     elevation: 12,
   },
 
@@ -280,39 +293,52 @@ const styles = StyleSheet.create({
     marginBottom: rvs(4),
   },
 
-  // ── Language options ──────────────────────────────────
-  langOption: {
+  // ── Language options (row: circle | name | check) ───────
+  langRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: rs(12),
-    paddingVertical: rvs(14),
+    paddingVertical: rvs(12),
     paddingHorizontal: rs(4),
-    borderRadius: rs(10),
+    gap: rs(12),
   },
 
-  langOptionBorder: {
+  langRowBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderCard,
+    borderBottomColor: colors.divider,
   },
 
-  langOptionSelected: {
-    backgroundColor: 'rgba(45,74,82,0.05)',
+  codeCircle: {
+    width: rs(40),
+    height: rs(40),
+    borderRadius: rs(20),
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
 
-  langFlag: {
-    fontSize: rfs(20),
+  codeCircleText: {
+    fontSize: rfs(13),
+    fontWeight: '800',
+    color: colors.textLight,
+    letterSpacing: 0.6,
   },
 
-  langText: {
+  langPickerLabel: {
     flex: 1,
-    fontSize: rfs(14),
+    fontSize: rfs(15),
     fontWeight: '600',
     color: colors.textPrimary,
   },
 
-  langTextSelected: {
+  langPickerLabelSelected: {
     color: colors.primary,
     fontWeight: '700',
+  },
+
+  checkPlaceholder: {
+    width: rfs(22),
+    height: rfs(22),
   },
 
   // ── Cancel button ─────────────────────────────────────

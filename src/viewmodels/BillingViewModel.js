@@ -53,7 +53,7 @@ const useBillingViewModel = () => {
 
     if (!product) {
       console.log("Product not found anywhere:", cleanBarcode);
-      return;
+      return { status: "NEEDS_SETUP" };
     }
 
     // 2. Check inventory
@@ -61,7 +61,7 @@ const useBillingViewModel = () => {
 
     if (!inventory) {
       console.log("Not in inventory:", cleanBarcode);
-      return;
+      return { status: "NEEDS_SETUP" };
     }
 
     const rate = Number(inventory.sellingPrice ?? product.mrp ?? 0);
@@ -99,6 +99,7 @@ const useBillingViewModel = () => {
 
     });
 
+    return { status: "ADDED" };
   };
 
   /* ───────── UPDATE ITEM QTY ───────── */

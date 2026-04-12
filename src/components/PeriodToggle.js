@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, TouchableOpacity, Modal,
   StyleSheet, Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -13,10 +14,10 @@ const rs    = (n) => Math.round(n * scale);
 const rvs   = (n) => Math.round(n * vs);
 const rfs   = (n) => Math.round(n * Math.min(scale, vs));
 
-const OPTIONS = [
-  { key: 'today', label: 'Today',        icon: 'today-outline'         },
-  { key: '7d',    label: 'Last 7 Days',  icon: 'calendar-outline'      },
-  { key: '30d',   label: 'Last 30 Days', icon: 'calendar-clear-outline' },
+const OPTION_KEYS = [
+  { key: 'today', icon: 'today-outline' },
+  { key: '7d',    icon: 'calendar-outline' },
+  { key: '30d',   icon: 'calendar-clear-outline' },
 ];
 
 /**
@@ -26,8 +27,23 @@ const OPTIONS = [
  * Trigger: funnel icon (use anywhere in a card header)
  */
 const PeriodToggle = ({ period, onChangePeriod, loading, accentColor, label }) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const accent = accentColor || colors.primary;
+
+  const options = useMemo(
+    () =>
+      OPTION_KEYS.map((o) => ({
+        ...o,
+        label:
+          o.key === 'today'
+            ? t('home.periodToday')
+            : o.key === '7d'
+              ? t('home.periodLast7Days')
+              : t('home.periodLast30Days'),
+      })),
+    [t],
+  );
 
   const select = (key) => {
     setOpen(false);
@@ -77,7 +93,7 @@ const PeriodToggle = ({ period, onChangePeriod, loading, accentColor, label }) =
                 <Icon name="funnel-outline" size={rfs(18)} color="#FFFFFF" />
               </View>
               <View style={styles.popupHeaderText}>
-                <Text style={styles.popupTitle}>Filter Period</Text>
+                <Text style={styles.popupTitle}>{t('home.filterPeriod')}</Text>
                 {label ? <Text style={styles.popupSubtitle}>{label}</Text> : null}
               </View>
             </View>
@@ -85,7 +101,7 @@ const PeriodToggle = ({ period, onChangePeriod, loading, accentColor, label }) =
             <View style={styles.divider} />
 
             {/* Options */}
-            {OPTIONS.map((opt, i) => {
+            {options.map((opt, i) => {
               const active = opt.key === period;
               return (
                 <TouchableOpacity
@@ -93,7 +109,7 @@ const PeriodToggle = ({ period, onChangePeriod, loading, accentColor, label }) =
                   style={[
                     styles.option,
                     active && styles.optionActive,
-                    i < OPTIONS.length - 1 && styles.optionBorder,
+                    i < options.length - 1 && styles.optionBorder,
                   ]}
                   onPress={() => select(opt.key)}
                   activeOpacity={0.8}
@@ -129,7 +145,7 @@ const PeriodToggle = ({ period, onChangePeriod, loading, accentColor, label }) =
               onPress={() => setOpen(false)}
               activeOpacity={0.8}
             >
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.cancelText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
 
           </TouchableOpacity>

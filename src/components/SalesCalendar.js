@@ -62,13 +62,13 @@ function MonthYearPicker({ visible, currentDay, currentMonth, currentYear, onSel
     (_, i) => START_YEAR + i
   );
 
-  const [pickerYear,  setPickerYear]  = useState(currentYear);
-  const [pickerMonth, setPickerMonth] = useState(currentMonth);
-  const [pickerDay, setPickerDay] = useState(currentDay);
-  const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
+  const [pickerYear,        setPickerYear]        = useState(currentYear);
+  const [pickerMonth,       setPickerMonth]       = useState(currentMonth);
+  const [pickerDay,         setPickerDay]         = useState(currentDay);
+  const [yearDropdownOpen,  setYearDropdownOpen]  = useState(false);
   const [monthDropdownOpen, setMonthDropdownOpen] = useState(false);
 
-  // Sync + scroll every time modal opens
+  // Sync every time modal opens
   React.useEffect(() => {
     if (visible) {
       setPickerYear(currentYear);
@@ -275,11 +275,11 @@ function MonthYearPicker({ visible, currentDay, currentMonth, currentYear, onSel
 /* ───────── TIER COLORS (teal theme shades) ───────── */
 // tier 4 = highest sales, tier 1 = lowest with sales, 0 = no sales
 const TIER_BG = {
-  4: 'rgba(45,74,82,0.90)',   // darkest — top sales day
-  3: 'rgba(45,74,82,0.55)',   // dark-medium
-  2: 'rgba(45,74,82,0.28)',   // medium-light
-  1: 'rgba(45,74,82,0.10)',   // lightest — has sales but low
-  0: 'transparent',           // no sales
+  4: 'rgba(45,74,82,0.90)',
+  3: 'rgba(45,74,82,0.55)',
+  2: 'rgba(45,74,82,0.28)',
+  1: 'rgba(45,74,82,0.10)',
+  0: 'transparent',
 };
 
 const TIER_TEXT = {
@@ -293,9 +293,8 @@ const TIER_TEXT = {
 /* ───────── DAY COMPONENT ───────── */
 
 function CalDay({ date, isActive, isToday, saleTier, onPress }) {
-  const tierBg  = TIER_BG[saleTier]  ?? 'transparent';
+  const tierBg   = TIER_BG[saleTier]  ?? 'transparent';
   const tierText = TIER_TEXT[saleTier] ?? colors.textPrimary;
-
   const hasSales = saleTier > 0;
 
   const nameColor = hasSales && saleTier >= 3
@@ -336,15 +335,16 @@ function CalDay({ date, isActive, isToday, saleTier, onPress }) {
 const SalesCalendar = ({ stats = [], selectedDate, onSelectDate }) => {
 
   const now = new Date();
-  const dayStripRef = useRef(null);
+
+  const dayStripRef      = useRef(null);
+  // ── Only auto-scroll when user picks from modal, not on every date tap ──
+  const shouldAutoScroll = useRef(false);
 
   const [calMonth,      setCalMonth]      = useState(now.getMonth());
   const [calYear,       setCalYear]       = useState(now.getFullYear());
   const [pickerVisible, setPickerVisible] = useState(false);
 
-  // Track if user has changed from current month/year
-  const isFiltered = calMonth !== now.getMonth() || calYear !== now.getFullYear();
-
+  const isFiltered  = calMonth !== now.getMonth() || calYear !== now.getFullYear();
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
 
   // ── Sales map: day → totalSales ──────────────────────
@@ -362,15 +362,14 @@ const SalesCalendar = ({ stats = [], selectedDate, onSelectDate }) => {
   // ── Sales tier per day (0–4) ──────────────────────────
   const saleTierMap = useMemo(() => {
     if (salesMap.size === 0) return new Map();
-    const values  = Array.from(salesMap.values()).filter(v => v > 0).sort((a, b) => a - b);
+    const values = Array.from(salesMap.values()).filter(v => v > 0).sort((a, b) => a - b);
     if (values.length === 0) return new Map();
-    const max     = values[values.length - 1];
     const p75     = values[Math.floor(values.length * 0.75)];
     const p50     = values[Math.floor(values.length * 0.50)];
     const p25     = values[Math.floor(values.length * 0.25)];
     const tierMap = new Map();
     salesMap.forEach((sales, day) => {
-      if (sales <= 0)      tierMap.set(day, 0);
+      if (sales <= 0)        tierMap.set(day, 0);
       else if (sales >= p75) tierMap.set(day, 4);
       else if (sales >= p50) tierMap.set(day, 3);
       else if (sales >= p25) tierMap.set(day, 2);
@@ -389,24 +388,41 @@ const SalesCalendar = ({ stats = [], selectedDate, onSelectDate }) => {
     else setCalMonth(m => m + 1);
   }
 
-  // Reset to current month/year + today's date
   function resetToNow() {
     setCalMonth(now.getMonth());
     setCalYear(now.getFullYear());
     onSelectDate(new Date());
   }
 
+  // ── On mount: scroll to show today (current week visible) ────────────────
   React.useEffect(() => {
+    const todayIndex       = now.getDate() - 1;
+    const itemWidthWithGap = rs(52) + rs(6);
+    // Center today by offsetting half the screen width
+    const targetX = Math.max(0, todayIndex * itemWidthWithGap - (SCREEN_W / 2) + rs(26));
+    const timer = setTimeout(() => {
+      dayStripRef.current?.scrollTo({ x: targetX, animated: false });
+    }, 150);
+    return () => clearTimeout(timer);
+  }, []); // runs once on mount only
+
+  // ── Auto-scroll ONLY when user picks a date from the modal ───────────────
+  React.useEffect(() => {
+    if (!shouldAutoScroll.current) return; // not a modal pick — skip
+
     if (
       selectedDate.getFullYear() !== calYear ||
-      selectedDate.getMonth() !== calMonth
-    ) {
-      return;
-    }
+      selectedDate.getMonth()    !== calMonth
+    ) return;
+
+    shouldAutoScroll.current = false; // reset after use
 
     const selectedDayIndex = selectedDate.getDate() - 1;
     const itemWidthWithGap = rs(52) + rs(6);
-    const targetX = Math.max(0, selectedDayIndex * itemWidthWithGap - rs(24));
+    const targetX = Math.max(
+      0,
+      selectedDayIndex * itemWidthWithGap - (SCREEN_W / 2) + rs(26)
+    );
 
     const timer = setTimeout(() => {
       dayStripRef.current?.scrollTo({ x: targetX, animated: true });
@@ -421,18 +437,15 @@ const SalesCalendar = ({ stats = [], selectedDate, onSelectDate }) => {
       {/* ── Month header ── */}
       <View style={styles.monthRow}>
 
-        {/* Prev arrow */}
         <TouchableOpacity style={styles.navBtn} onPress={prevMonth} activeOpacity={0.7}>
           <Text style={styles.navIcon}>‹</Text>
         </TouchableOpacity>
 
-        {/* Center pill */}
         <TouchableOpacity
           style={styles.monthLabelBtn}
           onPress={() => setPickerVisible(true)}
           activeOpacity={0.75}
         >
-          {/* Dynamic calendar icon */}
           <View style={styles.calIconWrap}>
             <View style={styles.calIconHeader} />
             <Text style={styles.calIconDay}>{selectedDate.getDate()}</Text>
@@ -445,13 +458,11 @@ const SalesCalendar = ({ stats = [], selectedDate, onSelectDate }) => {
             <Text style={styles.monthHint}>tap to change</Text>
           </View>
 
-          {/* Chevron down */}
           <View style={styles.chevronWrap}>
             <View style={styles.chevronV} />
           </View>
         </TouchableOpacity>
 
-        {/* Cross reset — only shown when filtered */}
         {isFiltered && (
           <TouchableOpacity
             style={styles.resetBtn}
@@ -463,7 +474,6 @@ const SalesCalendar = ({ stats = [], selectedDate, onSelectDate }) => {
           </TouchableOpacity>
         )}
 
-        {/* Next arrow */}
         <TouchableOpacity style={styles.navBtn} onPress={nextMonth} activeOpacity={0.7}>
           <Text style={styles.navIcon}>›</Text>
         </TouchableOpacity>
@@ -499,6 +509,7 @@ const SalesCalendar = ({ stats = [], selectedDate, onSelectDate }) => {
         currentMonth={calMonth}
         currentYear={calYear}
         onSelect={(day, month, year) => {
+          shouldAutoScroll.current = true; // ← flag: this came from modal
           setCalMonth(month);
           setCalYear(year);
           onSelectDate(new Date(year, month, day));
@@ -522,7 +533,6 @@ const styles = StyleSheet.create({
     paddingBottom: rvs(14),
   },
 
-  // ── Month header row ──────────────────────────────────
   monthRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -615,7 +625,6 @@ const styles = StyleSheet.create({
     marginTop: -rs(3),
   },
 
-  // ── Cross reset button ────────────────────────────────
   resetBtn: {
     width: rs(30),
     height: rs(30),
@@ -646,7 +655,6 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '-45deg' }],
   },
 
-  // ── Nav buttons ───────────────────────────────────────
   navBtn: {
     width: rs(36),
     height: rs(36),
@@ -667,12 +675,10 @@ const styles = StyleSheet.create({
     lineHeight: rfs(24),
   },
 
-  // ── Day strip ─────────────────────────────────────────
   dayStrip: {
     gap: rs(6),
   },
 
-  // ── Day card ──────────────────────────────────────────
   dayWrapper: {
     width: rs(52),
   },
@@ -688,7 +694,6 @@ const styles = StyleSheet.create({
     paddingBottom: rvs(8),
   },
 
-  // Selected: only border changes — bg stays as-is (white or tier tint)
   daySelected: {
     borderWidth: rs(3),
     borderColor: colors.accent,
@@ -712,15 +717,12 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
 
-  dayToday: { color: colors.accent },
-
   dotPlaceholder: {
     marginTop: rvs(4),
     width: rs(5),
     height: rs(5),
   },
 
-  // ── Modal backdrop ────────────────────────────────────
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(26,43,48,0.50)',
@@ -733,7 +735,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: rs(20),
   },
 
-  // ── Picker card — centered modal ──────────────────────
   pickerCard: {
     width: '100%',
     maxWidth: rs(360),
@@ -757,6 +758,7 @@ const styles = StyleSheet.create({
     marginBottom: rvs(2),
     letterSpacing: 0.2,
   },
+
   pickerSubtitle: {
     fontSize: rfs(12),
     color: colors.textSecondary,
@@ -772,22 +774,26 @@ const styles = StyleSheet.create({
     marginBottom: rvs(8),
     marginTop: rvs(2),
   },
+
   monthGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: rs(8),
     marginBottom: rvs(12),
   },
+
   dayWrap: {
     maxHeight: rvs(150),
     marginBottom: rvs(4),
   },
+
   dayGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: rs(8),
     paddingBottom: rvs(6),
   },
+
   dayChip: {
     minWidth: rs(44),
     minHeight: rvs(36),
@@ -799,6 +805,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   monthChip: {
     width: `${(100 / 4) - 1}%`,
     minHeight: rvs(40),
@@ -809,6 +816,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   yearSelectBtn: {
     minHeight: rvs(44),
     borderRadius: rs(12),
@@ -821,16 +829,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: rvs(8),
   },
+
   yearSelectText: {
     fontSize: rfs(14),
     fontWeight: '700',
     color: colors.textPrimary,
   },
+
   yearSelectChevron: {
     fontSize: rfs(11),
     color: colors.textSecondary,
     fontWeight: '700',
   },
+
   yearDropdown: {
     maxHeight: rvs(170),
     borderRadius: rs(12),
@@ -839,55 +850,65 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     marginBottom: rvs(12),
   },
+
   yearDropdownContent: {
     paddingVertical: rvs(6),
   },
+
   yearOption: {
     minHeight: rvs(38),
     paddingHorizontal: rs(12),
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   yearOptionActive: {
     backgroundColor: 'rgba(45,74,82,0.08)',
   },
+
   yearOptionText: {
     fontSize: rfs(13),
     fontWeight: '600',
     color: colors.textPrimary,
   },
+
   yearOptionTextActive: {
     color: colors.primary,
     fontWeight: '800',
   },
+
   chipActive: {
     backgroundColor: 'rgba(45,74,82,0.08)',
     borderColor: colors.primary,
   },
+
   chipDisabled: {
     backgroundColor: 'rgba(45,74,82,0.03)',
     borderColor: colors.borderCard,
   },
+
   chipText: {
     fontSize: rfs(13),
     fontWeight: '600',
     color: colors.textPrimary,
   },
+
   chipTextActive: {
     color: colors.primary,
     fontWeight: '800',
   },
+
   chipTextDisabled: {
     color: colors.textSecondary,
     opacity: 0.4,
   },
 
-  // ── Apply button ──────────────────────────────────────
   actionsRow: {
     flexDirection: 'row',
     gap: rs(10),
     marginTop: rvs(14),
   },
+
   cancelBtn: {
     flex: 1,
     height: rvs(46),
@@ -898,11 +919,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(45,74,82,0.04)',
   },
+
   cancelText: {
     fontSize: rfs(14),
     fontWeight: '700',
     color: colors.textSecondary,
   },
+
   applyBtn: {
     flex: 1,
     height: rvs(46),

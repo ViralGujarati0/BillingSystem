@@ -58,14 +58,14 @@ const BillingHeader = ({ navigation, shop }) => {
         <View style={styles.orbTopRight} />
         <View style={styles.orbBottomLeft} />
 
-        {/* Back button */}
         <TouchableOpacity
           style={styles.backBtn}
           onPress={() => navigation.goBack()}
-          activeOpacity={0.75}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
         >
-          <Icon name="chevron-back" size={rfs(15)} color="rgba(255,255,255,0.80)" />
-          <Text style={styles.backText}>Back</Text>
+          <Icon name="chevron-back" size={rfs(19)} color="#FFFFFF" />
         </TouchableOpacity>
 
         {/* Shop info + DRAFT badge */}
@@ -75,9 +75,6 @@ const BillingHeader = ({ navigation, shop }) => {
             { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
           ]}
         >
-          {/* Accent bar */}
-          <View style={styles.accentBar} />
-
           <View style={styles.infoText}>
             <Text style={styles.shopName} numberOfLines={1}>
               {shop?.businessName || "—"}
@@ -134,24 +131,18 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.04)",
   },
 
-  // ── Back button ───────────────────────────────────────
+  // ── Back (icon only, circular) ────────────────────────
   backBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: rs(4),
+    width: rs(36),
+    height: rs(36),
+    borderRadius: rs(18),
     alignSelf: "flex-start",
     backgroundColor: "rgba(255,255,255,0.10)",
-    borderRadius: rs(20),
-    paddingVertical: rvs(5),
-    paddingHorizontal: rs(12),
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: rvs(16),
-  },
-
-  backText: {
-    fontSize: rfs(13),
-    fontWeight: "600",
-    color: "rgba(255,255,255,0.80)",
-    letterSpacing: 0.2,
   },
 
   // ── Info row ──────────────────────────────────────────
@@ -159,14 +150,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: rs(10),
-  },
-
-  accentBar: {
-    width: rs(3),
-    height: rvs(36),
-    borderRadius: rs(2),
-    backgroundColor: colors.accent,
-    flexShrink: 0,
   },
 
   infoText: {

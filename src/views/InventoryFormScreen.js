@@ -15,6 +15,7 @@ import { inventoryFormAtom } from '../atoms/forms';
 import useInventoryViewModel from '../viewmodels/InventoryViewModel';
 import { colors } from '../theme/colors';
 import AppHeaderLayout from '../components/AppHeaderLayout';
+import HeaderBackButton from '../components/HeaderBackButton';
 import ConfirmActionModal from '../components/ConfirmActionModal';
 import FormInputField from '../components/FormInputField';
 
@@ -24,14 +25,6 @@ const vs    = SCREEN_H / 844;
 const rs    = (n) => Math.round(n * scale);
 const rvs   = (n) => Math.round(n * vs);
 const rfs   = (n) => Math.round(n * Math.min(scale, vs));
-
-// ─── Back pill ────────────────────────────────────────────────────────────────
-const BackPill = ({ onPress }) => (
-  <TouchableOpacity style={styles.backPill} onPress={onPress} activeOpacity={0.75}>
-    <Icon name="chevron-back" size={rfs(16)} color="#FFFFFF" />
-    <Text style={styles.backPillText}>Back</Text>
-  </TouchableOpacity>
-);
 
 // ─── Product hero card ────────────────────────────────────────────────────────
 // Dark teal background — visually continues from the header, distinct from
@@ -131,7 +124,7 @@ const MarginPill = ({ sell, purchase }) => {
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 const InventoryFormScreen = ({ navigation, route }) => {
-  const { barcode, product } = route.params || {};
+  const { barcode, product, returnToBillingScanner } = route.params || {};
   const vm  = useInventoryViewModel();
   const [form, setForm] = useAtom(inventoryFormAtom);
   const mrp = product?.mrp ?? 0;
@@ -166,7 +159,15 @@ const InventoryFormScreen = ({ navigation, route }) => {
     setForm((prev) => ({ ...prev, saving: true }));
     try {
       await vm.saveNewInventory({ barcode });
-      navigation.goBack();
+      if (returnToBillingScanner) {
+        Alert.alert(
+          'Success',
+          'Inventory updated. Scan this barcode again on the billing screen to add it to the bill.',
+          [{ text: 'OK', onPress: () => navigation.pop(2) }]
+        );
+      } else {
+        navigation.goBack();
+      }
     } catch (err) {
       Alert.alert('Error', err.message || 'Failed to save inventory.');
     } finally {
@@ -174,7 +175,7 @@ const InventoryFormScreen = ({ navigation, route }) => {
     }
   };
 
-  const headerLeft = <BackPill onPress={() => navigation.goBack()} />;
+  const headerLeft = <HeaderBackButton onPress={() => navigation.goBack()} />;
 
   return (
     <AppHeaderLayout
@@ -330,25 +331,6 @@ export default InventoryFormScreen;
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-
-  // ── Back pill ────────────────────────────────────────────
-  backPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(4),
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    borderRadius: rs(20),
-    paddingHorizontal: rs(12),
-    paddingVertical: rvs(7),
-  },
-
-  backPillText: {
-    fontSize: rfs(13),
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
 
   // ── Scroll ───────────────────────────────────────────────
   scroll: { flex: 1 },

@@ -16,6 +16,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useAtomValue } from 'jotai';
 
 import PurchaseInvoiceCard    from '../components/PurchaseInvoiceCard';
+import HeaderBackButton       from '../components/HeaderBackButton';
 import { generatePurchasePdf } from '../services/purchasePdfService';
 import { currentOwnerAtom }    from '../atoms/owner';
 import { colors }              from '../theme/colors';
@@ -57,14 +58,7 @@ const PurchaseDetailScreen = ({ navigation, route }) => {
           <Icon name="cart-outline" size={rfs(36)} color={colors.textSecondary} />
           <Text style={styles.errorTitle}>Purchase not found</Text>
           <Text style={styles.errorSub}>Could not load purchase details.</Text>
-          <TouchableOpacity
-            style={styles.errorBackBtn}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.8}
-          >
-            <Icon name="arrow-back-outline" size={rfs(14)} color="#FFFFFF" />
-            <Text style={styles.errorBackText}>Go Back</Text>
-          </TouchableOpacity>
+          <HeaderBackButton filled onPress={() => navigation.goBack()} />
         </View>
       </View>
     );
@@ -120,14 +114,9 @@ const PurchaseDetailScreen = ({ navigation, route }) => {
           <View style={styles.orbTopRight} />
           <View style={styles.orbBottomLeft} />
 
-          <TouchableOpacity
-            style={styles.backPill}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.75}
-          >
-            <Icon name="chevron-back" size={rfs(16)} color="#FFFFFF" />
-            <Text style={styles.backPillText}>Back</Text>
-          </TouchableOpacity>
+          <View style={styles.backWrap}>
+            <HeaderBackButton onPress={() => navigation.goBack()} />
+          </View>
 
           {/* Icon ring — amber tint instead of purple */}
           <View style={styles.iconRing}>
@@ -170,18 +159,6 @@ const PurchaseDetailScreen = ({ navigation, route }) => {
             )}
           </TouchableOpacity>
 
-          {/* Go back button */}
-          <TouchableOpacity
-            style={styles.closeBtn}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.8}
-          >
-            <View style={styles.closeIconBox}>
-              <Icon name="arrow-back-outline" size={rfs(14)} color={colors.primary} />
-            </View>
-            <Text style={styles.closeBtnText}>Go Back</Text>
-          </TouchableOpacity>
-
         </View>
 
       </ScrollView>
@@ -222,24 +199,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.04)',
   },
 
-  backPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  backWrap: {
     alignSelf: 'flex-start',
-    gap: rs(4),
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    borderRadius: rs(20),
-    paddingHorizontal: rs(12),
-    paddingVertical: rvs(7),
     marginBottom: rvs(20),
-  },
-
-  backPillText: {
-    fontSize: rfs(13),
-    fontWeight: '600',
-    color: '#FFFFFF',
   },
 
   iconRing: {
@@ -328,38 +290,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // ── Close button ──────────────────────────────────────
-  closeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: rs(8),
-    paddingVertical: rvs(14),
-    borderRadius: rs(14),
-    borderWidth: 1,
-    borderColor: colors.borderCard,
-    backgroundColor: '#FFFFFF',
-    shadowColor: colors.shadowCard,
-    shadowOffset: { width: 0, height: rvs(2) },
-    shadowOpacity: 1,
-    shadowRadius: rs(8),
-    elevation: 2,
-  },
-
-  closeIconBox: {
-    width: rs(24), height: rs(24),
-    borderRadius: rs(7),
-    backgroundColor: 'rgba(45,74,82,0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  closeBtnText: {
-    fontSize: rfs(14),
-    fontWeight: '700',
-    color: colors.primary,
-  },
-
   btnDisabled: { opacity: 0.6 },
 
   // ── Error state ───────────────────────────────────────
@@ -399,23 +329,6 @@ const styles = StyleSheet.create({
     fontSize: rfs(13),
     color: colors.textSecondary,
     textAlign: 'center',
-  },
-
-  errorBackBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(5),
-    backgroundColor: colors.primary,
-    borderRadius: rs(12),
-    paddingVertical: rvs(10),
-    paddingHorizontal: rs(20),
-    marginTop: rvs(12),
-  },
-
-  errorBackText: {
-    fontSize: rfs(13),
-    fontWeight: '700',
-    color: '#FFFFFF',
   },
 
 });

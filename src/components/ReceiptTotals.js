@@ -18,6 +18,13 @@ const rfs   = (n) => Math.round(n * Math.min(scale, vs));
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const ReceiptTotals = ({ data }) => {
+  const items = data.items || [];
+  const totalItems = items.length;
+  const totalQty =
+    data.totalQty != null
+      ? Number(data.totalQty)
+      : items.reduce((s, i) => s + Number(i.qty || 0), 0);
+
   return (
     <View style={styles.container}>
 
@@ -28,7 +35,7 @@ const ReceiptTotals = ({ data }) => {
           <View style={styles.metaRow}>
             <View style={styles.metaDot} />
             <Text style={styles.metaText}>
-              {data.totalQty} item{data.totalQty !== 1 ? "s" : ""} · {data.totalQty} qty
+              {totalItems} item{totalItems !== 1 ? "s" : ""} · {totalQty} qty
             </Text>
           </View>
         </View>

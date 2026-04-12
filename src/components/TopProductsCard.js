@@ -6,6 +6,7 @@ import {
   Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
 import PeriodToggle from './PeriodToggle';
 
@@ -36,6 +37,7 @@ const formatRevenue = (v) =>
  * products: [{ name, qty, revenue }]
  */
 const TopProductsCard = ({ products = [], period, onChangePeriod, loading }) => {
+  const { t } = useTranslation();
 
   const maxQty = Math.max(...products.map((p) => p.qty || 0), 1);
 
@@ -45,10 +47,14 @@ const TopProductsCard = ({ products = [], period, onChangePeriod, loading }) => 
       {/* ── Header ── */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>Top Products</Text>
-          <Text style={styles.subtitle}>by quantity sold</Text>
+          <Text style={styles.title}>{t('home.topProducts')}</Text>
+          <Text style={styles.subtitle}>{t('home.topProductsSubtitle')}</Text>
         </View>
-        <PeriodToggle period={period} onChangePeriod={onChangePeriod} />
+        <PeriodToggle
+          period={period}
+          onChangePeriod={onChangePeriod}
+          label={t('home.topProducts')}
+        />
       </View>
 
       {/* ── Content ── */}
@@ -66,7 +72,7 @@ const TopProductsCard = ({ products = [], period, onChangePeriod, loading }) => 
           <View style={styles.emptyIconWrap}>
             <Icon name="cube-outline" size={rfs(22)} color={colors.textSecondary} />
           </View>
-          <Text style={styles.emptyText}>No sales data</Text>
+          <Text style={styles.emptyText}>{t('home.noSalesData')}</Text>
         </View>
       ) : (
         <View style={styles.list}>
@@ -102,7 +108,7 @@ const TopProductsCard = ({ products = [], period, onChangePeriod, loading }) => 
                   </View>
 
                   {/* Qty below bar */}
-                  <Text style={styles.qty}>{p.qty} sold</Text>
+                  <Text style={styles.qty}>{t('home.qtySold', { qty: p.qty })}</Text>
 
                 </View>
 

@@ -23,6 +23,11 @@ import { colors as T } from '../theme/colors';
 
 const { width, height } = Dimensions.get('window');
 
+const STATUS_INSET =
+  Platform.OS === 'android'
+    ? (StatusBar.currentHeight ?? 24)
+    : 47;
+
 const wp = (pct) => width  * (pct / 100);
 const hp = (pct) => height * (pct / 100);
 const sp = (size) => Math.round(size * (width / 375));
@@ -124,10 +129,22 @@ const StaffLoginScreen = ({ navigation }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <Animated.View style={[styles.root, { opacity: masterFade }]}>
-        <StatusBar barStyle="light-content" backgroundColor={T.primary} />
+        <StatusBar
+          translucent
+          backgroundColor="transparent"
+          barStyle="light-content"
+        />
 
         {/* ── HERO PANEL ── */}
-        <Animated.View style={[styles.hero, { transform: [{ translateY: heroSlide }] }]}>
+        <Animated.View
+          style={[
+            styles.hero,
+            {
+              transform: [{ translateY: heroSlide }],
+              paddingTop: STATUS_INSET + hp(4),
+            },
+          ]}
+        >
 
           {/* Thick outline rings */}
           <Animated.View style={[styles.ring1, { transform: [{ translateY: orb1 }] }]} />
@@ -264,7 +281,6 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: wp(8.5),
     borderBottomRightRadius: wp(8.5),
     paddingHorizontal: wp(7),
-    paddingTop: hp(6.5),
     paddingBottom: hp(3),
     overflow: 'hidden',
     flexDirection: 'row',

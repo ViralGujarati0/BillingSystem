@@ -9,6 +9,7 @@ import {
   Animated,
   Dimensions,
   Platform,
+  StatusBar,
 } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +18,12 @@ import useAuthViewModel from '../viewmodels/AuthViewModel';
 import { colors as T } from '../theme/colors';
 
 const { width, height } = Dimensions.get('window');
+
+/** Status bar inset so hero content sits below icons; matches AppHeaderLayout pattern. */
+const STATUS_INSET =
+  Platform.OS === 'android'
+    ? (StatusBar.currentHeight ?? 24)
+    : 47;
 
 const wp = (pct) => width  * (pct / 100);
 const hp = (pct) => height * (pct / 100);
@@ -103,9 +110,22 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <Animated.View style={[styles.root, { opacity: masterFade }]}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="light-content"
+      />
 
       {/* ── HERO PANEL ── */}
-      <Animated.View style={[styles.hero, { transform: [{ translateY: heroSlide }] }]}>
+      <Animated.View
+        style={[
+          styles.hero,
+          {
+            transform: [{ translateY: heroSlide }],
+            paddingTop: STATUS_INSET + hp(4),
+          },
+        ]}
+      >
 
         {/* Thick outline rings */}
         <Animated.View style={[styles.ring1, { transform: [{ translateY: orb1 }] }]} />
@@ -200,7 +220,6 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: wp(8.5),
     borderBottomRightRadius: wp(8.5),
     paddingHorizontal: wp(7.5),
-    paddingTop: hp(7),
     paddingBottom: hp(3.5),
     overflow: 'hidden',
   },

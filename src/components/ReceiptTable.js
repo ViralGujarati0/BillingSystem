@@ -56,8 +56,8 @@ const ReceiptTable = ({ items }) => {
           {/* No */}
           <Text style={[styles.tdNo, { width: COL_NO }]}>{i + 1}</Text>
 
-          {/* Name */}
-          <Text style={[styles.tdName]} numberOfLines={1}>{it.name}</Text>
+          {/* Name — wraps to next line instead of ellipsis */}
+          <Text style={styles.tdName}>{it.name}</Text>
 
           {/* Qty */}
           <Text style={[styles.td, { width: COL_QTY, textAlign: "center" }]}>
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   // ── Row ───────────────────────────────────────────────
   row: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     paddingVertical: rvs(11),
     paddingRight: rs(16),
     gap: rs(4),
@@ -154,6 +154,7 @@ const styles = StyleSheet.create({
 
   tdName: {
     flex: 1,
+    flexShrink: 1,
     fontSize: rfs(13),
     fontWeight: "700",
     color: colors.textPrimary,

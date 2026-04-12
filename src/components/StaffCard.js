@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { resetStaffPassword, updateStaffPermissions } from '../services/staffService';
+import { DEFAULT_STAFF_PERMISSIONS } from '../atoms/staff';
 import { colors } from '../theme/colors';
 import { getAvatarColor } from '../utils/avatarColor';
 
@@ -50,6 +51,20 @@ const PERMISSION_SECTIONS = [
       { key: 'inventoryList',  label: 'Inventory List',   description: 'View all inventory items' },
     ],
   },
+  {
+    key: 'home', label: 'Home dashboard', icon: 'home-outline', color: '#0d9488', flat: false,
+    items: [
+      { key: 'overviewStats',    label: 'Overview stats',     description: 'Revenue, profit, bills, items, avg bill, purchases' },
+      { key: 'revenueChart',     label: 'Revenue chart',      description: 'Bar chart of daily sales' },
+      { key: 'paymentSplit',     label: 'Payment split',      description: 'Cash vs online vs other' },
+      { key: 'topProducts',      label: 'Top products',       description: 'Best-selling products' },
+      { key: 'comparison',     label: 'Period comparison',  description: 'This period vs previous' },
+      { key: 'lowStock',         label: 'Low stock alert',    description: 'Products running low' },
+      { key: 'pendingPurchases', label: 'Pending purchases',  description: 'Unpaid purchase invoices' },
+      { key: 'recentBillsCard',  label: 'Recent bills',       description: 'Latest bills on home' },
+      { key: 'dailyReportFab',   label: 'Print daily report', description: 'Floating button to build / print report' },
+    ],
+  },
 ];
 
 // ─── Toggle row ───────────────────────────────────────────────────────────────
@@ -67,6 +82,24 @@ const ToggleRow = ({ label, description, value, onToggle, accent }) => (
       ios_backgroundColor="#e5e7eb"
     />
   </View>
+);
+
+// ─── Card action (icon + label, equal columns) ────────────────────────────────
+const CardAction = ({ icon, label, onPress, iconColor, labelColor }) => (
+  <TouchableOpacity
+    style={styles.cardAction}
+    onPress={onPress}
+    activeOpacity={0.72}
+    accessibilityRole="button"
+    accessibilityLabel={label}
+  >
+    <View style={[styles.cardActionIconWrap, { borderColor: iconColor + '35', backgroundColor: iconColor + '12' }]}>
+      <Icon name={icon} size={rfs(17)} color={iconColor} />
+    </View>
+    <Text style={[styles.cardActionLabel, labelColor && { color: labelColor }]} numberOfLines={1}>
+      {label}
+    </Text>
+  </TouchableOpacity>
 );
 
 // ─── Permission section ───────────────────────────────────────────────────────
@@ -137,13 +170,13 @@ export default function StaffCard({ staff, onEdit, onDelete }) {
   const [resetting,   setResetting]   = useState(false);
   const [savingPerms, setSavingPerms] = useState(false);
 
-  const [permissions, setPermissions] = useState(
-    staff.permissions ?? {
-      billing: false,
-      sales:   { summaryStrip: false, calendar: false, recentBills: false },
-      stock:   { searchBar: false, statsCards: false, stockHealth: false, categoryFilter: false, quickActions: false, inventoryList: false },
-    }
-  );
+  const [permissions, setPermissions] = useState(() => ({
+    ...DEFAULT_STAFF_PERMISSIONS,
+    ...staff.permissions,
+    sales: { ...DEFAULT_STAFF_PERMISSIONS.sales, ...staff.permissions?.sales },
+    stock: { ...DEFAULT_STAFF_PERMISSIONS.stock, ...staff.permissions?.stock },
+    home:  { ...DEFAULT_STAFF_PERMISSIONS.home, ...staff.permissions?.home },
+  }));
 
   const handleToggle = (sectionKey, itemKey, value) => {
     setPermissions((prev) => {
@@ -195,49 +228,73 @@ export default function StaffCard({ staff, onEdit, onDelete }) {
     <>
       {/* ── Card ── */}
       <View style={styles.card}>
-
-        <View style={[styles.avatarWrap, { backgroundColor: avatarColor.bg }]}>
-          <Text style={[styles.avatarText, { color: avatarColor.text }]}>
-            {staff.name?.charAt(0)?.toUpperCase() ?? '?'}
-          </Text>
-        </View>
-
-        <View style={styles.info}>
-          <Text style={styles.name}>{staff.name}</Text>
-          <Text style={styles.email}>{staff.email}</Text>
-          <View style={styles.pwdRow}>
-            <Icon name="lock-closed-outline" size={rfs(12)} color="#aaa" />
-            <Text style={styles.pwdText}>
-              {pwdVisible ? (staff.password ?? '-') : 'xxxxxxxxxx'}
+        <View style={styles.cardTop}>
+          <View style={[styles.avatarWrap, { backgroundColor: avatarColor.bg }]}>
+            <Text style={[styles.avatarText, { color: avatarColor.text }]}>
+              {staff.name?.charAt(0)?.toUpperCase() ?? '?'}
             </Text>
-            <TouchableOpacity
-              onPress={() => setPwdVisible((v) => !v)}
-              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-            >
-              <Icon name={pwdVisible ? 'eye-off-outline' : 'eye-outline'} size={rfs(14)} color="#aaa" />
-            </TouchableOpacity>
+          </View>
+
+          <View style={styles.info}>
+            <Text style={styles.name} numberOfLines={1}>{staff.name}</Text>
+            <View style={styles.emailRow}>
+              <Text style={styles.email} numberOfLines={1}>{staff.email}</Text>
+              <View style={styles.pwdPill}>
+                <Icon name="lock-closed-outline" size={rfs(12)} color={colors.textSecondary} />
+                <Text
+                  style={[styles.pwdText, !pwdVisible && { letterSpacing: 1.2 }]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {pwdVisible ? (staff.password ?? '—') : '••••••••••'}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setPwdVisible((v) => !v)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={pwdVisible ? 'Hide password' : 'Show password'}
+                >
+                  <Icon
+                    name={pwdVisible ? 'eye-off-outline' : 'eye-outline'}
+                    size={rfs(15)}
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         </View>
 
-        <View style={styles.actions}>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => onEdit(staff)}
-            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-            <Icon name="pencil-outline" size={rfs(15)} color={colors.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.iconBtn, styles.iconBtnRed]} onPress={() => onDelete(staff)}
-            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-            <Icon name="trash-outline" size={rfs(15)} color="#E05252" />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.iconBtn, styles.iconBtnAmber]} onPress={() => setPwdModal(true)}
-            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-            <Icon name="key-outline" size={rfs(15)} color={colors.accent} />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.iconBtn, styles.iconBtnGreen]} onPress={() => setPermModal(true)}
-            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-            <Icon name="shield-checkmark-outline" size={rfs(15)} color="#5B9E6D" />
-          </TouchableOpacity>
+        <View style={styles.actionBar}>
+          <CardAction
+            icon="create-outline"
+            label="Edit"
+            iconColor={colors.primary}
+            onPress={() => onEdit(staff)}
+          />
+          <View style={styles.actionBarDivider} />
+          <CardAction
+            icon="trash-outline"
+            label="Delete"
+            iconColor={colors.danger}
+            labelColor={colors.danger}
+            onPress={() => onDelete(staff)}
+          />
+          <View style={styles.actionBarDivider} />
+          <CardAction
+            icon="key-outline"
+            label="Password"
+            iconColor={colors.accent}
+            onPress={() => setPwdModal(true)}
+          />
+          <View style={styles.actionBarDivider} />
+          <CardAction
+            icon="shield-checkmark-outline"
+            label="Access"
+            iconColor={colors.success}
+            onPress={() => setPermModal(true)}
+          />
         </View>
-
       </View>
 
       {/* ── Reset Password Modal ── */}
@@ -357,13 +414,11 @@ const styles = StyleSheet.create({
 
   // ── Card ──────────────────────────────────────────────
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: rs(14),
-    padding: rs(14),
     borderWidth: 1,
     borderColor: colors.borderCard,
+    overflow: 'hidden',
     shadowColor: colors.shadowCard,
     shadowOffset: { width: 0, height: rvs(2) },
     shadowOpacity: 1,
@@ -371,87 +426,124 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
 
+  cardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: rs(14),
+    paddingTop: rs(14),
+    paddingBottom: rs(12),
+  },
+
   avatarWrap: {
-    width: rs(44),
-    height: rs(44),
-    borderRadius: rs(13),
+    width: rs(48),
+    height: rs(48),
+    borderRadius: rs(14),
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: rs(12),
     shadowOffset: { width: 0, height: rvs(2) },
-    shadowOpacity: 0.28,
+    shadowOpacity: 0.22,
     shadowRadius: rs(6),
     elevation: 3,
     flexShrink: 0,
   },
 
   avatarText: {
-    fontSize: rfs(18),
+    fontSize: rfs(19),
     fontWeight: '800',
     letterSpacing: -0.5,
   },
 
   info: {
     flex: 1,
-    gap: rvs(2),
+    minWidth: 0,
+    gap: rvs(3),
   },
 
   name: {
-    fontSize: rfs(14),
+    fontSize: rfs(15),
     fontWeight: '700',
     color: colors.textPrimary,
+    letterSpacing: -0.2,
+  },
+
+  emailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(10),
+    marginTop: rvs(2),
+    minWidth: 0,
   },
 
   email: {
-    fontSize: rfs(11),
+    flex: 1,
+    minWidth: 0,
+    fontSize: rfs(12),
     color: colors.textSecondary,
+    fontWeight: '500',
   },
 
-  pwdRow: {
+  pwdPill: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 0,
+    maxWidth: '52%',
     gap: rs(5),
-    marginTop: rvs(3),
+    paddingVertical: rvs(4),
+    paddingHorizontal: rs(8),
+    borderRadius: rs(20),
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.borderCard,
   },
 
   pwdText: {
-    fontSize: rfs(11),
-    color: colors.textSecondary,
-    letterSpacing: 1,
     flex: 1,
+    minWidth: 0,
+    fontSize: rfs(11),
+    fontWeight: '600',
+    color: colors.textSecondary,
   },
 
-  actions: {
+  actionBar: {
     flexDirection: 'row',
-    gap: rs(7),
-    marginLeft: rs(8),
-    flexWrap: 'wrap',
-    justifyContent: 'flex-end',
-    maxWidth: rs(84),
+    alignItems: 'stretch',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.divider,
+    backgroundColor: colors.background,
   },
 
-  iconBtn: {
-    width: rs(32),
-    height: rs(32),
-    borderRadius: rs(9),
-    backgroundColor: 'rgba(45,74,82,0.08)',
+  actionBarDivider: {
+    width: StyleSheet.hairlineWidth,
+    backgroundColor: colors.divider,
+    marginVertical: rvs(10),
+  },
+
+  cardAction: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: rvs(12),
+    paddingHorizontal: rs(2),
+    gap: rvs(6),
+  },
+
+  cardActionIconWrap: {
+    width: rs(36),
+    height: rs(36),
+    borderRadius: rs(11),
     borderWidth: 1,
-    borderColor: 'rgba(45,74,82,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  iconBtnRed:   {
-    backgroundColor: 'rgba(224,82,82,0.08)',
-    borderColor: 'rgba(224,82,82,0.20)',
-  },
-  iconBtnAmber: {
-    backgroundColor: 'rgba(245,166,35,0.10)',
-    borderColor: 'rgba(245,166,35,0.20)',
-  },
-  iconBtnGreen: {
-    backgroundColor: 'rgba(91,158,109,0.10)',
-    borderColor: 'rgba(91,158,109,0.20)',
+  cardActionLabel: {
+    fontSize: rfs(10),
+    fontWeight: '700',
+    color: colors.textSecondary,
+    letterSpacing: 0.2,
+    textAlign: 'center',
   },
 
   // ── Overlay ───────────────────────────────────────────

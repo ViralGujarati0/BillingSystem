@@ -11,6 +11,7 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../theme/colors';
 import AppHeaderLayout    from '../components/AppHeaderLayout';
+import HeaderBackButton   from '../components/HeaderBackButton';
 import ConfirmActionModal from '../components/ConfirmActionModal';
 import FormInputField     from '../components/FormInputField';
 import useSupplierViewModel from '../viewmodels/SupplierViewModel';
@@ -21,14 +22,6 @@ const vs    = SCREEN_H / 844;
 const rs    = (n) => Math.round(n * scale);
 const rvs   = (n) => Math.round(n * vs);
 const rfs   = (n) => Math.round(n * Math.min(scale, vs));
-
-// ─── Back pill ────────────────────────────────────────────────────────────────
-const BackPill = ({ onPress }) => (
-  <TouchableOpacity style={styles.backPill} onPress={onPress} activeOpacity={0.75}>
-    <Icon name="chevron-back" size={rfs(16)} color="#FFFFFF" />
-    <Text style={styles.backPillText}>Back</Text>
-  </TouchableOpacity>
-);
 
 // ─── Section label ────────────────────────────────────────────────────────────
 const SectionLabel = ({ icon, label }) => (
@@ -103,12 +96,18 @@ export default function SupplierFormScreen({ navigation, route }) {
     }
   };
 
-  const headerLeft = <BackPill onPress={() => navigation.goBack()} />;
+  const headerLeft = (
+    <HeaderBackButton onPress={() => navigation.goBack()} />
+  );
 
   // ── Derive avatar initial for identity badge ──
-  const initial = name.trim() ? name.trim()[0].toUpperCase()
-    : supplier?.name ? supplier.name[0].toUpperCase()
-    : '?';
+  const initial = (
+    name.trim()
+      ? name.trim()[0].toUpperCase()
+      : supplier?.name
+        ? supplier.name[0].toUpperCase()
+        : '?'
+  );
 
   return (
     <AppHeaderLayout
@@ -273,25 +272,6 @@ export default function SupplierFormScreen({ navigation, route }) {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-
-  // ── Back pill ────────────────────────────────────────
-  backPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(4),
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    borderRadius: rs(20),
-    paddingHorizontal: rs(12),
-    paddingVertical: rvs(7),
-  },
-
-  backPillText: {
-    fontSize: rfs(13),
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
 
   // ── Scroll ───────────────────────────────────────────
   scroll: { flex: 1 },

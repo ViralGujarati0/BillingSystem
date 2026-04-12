@@ -54,21 +54,22 @@ const ReceiptActions = ({ loading, onPdf, onBack }) => {
         </TouchableOpacity>
       </Animated.View>
 
-      {/* ── Back to home ── */}
-      <Animated.View style={{ transform: [{ scale: scaleBack }] }}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={onBack}
-          onPressIn={() => press(scaleBack)}
-          onPressOut={() => release(scaleBack)}
-          activeOpacity={1}
-        >
-          <View style={styles.backIconWrap}>
-            <Icon name="home-outline" size={rfs(14)} color={colors.primary} />
-          </View>
-          <Text style={styles.backText}>Back to Home</Text>
-        </TouchableOpacity>
-      </Animated.View>
+      {typeof onBack === "function" && (
+        <Animated.View style={{ transform: [{ scale: scaleBack }] }}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={onBack}
+            onPressIn={() => press(scaleBack)}
+            onPressOut={() => release(scaleBack)}
+            activeOpacity={1}
+          >
+            <View style={styles.backIconWrap}>
+              <Icon name="home-outline" size={rfs(14)} color={colors.primary} />
+            </View>
+            <Text style={styles.backText}>Back to Home</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
 
     </View>
   );

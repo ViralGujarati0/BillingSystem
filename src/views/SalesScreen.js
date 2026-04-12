@@ -6,10 +6,10 @@ import { useAtomValue } from "jotai";
 
 import { currentOwnerAtom } from "../atoms/owner";
 import { colors } from "../theme/colors";
-import AppHeaderLayout   from "../components/AppHeaderLayout";
-import SalesSummaryStrip from "../components/SalesSummaryStrip";
-import SalesCalendar     from "../components/SalesCalendar";
-import RecentBillsList   from "../components/RecentBillsList";
+import AppHeaderLayout    from "../components/AppHeaderLayout";
+import SalesSummaryStrip  from "../components/SalesSummaryStrip";
+import SalesCalendar      from "../components/SalesCalendar";
+import RecentBillsList    from "../components/RecentBillsList";
 
 import { listenMonthStats } from "../services/statsService";
 
@@ -32,7 +32,7 @@ function endOfDay(d) {
 }
 
 const SalesScreen = ({ navigation }) => {
-  const { t } = useTranslation();
+  const { t }  = useTranslation();
   const owner  = useAtomValue(currentOwnerAtom);
   const shopId = owner?.shopId;
 
@@ -41,31 +41,72 @@ const SalesScreen = ({ navigation }) => {
   const [loading,      setLoading]      = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
+  // ── Listen to month stats (realtime) ─────────────────────────────────────
   useEffect(() => {
     if (!shopId) return;
     const now   = new Date();
     const unsub = listenMonthStats(shopId, now.getFullYear(), now.getMonth(), (data) => {
+      console.log('[SalesScreen] stats count:', data.length);
       setStats(data);
     });
     return () => unsub();
   }, [shopId]);
 
+  // ── Listen to bills for selected date (realtime) ──────────────────────────
   useEffect(() => {
-    if (!shopId) return;
+    if (!shopId) {
+      console.warn('[SalesScreen] no shopId yet, skipping bills query');
+      return;
+    }
+
+    setLoading(true);
+
     const start = startOfDay(selectedDate);
     const end   = endOfDay(selectedDate);
+
+    const startTs = firestore.Timestamp.fromDate(start);
+    const endTs   = firestore.Timestamp.fromDate(end);
+
+    // ── DEBUG: log exactly what we're querying ──
+    console.log('[SalesScreen] ── BILLS QUERY ──────────────────');
+    console.log('[SalesScreen] shopId           :', shopId);
+    console.log('[SalesScreen] selectedDate      :', selectedDate.toISOString());
+    console.log('[SalesScreen] startOfDay (local):', start.toString());
+    console.log('[SalesScreen] endOfDay   (local):', end.toString());
+    console.log('[SalesScreen] startTs.toDate()  :', startTs.toDate().toISOString());
+    console.log('[SalesScreen] endTs.toDate()    :', endTs.toDate().toISOString());
+    console.log('[SalesScreen] collection path   :', `billing_shops/${shopId}/bills`);
+    console.log('[SalesScreen] ────────────────────────────────');
+
     const unsub = firestore()
       .collection("billing_shops")
       .doc(shopId)
       .collection("bills")
-      .where("createdAt", ">=", start)
-      .where("createdAt", "<=", end)
+      .where("createdAt", ">=", startTs)
+      .where("createdAt", "<=", endTs)
       .orderBy("createdAt", "desc")
-      .onSnapshot((snap) => {
-        const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        setBills(data);
-        setLoading(false);
-      });
+      .onSnapshot(
+        (snap) => {
+          console.log('[SalesScreen] snapshot received, doc count:', snap.docs.length);
+          snap.docs.forEach((d, i) => {
+            const data = d.data();
+            console.log(
+              `[SalesScreen] bill[${i}]`,
+              '| id:', d.id,
+              '| createdAt:', data.createdAt?.toDate?.()?.toISOString?.() ?? data.createdAt,
+              '| grandTotal:', data.grandTotal
+            );
+          });
+          const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          setBills(data);
+          setLoading(false);
+        },
+        (error) => {
+          console.error('[SalesScreen] bills query ERROR:', error.code, error.message);
+          setLoading(false);
+        }
+      );
+
     return () => unsub();
   }, [shopId, selectedDate]);
 

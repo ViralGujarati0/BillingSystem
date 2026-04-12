@@ -1,4 +1,5 @@
 import { atom } from 'jotai';
+import { DEFAULT_STAFF_PERMISSIONS } from './staff';
 
 const defaultInventoryForm = {
   sellingPrice: '',
@@ -34,20 +35,10 @@ const defaultAddStaffForm = {
   email:    '',
   password: '',
   permissions: {
-    billing: false,
-    sales: {
-      summaryStrip: false,
-      calendar:     false,
-      recentBills:  false,
-    },
-    stock: {
-      searchBar:      false,
-      statsCards:     false,
-      stockHealth:    false,
-      categoryFilter: false,
-      quickActions:   false,
-      inventoryList:  false,
-    },
+    billing: DEFAULT_STAFF_PERMISSIONS.billing,
+    sales:   { ...DEFAULT_STAFF_PERMISSIONS.sales },
+    stock:   { ...DEFAULT_STAFF_PERMISSIONS.stock },
+    home:    { ...DEFAULT_STAFF_PERMISSIONS.home },
   },
 };
 

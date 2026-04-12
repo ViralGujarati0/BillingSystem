@@ -17,6 +17,7 @@ import { createProduct } from '../services/productService';
 import { setInventoryItem } from '../services/inventoryService';
 import { colors } from '../theme/colors';
 import AppHeaderLayout from '../components/AppHeaderLayout';
+import HeaderBackButton from '../components/HeaderBackButton';
 import ConfirmActionModal from '../components/ConfirmActionModal';
 import CategoryDropdown from '../components/CategoryDropdown';
 import UnitDropdown from '../components/UnitDropdown';
@@ -56,14 +57,6 @@ const SectionHeader = ({ icon, label, accent }) => (
   </View>
 );
 
-// ─── Back pill ────────────────────────────────────────────────────────────────
-const BackPill = ({ onPress }) => (
-  <TouchableOpacity style={styles.backPill} onPress={onPress} activeOpacity={0.75}>
-    <Icon name="chevron-back" size={rfs(16)} color="#FFFFFF" />
-    <Text style={styles.backPillText}>Back</Text>
-  </TouchableOpacity>
-);
-
 // ─── Barcode badge ────────────────────────────────────────────────────────────
 const BarcodeBadge = ({ barcode }) => (
   <View style={styles.barcodeBadge}>
@@ -99,7 +92,7 @@ const DropdownRow = ({ label, required, children, error }) => (
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 const CreateProductScreen = ({ navigation, route }) => {
-  const { barcode } = route.params || {};
+  const { barcode, returnToBillingScanner } = route.params || {};
   const owner = useAtomValue(currentOwnerAtom);
   const [form, setForm] = useAtom(createProductFormAtom);
   const [confirmModal, setConfirmModal] = useState(false);
@@ -173,15 +166,23 @@ const CreateProductScreen = ({ navigation, route }) => {
         expiry:        (form.expiry || '').trim(),
       });
 
-      navigation.goBack();
+      if (returnToBillingScanner) {
+        Alert.alert(
+          'Success',
+          'Product added successfully. Scan this barcode again on the billing screen to add it to the bill.',
+          [{ text: 'OK', onPress: () => navigation.pop(2) }]
+        );
+      } else {
+        navigation.goBack();
+      }
     } catch (err) {
-      Alert.alert('Error', err.message);
+      Alert.alert('Error', err.message ?? 'Could not create product.');
     } finally {
       setForm((prev) => ({ ...prev, saving: false }));
     }
   };
 
-  const headerLeft = <BackPill onPress={() => navigation.goBack()} />;
+  const headerLeft = <HeaderBackButton onPress={() => navigation.goBack()} />;
 
   return (
     <AppHeaderLayout
@@ -431,25 +432,6 @@ export default CreateProductScreen;
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-
-  // ── Back pill ────────────────────────────────────────────
-  backPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(4),
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    borderRadius: rs(20),
-    paddingHorizontal: rs(12),
-    paddingVertical: rvs(7),
-  },
-
-  backPillText: {
-    fontSize: rfs(13),
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
 
   // ── Scroll ───────────────────────────────────────────────
   scroll: { flex: 1 },

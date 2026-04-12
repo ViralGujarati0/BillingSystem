@@ -6,8 +6,22 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
 import PeriodToggle from './PeriodToggle';
+
+function periodLabelFor(period, t) {
+  switch (period) {
+    case 'today':
+      return t('home.periodToday');
+    case '7d':
+      return t('home.periodLast7Days');
+    case '30d':
+      return t('home.periodLast30Days');
+    default:
+      return t('home.periodToday');
+  }
+}
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const scale = SCREEN_W / 390;
@@ -44,15 +58,11 @@ const StatCard = ({
   accentColor,
   headerColor,
 }) => {
+  const { t } = useTranslation();
   const accent = accentColor || colors.primary;
   const headerAccent = headerColor || accent;
 
-  const PERIODS = [
-    { key: 'today', label: 'Today' },
-    { key: '7d',    label: 'Last 7 Days' },
-    { key: '30d',   label: 'Last 30 Days' },
-  ];
-  const periodLabel = PERIODS.find((p) => p.key === period)?.label ?? 'Today';
+  const periodLabel = periodLabelFor(period, t);
 
   return (
     <View style={styles.card}>

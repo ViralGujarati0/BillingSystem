@@ -54,20 +54,25 @@ const InventoryQuickActions = ({ navigation }) => {
   );
 };
 
-// ─── Single pill ──────────────────────────────────────────────────────────────
-function ActionPill({ icon, label, onPress, accent }) {
+// ─── Single pill (also used by Home header — same look as Stock) ─────────────
+export function ActionPill({ icon, label, onPress, accent, accessibilityLabel }) {
   return (
     <TouchableOpacity
       style={[styles.pill, accent && styles.pillAccent]}
       onPress={onPress}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
     >
       <Ionicons
         name={icon}
         size={rfs(14)}
         color={accent ? colors.accent : 'rgba(255,255,255,0.80)'}
       />
-      <Text style={[styles.pillLabel, accent && styles.pillLabelAccent]}>
+      <Text
+        style={[styles.pillLabel, accent && styles.pillLabelAccent]}
+        numberOfLines={1}
+      >
         {label}
       </Text>
     </TouchableOpacity>

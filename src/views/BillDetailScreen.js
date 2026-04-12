@@ -18,10 +18,12 @@ import ReceiptHeader  from '../components/ReceiptHeader';
 import ReceiptInfo    from '../components/ReceiptInfo';
 import ReceiptTable   from '../components/ReceiptTable';
 import ReceiptTotals  from '../components/ReceiptTotals';
-import ReceiptActions from '../components/ReceiptActions';
+import ReceiptActions   from '../components/ReceiptActions';
+import HeaderBackButton   from '../components/HeaderBackButton';
 
 import { currentOwnerAtom } from '../atoms/owner';
 import { generateBillPdf }  from '../services/pdfService';
+import { numberToWords }    from '../utils/numberToWords';
 import { colors }           from '../theme/colors';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -64,14 +66,6 @@ function formatTime(timestamp) {
   }
 }
 
-// ─── Back pill ────────────────────────────────────────────────────────────────
-const BackPill = ({ onPress }) => (
-  <TouchableOpacity style={styles.backPill} onPress={onPress} activeOpacity={0.75}>
-    <Icon name="chevron-back" size={rfs(16)} color="#FFFFFF" />
-    <Text style={styles.backPillText}>Back</Text>
-  </TouchableOpacity>
-);
-
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 const BillDetailScreen = ({ navigation, route }) => {
   const { bill } = route.params || {};
@@ -88,20 +82,26 @@ const BillDetailScreen = ({ navigation, route }) => {
           <Icon name="receipt-outline" size={rfs(36)} color={colors.textSecondary} />
           <Text style={styles.errorTitle}>Bill not found</Text>
           <Text style={styles.errorSub}>Could not load bill details.</Text>
-          <TouchableOpacity
-            style={styles.errorBackBtn}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.8}
-          >
-            <Icon name="arrow-back-outline" size={rfs(14)} color="#FFFFFF" />
-            <Text style={styles.errorBackText}>Go Back</Text>
-          </TouchableOpacity>
+          <HeaderBackButton filled onPress={() => navigation.goBack()} />
         </View>
       </View>
     );
   }
 
   // ── Build data shape matching receipt components ──
+  const items = (bill.items || []).map((it) => ({
+    name:   it.name   || '',
+    qty:    it.qty    || 0,
+    mrp:    it.mrp    ?? it.rate ?? 0,
+    rate:   it.rate   ?? it.mrp  ?? 0,
+    amount: it.amount ?? 0,
+  }));
+  const grandTotal = Number(bill.grandTotal ?? 0);
+  const totalQty = items.reduce((sum, it) => sum + Number(it.qty || 0), 0);
+  const totalInWords =
+    (typeof bill.totalInWords === 'string' && bill.totalInWords.trim()) ||
+    `Rs. ${numberToWords(Math.floor(grandTotal)).replace(/^./, (c) => c.toUpperCase())} only`;
+
   const receiptData = {
     billNo:          bill.billNo,
     shopName:        owner?.businessName || owner?.name || 'Shop',
@@ -110,14 +110,10 @@ const BillDetailScreen = ({ navigation, route }) => {
     paymentType:     bill.paymentType    || 'CASH',
     date:            formatDate(bill.createdAt),
     time:            formatTime(bill.createdAt),
-    items:           (bill.items || []).map((it) => ({
-      name:   it.name   || '',
-      qty:    it.qty    || 0,
-      mrp:    it.mrp    ?? it.rate ?? 0,
-      rate:   it.rate   ?? it.mrp  ?? 0,
-      amount: it.amount ?? 0,
-    })),
-    grandTotal:      bill.grandTotal     ?? 0,
+    items,
+    grandTotal,
+    totalQty,
+    totalInWords,
     thankYouMessage: 'Thank you for your purchase!',
   };
 
@@ -143,46 +139,50 @@ const BillDetailScreen = ({ navigation, route }) => {
         showsVerticalScrollIndicator={false}
       >
 
-        {/* ── Header banner ── */}
+        {/* ── Compact header ── */}
         <LinearGradient
           colors={['#2D4A52', '#1E3A42']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.banner}
         >
-          {/* Decorative orbs */}
           <View style={styles.orbTopRight} />
-          <View style={styles.orbBottomLeft} />
 
-          {/* Back pill */}
-          <TouchableOpacity
-            style={styles.backPill}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.75}
-          >
-            <Icon name="chevron-back" size={rfs(16)} color="#FFFFFF" />
-            <Text style={styles.backPillText}>Back</Text>
-          </TouchableOpacity>
+          <View style={styles.headerBar}>
+            <TouchableOpacity
+              style={styles.backIconBtn}
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+            >
+              <Icon name="chevron-back" size={rfs(19)} color="#FFFFFF" />
+            </TouchableOpacity>
 
-          {/* Receipt icon */}
-          <View style={styles.receiptRing}>
-            <Icon name="receipt-outline" size={rfs(30)} color={colors.accent} />
-          </View>
-
-          <Text style={styles.bannerTitle}>Bill Detail</Text>
-          <Text style={styles.bannerSub}>
-            {formatDate(bill.createdAt)}
-            {formatTime(bill.createdAt) ? `  ·  ${formatTime(bill.createdAt)}` : ''}
-          </Text>
-
-          {/* Bill no pill */}
-          {!!bill.billNo && (
-            <View style={styles.billNoPill}>
-              <View style={styles.billNoDot} />
-              <Text style={styles.billNoText}>BILL #{bill.billNo}</Text>
+            <View style={styles.headerMain}>
+              <Text style={styles.bannerTitle} numberOfLines={1}>
+                Bill detail
+              </Text>
+              <Text style={styles.bannerSub} numberOfLines={1}>
+                {formatDate(bill.createdAt)}
+                {formatTime(bill.createdAt) ? ` · ${formatTime(bill.createdAt)}` : ''}
+              </Text>
             </View>
-          )}
 
+            {!!bill.billNo ? (
+              <View style={styles.billNoPill}>
+                <Text
+                  style={styles.billNoText}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  #{bill.billNo}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.headerSideSpacer} />
+            )}
+          </View>
         </LinearGradient>
 
         {/* ── Receipt card ── */}
@@ -206,7 +206,6 @@ const BillDetailScreen = ({ navigation, route }) => {
         <ReceiptActions
           loading={pdfLoading}
           onPdf={handleConvertToPdf}
-          onBack={() => navigation.goBack()}
         />
 
       </ScrollView>
@@ -230,113 +229,89 @@ const styles = StyleSheet.create({
     paddingBottom: rvs(40),
   },
 
-  // ── Banner ────────────────────────────────────────────
+  // ── Banner (compact) ──────────────────────────────────
   banner: {
-    paddingTop: STATUS_H + rvs(16),
-    paddingBottom: rvs(28),
-    paddingHorizontal: rs(20),
-    alignItems: 'center',
+    paddingTop: STATUS_H + rvs(6),
+    paddingBottom: rvs(12),
+    paddingHorizontal: rs(12),
     position: 'relative',
     overflow: 'hidden',
   },
 
   orbTopRight: {
     position: 'absolute',
-    top: -rs(40),
-    right: -rs(40),
-    width: rs(160),
-    height: rs(160),
-    borderRadius: rs(80),
-    backgroundColor: 'rgba(245,166,35,0.08)',
+    top: -rs(50),
+    right: -rs(30),
+    width: rs(120),
+    height: rs(120),
+    borderRadius: rs(60),
+    backgroundColor: 'rgba(245,166,35,0.07)',
   },
 
-  orbBottomLeft: {
-    position: 'absolute',
-    bottom: -rvs(20),
-    left: -rs(20),
-    width: rs(100),
-    height: rs(100),
-    borderRadius: rs(50),
-    backgroundColor: 'rgba(255,255,255,0.04)',
-  },
-
-  backPill: {
+  headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: rs(4),
+    zIndex: 1,
+    gap: rs(8),
+  },
+
+  backIconBtn: {
+    width: rs(36),
+    height: rs(36),
+    borderRadius: rs(18),
     backgroundColor: 'rgba(255,255,255,0.10)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    borderRadius: rs(20),
-    paddingHorizontal: rs(12),
-    paddingVertical: rvs(7),
-    marginBottom: rvs(20),
-  },
-
-  backPillText: {
-    fontSize: rfs(13),
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-
-  receiptRing: {
-    width: rs(68),
-    height: rs(68),
-    borderRadius: rs(34),
-    backgroundColor: 'rgba(245,166,35,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(245,166,35,0.30)',
+    borderColor: 'rgba(255,255,255,0.14)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: rvs(14),
+  },
+
+  headerMain: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+  },
+
+  headerSideSpacer: {
+    width: rs(36),
+    height: rs(36),
   },
 
   bannerTitle: {
-    fontSize: rfs(20),
-    fontWeight: '800',
+    fontSize: rfs(19),
+    fontWeight: '700',
     color: '#FFFFFF',
-    letterSpacing: 0.2,
+    letterSpacing: 0.15,
   },
 
   bannerSub: {
     fontSize: rfs(12),
-    color: 'rgba(255,255,255,0.55)',
+    color: 'rgba(255,255,255,0.62)',
     fontWeight: '500',
-    marginTop: rvs(4),
+    marginTop: rvs(2),
   },
 
   billNoPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(5),
-    marginTop: rvs(14),
-    backgroundColor: 'rgba(245,166,35,0.15)',
+    maxWidth: '38%',
+    backgroundColor: 'rgba(245,166,35,0.14)',
     borderWidth: 1,
-    borderColor: 'rgba(245,166,35,0.30)',
-    borderRadius: rs(20),
-    paddingVertical: rvs(5),
-    paddingHorizontal: rs(14),
-  },
-
-  billNoDot: {
-    width: rs(6),
-    height: rs(6),
-    borderRadius: rs(3),
-    backgroundColor: colors.accent,
+    borderColor: 'rgba(245,166,35,0.32)',
+    borderRadius: rs(10),
+    paddingVertical: rvs(6),
+    paddingHorizontal: rs(10),
   },
 
   billNoText: {
     fontSize: rfs(11),
     fontWeight: '700',
     color: colors.accent,
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
 
   // ── Receipt card ──────────────────────────────────────
   receiptCard: {
     marginHorizontal: rs(16),
-    marginTop: rvs(14),
+    marginTop: rvs(10),
     backgroundColor: '#FFFFFF',
     borderRadius: rs(16),
     borderWidth: 1,
@@ -401,23 +376,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: rfs(20),
-  },
-
-  errorBackBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(5),
-    backgroundColor: colors.primary,
-    borderRadius: rs(12),
-    paddingVertical: rvs(10),
-    paddingHorizontal: rs(20),
-    marginTop: rvs(12),
-  },
-
-  errorBackText: {
-    fontSize: rfs(13),
-    fontWeight: '700',
-    color: '#FFFFFF',
   },
 
 });
