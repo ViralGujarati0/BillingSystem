@@ -7,6 +7,7 @@ import ShopForm from '../components/ShopForm';
 import { createShopFormAtom } from '../atoms/forms';
 import { currentOwnerAtom } from '../atoms/owner';
 import { createShopAndAssignToOwner } from '../services/shopService';
+import { getUser } from '../services/userService';
 
 export default function CreateShopScreen({ navigation }) {
   const { t } = useTranslation();
@@ -19,7 +20,8 @@ export default function CreateShopScreen({ navigation }) {
       return;
     }
     await createShopAndAssignToOwner(owner.id, form);
-    navigation.replace('OwnerTabs');
+    const userDoc = await getUser(owner.id);
+    navigation.replace('OwnerTabs', userDoc ? { userDoc } : undefined);
   };
 
   return (

@@ -22,6 +22,7 @@ import {
 } from '../atoms/billing';
 
 import useBillingViewModel from '../viewmodels/BillingViewModel';
+import useEffectiveBillingUserDoc from '../hooks/useEffectiveBillingUserDoc';
 
 import BillingHeader          from '../components/BillingHeader';
 import CustomerPaymentSection from '../components/CustomerPaymentSection';
@@ -43,7 +44,7 @@ const rfs   = (n) => Math.round(n * Math.min(scale, vs));
 // ─── Component ────────────────────────────────────────────────────────────────
 const BillingCartScreen = ({ navigation, route }) => {
   const { t } = useTranslation();
-  const { userDoc } = route.params || {};
+  const userDoc = useEffectiveBillingUserDoc(route);
   const shopId = userDoc?.shopId;
 
   const cartItems    = useAtomValue(billingCartItemsAtom);

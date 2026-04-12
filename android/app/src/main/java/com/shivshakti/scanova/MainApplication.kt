@@ -1,4 +1,4 @@
-package com.billing.system
+package com.shivshakti.scanova
 
 import android.app.Application
 import com.facebook.react.PackageList

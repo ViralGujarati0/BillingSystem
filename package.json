@@ -6,6 +6,13 @@
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "lint": "eslint .",
+    "prebuild": "npx react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res",
+    "clear": "cd android && ./gradlew clean && cd ../",
+    "build": "cd android && ./gradlew assembleRelease && cd ../ && open android/app/build/outputs/apk/release",
+    "build:install": "cd android && ./gradlew assembleRelease && cd ../ && adb install -r android/app/build/outputs/apk/release/app-release.apk",
+    "bundle": "cd android && ./gradlew bundleRelease && cd ../ && open android/app/build/outputs/bundle/release",
+    "debug:build": "cd android && ./gradlew assembleDebug && cd ../",
+    "cmakefix": "cd android && ./gradlew generateCodegenArtifactsFromSchema && cd ../",
     "start": "react-native start",
     "test": "jest"
   },

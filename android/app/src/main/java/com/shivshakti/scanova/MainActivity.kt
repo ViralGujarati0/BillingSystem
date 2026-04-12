@@ -1,4 +1,4 @@
-package com.billing.system
+package com.shivshakti.scanova
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

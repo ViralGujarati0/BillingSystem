@@ -7,6 +7,7 @@ import { authLoadingAtom, authErrorAtom } from '../atoms/auth';
 // ✅ correct imports — both functions live in userService
 import { createOrUpdateOwnerUser, getUser } from '../services/userService';
 
+// OAuth Web client (type 3) for this Firebase project; matches com.shivshakti.scanova in google-services.json
 GoogleSignin.configure({
   webClientId: '365406749603-3ulea8cc0psm28s1dmp55vektg41rs04.apps.googleusercontent.com',
 });

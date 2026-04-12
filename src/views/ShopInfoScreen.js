@@ -117,7 +117,11 @@ export default function ShopInfoScreen({ navigation }) {
     }
   }, [owner]);
 
-  useFocusEffect(load);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   const headerLeft = (
     <BackPill onPress={() => navigation.goBack()} />

@@ -19,6 +19,7 @@ import { useIsFocused } from '@react-navigation/native';
 import { purchaseScannedBarcodeAtom } from '../atoms/purchase';
 import { barcodeScannerRequestingPermissionAtom } from '../atoms/forms';
 import useBillingViewModel from '../viewmodels/BillingViewModel';
+import useEffectiveBillingUserDoc from '../hooks/useEffectiveBillingUserDoc';
 import { colors } from '../theme/colors';
 
 import ScannerHeaderCart     from '../components/ScannerHeaderCart';
@@ -37,8 +38,8 @@ const rfs   = (n) => Math.round(n * Math.min(scale, vs));
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 const BillingScannerScreen = ({ navigation, route }) => {
-  const mode   = route?.params?.mode || 'default';
-  const userDoc = route?.params?.userDoc;
+  const mode    = route?.params?.mode || 'default';
+  const userDoc = useEffectiveBillingUserDoc(route);
   const shopId  = userDoc?.shopId;
 
   const device = useCameraDevice('back');
