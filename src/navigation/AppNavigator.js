@@ -41,6 +41,7 @@ import PurchaseManagementScreen from '../views/PurchaseManagementScreen';
 import PurchaseCreateScreen     from '../views/PurchaseCreateScreen';
 import PurchaseSuccessScreen    from '../views/PurchaseSuccessScreen';
 import PurchaseDetailScreen     from '../views/PurchaseDetailScreen';
+import RecordPurchasePaymentScreen from '../views/RecordPurchasePaymentScreen';
 import GlobalSearchScreen       from '../views/GlobalSearchScreen';
 import DailyReportPreviewScreen from '../views/DailyReportPreviewScreen';
 
@@ -125,11 +126,10 @@ const AppNavigator = () => {
 
             if (userDoc?.role === 'OWNER') {
               stopStaffListener();
-              const route = userDoc.shopId ? 'OwnerTabs' : 'CreateShop';
               if (navigationRef.isReady()) {
-                resetTo(route, { userDoc });
+                resetTo('OwnerTabs', { userDoc });
               } else {
-                setInitialRoute(route);
+                setInitialRoute('OwnerTabs');
                 setInitialParams({ userDoc });
               }
             } else if (userDoc?.role === 'STAFF') {
@@ -232,6 +232,7 @@ const AppNavigator = () => {
         <Stack.Screen name="PurchaseCreate"     component={PurchaseCreateScreen} />
         <Stack.Screen name="PurchaseSuccess"    component={PurchaseSuccessScreen} />
         <Stack.Screen name="PurchaseDetail"     component={PurchaseDetailScreen} />
+        <Stack.Screen name="RecordPurchasePayment" component={RecordPurchasePaymentScreen} />
 
         {/* ── Inventory ── */}
         <Stack.Screen name="BarcodeScanner"    component={BarcodeScannerScreen} />

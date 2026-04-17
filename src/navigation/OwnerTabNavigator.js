@@ -198,13 +198,18 @@ function CustomTabBar({ state, navigation, userDoc }) {
 // ─── Navigator ────────────────────────────────────────────────────────────────
 const OwnerTabNavigator = ({ route }) => {
   const userDoc = route.params?.userDoc;
+  const showSetupLoader = !!route.params?.showSetupLoader;
 
   return (
     <Tab.Navigator
       screenOptions={{ headerShown: false }}
       tabBar={props => <CustomTabBar {...props} userDoc={userDoc} />}
     >
-      <Tab.Screen name="HomeTab"   component={HomeScreen}   initialParams={{ userDoc }} />
+      <Tab.Screen
+        name="HomeTab"
+        component={HomeScreen}
+        initialParams={{ userDoc, showSetupLoader }}
+      />
       <Tab.Screen name="SalesTab"  component={SalesScreen}  />
       <Tab.Screen name="StockTab"  component={StockScreen}  />
       <Tab.Screen name="ProfileTab" component={ProfileScreen} />

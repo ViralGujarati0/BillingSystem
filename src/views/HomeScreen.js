@@ -7,6 +7,7 @@
     TouchableOpacity,
     StyleSheet,
     ScrollView,
+    ActivityIndicator,
     Dimensions,
   } from 'react-native';
   import auth from '@react-native-firebase/auth';
@@ -77,9 +78,22 @@
     const { t }   = useTranslation();
     const userDoc = route.params?.userDoc;
     const vm      = useHomeViewModel({ userDoc });
+    const [showSetupLoader, setShowSetupLoader] = useState(!!route.params?.showSetupLoader);
   
     // Resolve photo URL — prefer Firestore userDoc, fall back to Firebase Auth
     const photoURL = userDoc?.photoURL || auth().currentUser?.photoURL || null;
+
+    useEffect(() => {
+      if (route.params?.showSetupLoader) {
+        setShowSetupLoader(true);
+      }
+    }, [route.params?.showSetupLoader]);
+
+    useEffect(() => {
+      if (!showSetupLoader) return;
+      if (!vm.dashboardReady) return;
+      setShowSetupLoader(false);
+    }, [showSetupLoader, vm.dashboardReady]);
   
     return (
       <AppHeaderLayout
@@ -112,11 +126,23 @@
           ) : null
         }
       >
+
+        {vm.hasShop && showSetupLoader && (
+          <View style={styles.setupLoaderWrap}>
+            <View style={styles.setupLoaderIconWrap}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+            <Text style={styles.setupLoaderTitle}>Setting up your shop</Text>
+            <Text style={styles.setupLoaderSub}>
+              We are getting everything ready for {userDoc?.shopName || userDoc?.name || 'your shop'}.
+            </Text>
+          </View>
+        )}
   
         {/* ════════════════════════════════
             NO SHOP STATE
         ════════════════════════════════ */}
-        {!vm.hasShop && (
+        {!vm.hasShop && !showSetupLoader && (
           <View style={styles.createShopWrap}>
             <View style={styles.createShopIconWrap}>
               <Icon
@@ -145,7 +171,7 @@
         {/* ════════════════════════════════
             DASHBOARD
         ════════════════════════════════ */}
-        {vm.hasShop && (
+        {vm.hasShop && !showSetupLoader && (
           <View style={styles.dashRoot}>
   
             <ScrollView
@@ -285,17 +311,21 @@
               <PendingPurchasesCard
                 purchases={vm.pendingPurchases}
                 loading={vm.loadingPendingPurchases}
+                onPressPurchase={(purchase) =>
+                  navigation.getParent()?.navigate('RecordPurchasePayment', { purchase })
+                }
                 onViewAll={() =>
-                  navigation.getParent()?.navigate('Purchases')
+                  navigation.getParent()?.navigate('PurchaseManagement')
                 }
               />
   
               <RecentBillsCard
                 bills={vm.recentBills}
                 loading={vm.loadingRecentBills}
-                onViewAll={() =>
-                  navigation.getParent()?.navigate('Bills')
+                onPressBill={(bill) =>
+                  navigation.getParent()?.navigate('BillDetail', { bill })
                 }
+                onViewAll={() => navigation.navigate('SalesTab')}
               />
   
             </ScrollView>
@@ -330,6 +360,40 @@
     // ── Dashboard root ────────────────────────────────────
     dashRoot: {
       flex: 1,
+    },
+
+    setupLoaderWrap: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: rs(30),
+      gap: rvs(10),
+    },
+
+    setupLoaderIconWrap: {
+      width: rs(76),
+      height: rs(76),
+      borderRadius: rs(22),
+      backgroundColor: 'rgba(45,74,82,0.06)',
+      borderWidth: 1,
+      borderColor: colors.borderCard,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: rvs(4),
+    },
+
+    setupLoaderTitle: {
+      fontSize: rfs(18),
+      fontWeight: '800',
+      color: colors.textPrimary,
+      textAlign: 'center',
+    },
+
+    setupLoaderSub: {
+      fontSize: rfs(13),
+      color: colors.textSecondary,
+      textAlign: 'center',
+      lineHeight: rfs(20),
     },
   
     // ── Scroll content ────────────────────────────────────

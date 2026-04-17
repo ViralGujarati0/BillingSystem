@@ -1,69 +1,3 @@
-// import { useState, useEffect } from 'react';
-// import { useAtomValue, useSetAtom } from 'jotai';
-// import firestore from '@react-native-firebase/firestore';
-
-// import { currentOwnerAtom } from '../atoms/owner';
-
-// const useHomeViewModel = ({ userDoc } = {}) => {
-
-//   const setCurrentOwner = useSetAtom(currentOwnerAtom);
-//   const owner           = useAtomValue(currentOwnerAtom);
-
-//   const [stats,        setStats]        = useState(null);
-//   const [loadingStats, setLoadingStats] = useState(true);
-
-//   // ── Set current owner atom from userDoc (passed from navigator) ────────────
-//   useEffect(() => {
-//     if (userDoc?.role === 'OWNER') setCurrentOwner(userDoc);
-//   }, [userDoc, setCurrentOwner]);
-
-//   // ── Realtime today stats listener ──────────────────────────────────────────
-//   useEffect(() => {
-//     const shopId = userDoc?.shopId || owner?.shopId;
-//     if (!shopId) {
-//       setLoadingStats(false);
-//       return;
-//     }
-
-//     const todayKey = new Date()
-//       .toISOString()
-//       .slice(0, 10)
-//       .replace(/-/g, '_');
-
-//     const unsubscribe = firestore()
-//       .collection('billing_shops')
-//       .doc(shopId)
-//       .collection('stats')
-//       .doc(`daily_${todayKey}`)
-//       .onSnapshot((doc) => {
-//         setStats(doc.exists ? doc.data() : null);
-//         setLoadingStats(false);
-//       });
-
-//     return unsubscribe;
-
-//   }, [userDoc?.shopId, owner?.shopId]);
-
-//   // ── Greeting ───────────────────────────────────────────────────────────────
-//   const greeting = () => {
-//     const h = new Date().getHours();
-//     if (h < 12) return 'Good Morning';
-//     if (h < 17) return 'Good Afternoon';
-//     return 'Good Evening';
-//   };
-
-//   return {
-//     stats,
-//     loadingStats,
-//     greeting: greeting(),
-//     hasShop: !!(userDoc?.shopId || owner?.shopId),
-//   };
-// };
-
-// export default useHomeViewModel;
-
-
-
 import { useState, useEffect, useCallback } from 'react';
 import { useAtomValue, useSetAtom }          from 'jotai';
 import firestore                             from '@react-native-firebase/firestore';
@@ -101,6 +35,7 @@ const useHomeViewModel = ({ userDoc } = {}) => {
   const [statsMap,     setStatsMap]     = useState({});
   const [loadingMap,   setLoadingMap]   = useState({});
   const [prevStatsMap, setPrevStatsMap] = useState({});
+  const [readyMap,     setReadyMap]     = useState({});
 
   // ── Chart ─────────────────────────────────────────────────────────────────
   const [dailyData,    setDailyData]    = useState([]);
@@ -115,6 +50,10 @@ const useHomeViewModel = ({ userDoc } = {}) => {
   const [loadingLowStock,         setLoadingLowStock]         = useState(true);
   const [pendingPurchases,        setPendingPurchases]        = useState([]);
   const [loadingPendingPurchases, setLoadingPendingPurchases] = useState(true);
+
+  useEffect(() => {
+    setReadyMap({});
+  }, [shopId]);
 
   // ── Set owner atom ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -142,6 +81,7 @@ const useHomeViewModel = ({ userDoc } = {}) => {
       console.log(`[statsError] ${cardId} ${period}:`, e?.message);
     } finally {
       setLoadingMap((prev) => ({ ...prev, [cacheKey]: false }));
+      setReadyMap((prev) => ({ ...prev, [cardId]: true }));
     }
   }, [shopId]);
 
@@ -162,8 +102,16 @@ const useHomeViewModel = ({ userDoc } = {}) => {
     const days = getPeriodDays(chartPeriod);
     const keys = getLastNStatKeys(days);
     fetchStatsByKeys(db, shopId, keys)
-      .then(({ daily }) => { setDailyData(daily); setLoadingChart(false); })
-      .catch((e) => { console.log('[chartError]', e?.message); setLoadingChart(false); });
+      .then(({ daily }) => {
+        setDailyData(daily);
+        setLoadingChart(false);
+        setReadyMap((prev) => ({ ...prev, chart: true }));
+      })
+      .catch((e) => {
+        console.log('[chartError]', e?.message);
+        setLoadingChart(false);
+        setReadyMap((prev) => ({ ...prev, chart: true }));
+      });
   }, [shopId, chartPeriod]);
 
   // ── Top products ──────────────────────────────────────────────────────────
@@ -195,12 +143,14 @@ const useHomeViewModel = ({ userDoc } = {}) => {
           });
           setTopProducts(Object.values(map).sort((a, b) => b.qty - a.qty).slice(0, 5));
           setLoadingTopProducts(false);
+          setReadyMap((prev) => ({ ...prev, topProducts: true }));
         },
         (err) => {
           const url = err?.message?.match(/https:\/\/console\.firebase\.google\.com\S+/);
           if (url) console.log('✅ CREATE INDEX (top products):', url[0]);
           else     console.log('[topProductsError]', err?.message);
           setLoadingTopProducts(false);
+          setReadyMap((prev) => ({ ...prev, topProducts: true }));
         }
       );
     return unsub;
@@ -223,12 +173,14 @@ const useHomeViewModel = ({ userDoc } = {}) => {
             createdAt: d.data().createdAt?.toDate?.() || null,
           })));
           setLoadingRecentBills(false);
+          setReadyMap((prev) => ({ ...prev, recentBills: true }));
         },
         (err) => {
           const url = err?.message?.match(/https:\/\/console\.firebase\.google\.com\S+/);
           if (url) console.log('✅ CREATE INDEX (recent bills):', url[0]);
           else     console.log('[recentBillsError]', err?.message);
           setLoadingRecentBills(false);
+          setReadyMap((prev) => ({ ...prev, recentBills: true }));
         }
       );
     return unsub;
@@ -249,12 +201,14 @@ const useHomeViewModel = ({ userDoc } = {}) => {
             snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((i) => (i.stock || 0) >= 0)
           );
           setLoadingLowStock(false);
+          setReadyMap((prev) => ({ ...prev, lowStock: true }));
         },
         (err) => {
           const url = err?.message?.match(/https:\/\/console\.firebase\.google\.com\S+/);
           if (url) console.log('✅ CREATE INDEX (low stock):', url[0]);
           else     console.log('[lowStockError]', err?.message);
           setLoadingLowStock(false);
+          setReadyMap((prev) => ({ ...prev, lowStock: true }));
         }
       );
     return unsub;
@@ -277,12 +231,14 @@ const useHomeViewModel = ({ userDoc } = {}) => {
               .slice(0, 5)
           );
           setLoadingPendingPurchases(false);
+          setReadyMap((prev) => ({ ...prev, pendingPurchases: true }));
         },
         (err) => {
           const url = err?.message?.match(/https:\/\/console\.firebase\.google\.com\S+/);
           if (url) console.log('✅ CREATE INDEX (pending purchases):', url[0]);
           else     console.log('[pendingPurchasesError]', err?.message);
           setLoadingPendingPurchases(false);
+          setReadyMap((prev) => ({ ...prev, pendingPurchases: true }));
         }
       );
     return unsub;
@@ -300,10 +256,26 @@ const useHomeViewModel = ({ userDoc } = {}) => {
   const getStats  = (id, p) => statsMap[`${id}_${p}`]     || {};
   const getPrev   = (id, p) => prevStatsMap[`${id}_${p}`] || {};
   const isLoading = (id, p) => !!loadingMap[`${id}_${p}`];
+  const dashboardReady = !shopId || (
+    readyMap.revenue &&
+    readyMap.profit &&
+    readyMap.bills &&
+    readyMap.items &&
+    readyMap.avgbill &&
+    readyMap.purchase &&
+    readyMap.payment &&
+    readyMap.compare &&
+    readyMap.chart &&
+    readyMap.topProducts &&
+    readyMap.recentBills &&
+    readyMap.lowStock &&
+    readyMap.pendingPurchases
+  );
 
   return {
     greeting,
     hasShop: !!shopId,
+    dashboardReady,
 
     // each card gets its own { period, setPeriod, stats, prev, loading }
     revenue:     { period: revenuePeriod,     setPeriod: setRevenuePeriod,     stats: getStats('revenue',  revenuePeriod),    loading: isLoading('revenue',  revenuePeriod)    },

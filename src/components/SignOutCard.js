@@ -73,7 +73,7 @@ export default function SignOutCard() {
           <View style={styles.modalCard}>
 
             <View style={styles.modalIconRing}>
-              <Icon name="log-out-outline" size={rfs(28)} color={colors.textLight} />
+              <Icon name="log-out-outline" size={rfs(28)} color="#E05252" />
             </View>
 
             <Text style={styles.modalTitle}>Sign Out?</Text>
@@ -127,7 +127,6 @@ const styles = StyleSheet.create({
     width: rs(38),
     height: rs(38),
     borderRadius: rs(10),
-    // backgroundColor: 'rgba(224,82,82,0.08)',
     backgroundColor: colors.primary,
     borderWidth: 1,
     borderColor: 'rgba(224,82,82,0.20)',

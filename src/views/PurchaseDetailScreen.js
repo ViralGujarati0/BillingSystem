@@ -94,6 +94,10 @@ const PurchaseDetailScreen = ({ navigation, route }) => {
     }
   };
 
+  const handleRecordPayment = () => {
+    navigation.navigate('RecordPurchasePayment', { purchase });
+  };
+
   return (
     <View style={styles.root}>
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
@@ -139,6 +143,19 @@ const PurchaseDetailScreen = ({ navigation, route }) => {
         </View>
 
         <View style={styles.actionsWrap}>
+
+          {Number(purchase.dueAmount || 0) > 0 && (
+            <TouchableOpacity
+              style={styles.paymentBtn}
+              onPress={handleRecordPayment}
+              activeOpacity={0.85}
+            >
+              <View style={styles.paymentIconBox}>
+                <Icon name="wallet-outline" size={rfs(15)} color={colors.primary} />
+              </View>
+              <Text style={styles.paymentBtnText}>Record Payment</Text>
+            </TouchableOpacity>
+          )}
 
           {/* Share PDF button */}
           <TouchableOpacity
@@ -258,6 +275,36 @@ const styles = StyleSheet.create({
   // ── Card + actions ────────────────────────────────────
   cardWrap:    { marginHorizontal: rs(16), marginTop: rvs(14) },
   actionsWrap: { marginHorizontal: rs(16), marginTop: rvs(16), gap: rvs(10) },
+
+  paymentBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: rs(10),
+    backgroundColor: colors.success,
+    paddingVertical: rvs(15),
+    borderRadius: rs(14),
+    shadowColor: colors.success,
+    shadowOffset: { width: 0, height: rvs(4) },
+    shadowOpacity: 0.24,
+    shadowRadius: rs(12),
+    elevation: 5,
+  },
+
+  paymentIconBox: {
+    width: rs(26), height: rs(26),
+    borderRadius: rs(8),
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  paymentBtnText: {
+    fontSize: rfs(15),
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
+  },
 
   // ── PDF button ────────────────────────────────────────
   pdfBtn: {

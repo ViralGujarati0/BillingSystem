@@ -31,3 +31,75 @@ export function subscribePurchases(shopId, callback) {
       callback(list);
     });
 }
+
+export async function recordPurchasePayment({
+  shopId,
+  purchaseId,
+  amount,
+  paymentType = 'CASH',
+  createdBy,
+}) {
+  const db = firestore();
+  const purchaseRef = db
+    .collection(COLLECTIONS.SHOPS)
+    .doc(shopId)
+    .collection(COLLECTIONS.PURCHASES)
+    .doc(purchaseId);
+
+  const paymentRef = purchaseRef.collection('payments').doc();
+  const normalizedAmount = Number(amount) || 0;
+  const normalizedType = String(paymentType || 'CASH').toUpperCase();
+
+  if (normalizedAmount <= 0) {
+    throw new Error('Payment amount must be greater than 0.');
+  }
+
+  return db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(purchaseRef);
+
+    if (!snap.exists) {
+      throw new Error('Purchase not found.');
+    }
+
+    const purchase = { id: snap.id, ...snap.data() };
+    const subtotal = Number(purchase.subtotal || 0);
+    const previousPaidAmount = Number(purchase.paidAmount || 0);
+    const previousDueAmount = Number(purchase.dueAmount ?? Math.max(0, subtotal - previousPaidAmount));
+
+    if (previousDueAmount <= 0) {
+      throw new Error('This purchase is already fully paid.');
+    }
+
+    if (normalizedAmount > previousDueAmount) {
+      throw new Error('Payment amount cannot be greater than the due amount.');
+    }
+
+    const nextPaidAmount = previousPaidAmount + normalizedAmount;
+    const nextDueAmount = Math.max(0, subtotal - nextPaidAmount);
+
+    transaction.update(purchaseRef, {
+      paidAmount: nextPaidAmount,
+      dueAmount: nextDueAmount,
+      paymentType: normalizedType,
+      updatedAt: firestore.FieldValue.serverTimestamp(),
+    });
+
+    transaction.set(paymentRef, {
+      amount: normalizedAmount,
+      paymentType: normalizedType,
+      createdAt: firestore.FieldValue.serverTimestamp(),
+      createdBy: createdBy || null,
+      previousPaidAmount,
+      nextPaidAmount,
+      previousDueAmount,
+      nextDueAmount,
+    });
+
+    return {
+      ...purchase,
+      paidAmount: nextPaidAmount,
+      dueAmount: nextDueAmount,
+      paymentType: normalizedType,
+    };
+  });
+}

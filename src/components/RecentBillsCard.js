@@ -29,7 +29,7 @@ function formatTime(date) {
 }
 
 // ─── Bill row ─────────────────────────────────────────────────────────────────
-const BillRow = ({ bill, isLast }) => {
+const BillRow = ({ bill, isLast, onPress }) => {
   const { t } = useTranslation();
   const name   = bill.customerName || t('home.walkIn');
   const avatar = getAvatarColor(name);
@@ -38,7 +38,12 @@ const BillRow = ({ bill, isLast }) => {
   const itemsPhrase = t('home.billMetaItems', { count: itemCount });
 
   return (
-    <View style={[styles.row, !isLast && styles.rowBorder]}>
+    <TouchableOpacity
+      style={[styles.row, !isLast && styles.rowBorder]}
+      activeOpacity={0.75}
+      onPress={() => onPress?.(bill)}
+      disabled={!onPress}
+    >
 
       {/* Initial avatar */}
       <View style={[styles.avatar, { backgroundColor: avatar.bg }]}>
@@ -64,12 +69,12 @@ const BillRow = ({ bill, isLast }) => {
         ₹{Number(bill.grandTotal || 0).toFixed(0)}
       </Text>
 
-    </View>
+    </TouchableOpacity>
   );
 };
 
 // ─── Main component ───────────────────────────────────────────────────────────
-const RecentBillsCard = ({ bills = [], loading, onViewAll }) => {
+const RecentBillsCard = ({ bills = [], loading, onViewAll, onPressBill }) => {
   const { t } = useTranslation();
 
   return (
@@ -117,6 +122,7 @@ const RecentBillsCard = ({ bills = [], loading, onViewAll }) => {
             key={bill.id}
             bill={bill}
             isLast={i === bills.length - 1}
+            onPress={onPressBill}
           />
         ))}
       </View>

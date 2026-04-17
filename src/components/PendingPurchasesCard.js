@@ -24,10 +24,10 @@ const fmt = (v) =>
 
 /**
  * PendingPurchasesCard
- * Props: purchases, loading, onViewAll
+ * Props: purchases, loading, onViewAll, onPressPurchase
  * purchases: [{ id, supplierName, subtotal, paidAmount, dueAmount, purchaseNoFormatted }]
  */
-const PendingPurchasesCard = ({ purchases = [], loading, onViewAll }) => {
+const PendingPurchasesCard = ({ purchases = [], loading, onViewAll, onPressPurchase }) => {
   const { t } = useTranslation();
 
   const totalDue = purchases.reduce((s, p) => s + (p.dueAmount || 0), 0);
@@ -84,7 +84,12 @@ const PendingPurchasesCard = ({ purchases = [], loading, onViewAll }) => {
           {purchases.map((p, i) => (
             <View key={p.id}>
               {i > 0 && <View style={styles.divider} />}
-              <View style={styles.row}>
+              <TouchableOpacity
+                style={styles.row}
+                activeOpacity={0.75}
+                onPress={() => onPressPurchase?.(p)}
+                disabled={!onPressPurchase}
+              >
 
                 {/* Supplier icon box */}
                 <View style={styles.supplierIconWrap}>
@@ -111,7 +116,7 @@ const PendingPurchasesCard = ({ purchases = [], loading, onViewAll }) => {
                   <Text style={styles.dueValue}>{fmt(p.dueAmount)}</Text>
                 </View>
 
-              </View>
+              </TouchableOpacity>
             </View>
           ))}
         </View>
