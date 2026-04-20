@@ -44,6 +44,7 @@ import PurchaseDetailScreen     from '../views/PurchaseDetailScreen';
 import RecordPurchasePaymentScreen from '../views/RecordPurchasePaymentScreen';
 import GlobalSearchScreen       from '../views/GlobalSearchScreen';
 import DailyReportPreviewScreen from '../views/DailyReportPreviewScreen';
+import RestockProductScreen from '../views/RestockProductScreen';
 
 export const navigationRef = createNavigationContainerRef();
 
@@ -233,6 +234,7 @@ const AppNavigator = () => {
         <Stack.Screen name="PurchaseSuccess"    component={PurchaseSuccessScreen} />
         <Stack.Screen name="PurchaseDetail"     component={PurchaseDetailScreen} />
         <Stack.Screen name="RecordPurchasePayment" component={RecordPurchasePaymentScreen} />
+        <Stack.Screen name="RestockProduct" component={RestockProductScreen} />
 
         {/* ── Inventory ── */}
         <Stack.Screen name="BarcodeScanner"    component={BarcodeScannerScreen} />

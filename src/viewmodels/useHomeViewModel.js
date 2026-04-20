@@ -3,6 +3,7 @@ import { useAtomValue, useSetAtom }          from 'jotai';
 import firestore                             from '@react-native-firebase/firestore';
 
 import { currentOwnerAtom } from '../atoms/owner';
+import { productCacheAtom } from '../atoms/productCache';
 import { COLLECTIONS }      from '../constants/collections';
 import {
   getISTStatsKey,
@@ -17,6 +18,7 @@ const useHomeViewModel = ({ userDoc } = {}) => {
 
   const setCurrentOwner = useSetAtom(currentOwnerAtom);
   const owner           = useAtomValue(currentOwnerAtom);
+  const products        = useAtomValue(productCacheAtom);
   const shopId          = userDoc?.shopId || owner?.shopId;
 
   // ── Per-card period state ─────────────────────────────────────────────────
@@ -36,6 +38,7 @@ const useHomeViewModel = ({ userDoc } = {}) => {
   const [loadingMap,   setLoadingMap]   = useState({});
   const [prevStatsMap, setPrevStatsMap] = useState({});
   const [readyMap,     setReadyMap]     = useState({});
+  const [statsRefreshTick, setStatsRefreshTick] = useState(0);
 
   // ── Chart ─────────────────────────────────────────────────────────────────
   const [dailyData,    setDailyData]    = useState([]);
@@ -53,6 +56,25 @@ const useHomeViewModel = ({ userDoc } = {}) => {
 
   useEffect(() => {
     setReadyMap({});
+  }, [shopId]);
+
+  // ── Realtime refresh for cards that depend on stats docs ───────────────────
+  // This keeps Home stat cards fresh after actions like restock/purchase/billing.
+  useEffect(() => {
+    if (!shopId) return;
+    const todayKey = getISTStatsKey(0);
+    const unsub = db
+      .collection(COLLECTIONS.SHOPS)
+      .doc(shopId)
+      .collection('stats')
+      .doc(todayKey)
+      .onSnapshot(
+        () => {
+          setStatsRefreshTick((v) => v + 1);
+        },
+        () => {}
+      );
+    return unsub;
   }, [shopId]);
 
   // ── Set owner atom ────────────────────────────────────────────────────────
@@ -86,14 +108,14 @@ const useHomeViewModel = ({ userDoc } = {}) => {
   }, [shopId]);
 
   // ── Trigger fetch per card when period changes ────────────────────────────
-  useEffect(() => { fetchCardStats('revenue',  revenuePeriod);    }, [shopId, revenuePeriod,    fetchCardStats]);
-  useEffect(() => { fetchCardStats('profit',   profitPeriod);     }, [shopId, profitPeriod,     fetchCardStats]);
-  useEffect(() => { fetchCardStats('bills',    billsPeriod);      }, [shopId, billsPeriod,      fetchCardStats]);
-  useEffect(() => { fetchCardStats('items',    itemsPeriod);      }, [shopId, itemsPeriod,      fetchCardStats]);
-  useEffect(() => { fetchCardStats('avgbill',  avgBillPeriod);    }, [shopId, avgBillPeriod,    fetchCardStats]);
-  useEffect(() => { fetchCardStats('purchase', purchasePeriod);   }, [shopId, purchasePeriod,   fetchCardStats]);
-  useEffect(() => { fetchCardStats('payment',  paymentPeriod);    }, [shopId, paymentPeriod,    fetchCardStats]);
-  useEffect(() => { fetchCardStats('compare',  comparisonPeriod); }, [shopId, comparisonPeriod, fetchCardStats]);
+  useEffect(() => { fetchCardStats('revenue',  revenuePeriod);    }, [shopId, revenuePeriod,    fetchCardStats, statsRefreshTick]);
+  useEffect(() => { fetchCardStats('profit',   profitPeriod);     }, [shopId, profitPeriod,     fetchCardStats, statsRefreshTick]);
+  useEffect(() => { fetchCardStats('bills',    billsPeriod);      }, [shopId, billsPeriod,      fetchCardStats, statsRefreshTick]);
+  useEffect(() => { fetchCardStats('items',    itemsPeriod);      }, [shopId, itemsPeriod,      fetchCardStats, statsRefreshTick]);
+  useEffect(() => { fetchCardStats('avgbill',  avgBillPeriod);    }, [shopId, avgBillPeriod,    fetchCardStats, statsRefreshTick]);
+  useEffect(() => { fetchCardStats('purchase', purchasePeriod);   }, [shopId, purchasePeriod,   fetchCardStats, statsRefreshTick]);
+  useEffect(() => { fetchCardStats('payment',  paymentPeriod);    }, [shopId, paymentPeriod,    fetchCardStats, statsRefreshTick]);
+  useEffect(() => { fetchCardStats('compare',  comparisonPeriod); }, [shopId, comparisonPeriod, fetchCardStats, statsRefreshTick]);
 
   // ── Chart data ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -112,7 +134,7 @@ const useHomeViewModel = ({ userDoc } = {}) => {
         setLoadingChart(false);
         setReadyMap((prev) => ({ ...prev, chart: true }));
       });
-  }, [shopId, chartPeriod]);
+  }, [shopId, chartPeriod, statsRefreshTick]);
 
   // ── Top products ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -198,7 +220,16 @@ const useHomeViewModel = ({ userDoc } = {}) => {
       .onSnapshot(
         (snap) => {
           setLowStockItems(
-            snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((i) => (i.stock || 0) >= 0)
+            snap.docs
+              .map((d) => {
+                const raw = { id: d.id, ...d.data() };
+                const product = products?.[String(raw.barcode)] || null;
+                return {
+                  ...raw,
+                  name: raw.name || product?.name || 'Unknown Product',
+                };
+              })
+              .filter((i) => (i.stock || 0) >= 0)
           );
           setLoadingLowStock(false);
           setReadyMap((prev) => ({ ...prev, lowStock: true }));
@@ -212,7 +243,7 @@ const useHomeViewModel = ({ userDoc } = {}) => {
         }
       );
     return unsub;
-  }, [shopId]);
+  }, [shopId, products]);
 
   // ── Pending purchases ─────────────────────────────────────────────────────
   useEffect(() => {

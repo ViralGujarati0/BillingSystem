@@ -19,10 +19,10 @@ const rfs   = (n) => Math.round(n * Math.min(scale, vs));
 
 /**
  * LowStockCard
- * Props: items, loading, onViewAll
+ * Props: items, loading, onViewAll, onPressItem
  * items: [{ id, barcode, name, stock }]
  */
-const LowStockCard = ({ items = [], loading, onViewAll }) => {
+const LowStockCard = ({ items = [], loading, onViewAll, onPressItem }) => {
   const { t } = useTranslation();
 
   const hasAlert = items.length > 0;
@@ -82,9 +82,12 @@ const LowStockCard = ({ items = [], loading, onViewAll }) => {
               : colors.warning;
 
             return (
-              <View
+              <TouchableOpacity
                 key={item.id}
                 style={[styles.row, i < items.length - 1 && styles.rowBorder]}
+                activeOpacity={0.85}
+                onPress={() => onPressItem?.(item)}
+                disabled={!onPressItem}
               >
                 {/* Stock icon box */}
                 <View style={[
@@ -108,19 +111,26 @@ const LowStockCard = ({ items = [], loading, onViewAll }) => {
                   </Text>
                 </View>
 
-                {/* Stock pill */}
-                <View style={[
-                  styles.stockPill,
-                  { backgroundColor: `${stockColor}10`, borderColor: `${stockColor}28` },
-                ]}>
-                  <Text style={[styles.stockText, { color: stockColor }]}>
-                    {stock === 0
-                      ? t('home.outOfStock')
-                      : t('home.stockLeft', { count: stock })}
-                  </Text>
-                </View>
+                <View style={styles.rowRight}>
+                  {!!onPressItem && (
+                    <View style={styles.restockPill}>
+                      <Text style={styles.restockText}>{t('home.restock')}</Text>
+                    </View>
+                  )}
 
-              </View>
+                  {/* Stock pill */}
+                  <View style={[
+                    styles.stockPill,
+                    { backgroundColor: `${stockColor}10`, borderColor: `${stockColor}28` },
+                  ]}>
+                    <Text style={[styles.stockText, { color: stockColor }]}>
+                      {stock === 0
+                        ? t('home.outOfStock')
+                        : t('home.stockLeft', { count: stock })}
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
             );
           })}
         </View>
@@ -256,6 +266,27 @@ const styles = StyleSheet.create({
   stockText: {
     fontSize: rfs(10),
     fontWeight: '800',
+  },
+
+  rowRight: {
+    alignItems: 'flex-end',
+    gap: rvs(5),
+  },
+
+  restockPill: {
+    borderRadius: rs(7),
+    backgroundColor: 'rgba(45,74,82,0.08)',
+    borderWidth: 1,
+    borderColor: colors.borderCard,
+    paddingHorizontal: rs(8),
+    paddingVertical: rvs(3),
+  },
+
+  restockText: {
+    fontSize: rfs(9),
+    fontWeight: '700',
+    color: colors.primary,
+    letterSpacing: 0.2,
   },
 
   // ── Skeleton ──────────────────────────────────────────

@@ -301,9 +301,14 @@
                 items={vm.lowStockItems}
                 loading={vm.loadingLowStock}
                 onViewAll={() =>
-                  navigation.navigate('GlobalSearch', {
-                    shopId: userDoc?.shopId,
-                    userDoc,
+                  navigation.getParent()?.navigate('RestockProduct', {
+                    items: vm.lowStockItems,
+                  })
+                }
+                onPressItem={(item) =>
+                  navigation.getParent()?.navigate('RestockProduct', {
+                    item,
+                    items: vm.lowStockItems,
                   })
                 }
               />

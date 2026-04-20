@@ -62,6 +62,14 @@ export async function recordPurchasePayment({
     }
 
     const purchase = { id: snap.id, ...snap.data() };
+    const supplierId = purchase?.supplierId ? String(purchase.supplierId) : '';
+    const supplierRef = supplierId
+      ? db
+        .collection(COLLECTIONS.SHOPS)
+        .doc(shopId)
+        .collection(COLLECTIONS.SUPPLIERS)
+        .doc(supplierId)
+      : null;
     const subtotal = Number(purchase.subtotal || 0);
     const previousPaidAmount = Number(purchase.paidAmount || 0);
     const previousDueAmount = Number(purchase.dueAmount ?? Math.max(0, subtotal - previousPaidAmount));
@@ -94,6 +102,17 @@ export async function recordPurchasePayment({
       previousDueAmount,
       nextDueAmount,
     });
+
+    if (supplierRef) {
+      transaction.set(
+        supplierRef,
+        {
+          totalPaidAmount: firestore.FieldValue.increment(normalizedAmount),
+          totalDueAmount: firestore.FieldValue.increment(-normalizedAmount),
+        },
+        { merge: true }
+      );
+    }
 
     return {
       ...purchase,

@@ -344,6 +344,11 @@ exports.createPurchase = onCall(async (request) => {
   const supplierName = supplierSnap.exists
     ? supplierSnap.data().name || "—"
     : "—";
+  const supplierRef = db
+    .collection(SHOPS)
+    .doc(shopId)
+    .collection("suppliers")
+    .doc(supplierId);
 
   const statsRef   = db.collection(SHOPS).doc(shopId).collection("stats").doc(statsKey);
   const counterRef = db.collection(SHOPS).doc(shopId).collection("meta").doc("counters");
@@ -417,6 +422,15 @@ exports.createPurchase = onCall(async (request) => {
       totalDueAmount:      admin.firestore.FieldValue.increment(dueAmount),
       totalPurchases:      admin.firestore.FieldValue.increment(1),
       lastUpdated:         admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    // ── Update supplier financial aggregates ──
+    tx.set(supplierRef, {
+      totalPurchaseAmount: admin.firestore.FieldValue.increment(subtotal),
+      totalPaidAmount: admin.firestore.FieldValue.increment(Number(paidAmount || 0)),
+      totalDueAmount: admin.firestore.FieldValue.increment(dueAmount),
+      totalPurchases: admin.firestore.FieldValue.increment(1),
+      lastPurchaseAt: admin.firestore.FieldValue.serverTimestamp(),
     }, { merge: true });
 
     return purchaseNoFormatted;

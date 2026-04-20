@@ -27,6 +27,11 @@ export async function createSupplier(
     address: String(address || '').trim(),
     gstNumber: String(gstNumber || '').trim(),
     openingBalance: Number(openingBalance) || 0,
+    totalPurchaseAmount: 0,
+    totalPaidAmount: 0,
+    totalDueAmount: 0,
+    totalPurchases: 0,
+    lastPurchaseAt: null,
     isActive: true,
     createdAt: firestore.FieldValue.serverTimestamp(),
   };

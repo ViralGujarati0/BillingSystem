@@ -12,8 +12,14 @@ export function supplierFromObject(obj) {
     address: obj.address || '',
     gstNumber: obj.gstNumber || '',
     openingBalance: Number(obj.openingBalance) || 0,
+    totalPurchaseAmount: Number(obj.totalPurchaseAmount) || 0,
+    totalPaidAmount: Number(obj.totalPaidAmount) || 0,
+    totalDueAmount: Number(obj.totalDueAmount) || 0,
+    totalPurchases: Number(obj.totalPurchases) || 0,
+    pendingAmount: (Number(obj.openingBalance) || 0) + (Number(obj.totalDueAmount) || 0),
     isActive: obj.isActive !== false,
     createdAt: obj.createdAt || null,
+    lastPurchaseAt: obj.lastPurchaseAt || null,
   };
 }
 

@@ -55,12 +55,30 @@ export default function SupplierCard({ supplier, onEdit, onDelete }) {
           </View>
         )}
 
-        <View style={styles.balancePill}>
-          <Icon name="wallet-outline" size={rfs(10)} color={colors.primary} />
-          <Text style={styles.balanceText}>
-            ₹{Number(supplier.openingBalance) || 0}
-          </Text>
-          <Text style={styles.balanceLabel}>Opening Balance</Text>
+        <View style={styles.statsRow}>
+          <View style={styles.balancePill}>
+            <Icon name="wallet-outline" size={rfs(10)} color={colors.primary} />
+            <Text style={styles.balanceText}>
+              ₹{Number(supplier.openingBalance) || 0}
+            </Text>
+            <Text style={styles.balanceLabel}>Opening</Text>
+          </View>
+
+          <View style={styles.balancePill}>
+            <Icon name="trending-up-outline" size={rfs(10)} color={colors.success} />
+            <Text style={[styles.balanceText, styles.balanceTextSuccess]}>
+              ₹{Number(supplier.totalPurchaseAmount) || 0}
+            </Text>
+            <Text style={styles.balanceLabel}>Spent</Text>
+          </View>
+
+          <View style={styles.balancePill}>
+            <Icon name="alert-circle-outline" size={rfs(10)} color={colors.accent} />
+            <Text style={[styles.balanceText, styles.balanceTextWarning]}>
+              ₹{Number(supplier.pendingAmount) || 0}
+            </Text>
+            <Text style={styles.balanceLabel}>Pending</Text>
+          </View>
         </View>
 
       </View>
@@ -179,11 +197,25 @@ const styles = StyleSheet.create({
     marginTop: rvs(2),
   },
 
+  statsRow: {
+    flexDirection: 'row',
+    gap: rs(5),
+    flexWrap: 'wrap',
+  },
+
   balanceText: {
     fontSize: rfs(11),
     fontWeight: '800',
     color: colors.primary,
     fontVariant: ['tabular-nums'],
+  },
+
+  balanceTextSuccess: {
+    color: colors.success,
+  },
+
+  balanceTextWarning: {
+    color: colors.accent,
   },
 
   balanceLabel: {
